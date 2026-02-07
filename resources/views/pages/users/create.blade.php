@@ -49,8 +49,9 @@
                                 </div>
 
                                 <div class="form-group col-12 col-lg-6 mb-3">
-                                    <x-form.input name="password" label="Password" type="password" required="true">
+                                    <x-form.input name="password" id="password" label="Password" type="password" required="true">
                                     </x-form.input>
+                                    <x-password-strength-indicator inputId="password" />
                                 </div>
 
                                 <div class="form-group col-12 col-lg-6 mb-3">

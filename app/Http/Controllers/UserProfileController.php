@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\LoginHistory;
 use App\Models\User;
+use App\Rules\StrongPassword;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -103,13 +104,11 @@ class UserProfileController extends Controller
         // validate
         $request->validate(
             [
-                'password' => ['required', 'regex:/^\S*$/u', 'min:6', 'confirmed']
+                'password' => ['required', new StrongPassword(), 'confirmed']
             ],
             [
                 'password.required' => 'Password is required',
-                'password.confirmed' => 'Password Confirmation dose not match!',
-                'password.min' => 'Minimum length is 6!',
-                'password.regex' => 'Invalid input!',
+                'password.confirmed' => 'Password Confirmation does not match!',
             ]
         );
 

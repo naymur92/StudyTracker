@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Rules\StrongPassword;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -21,7 +22,7 @@ class RegisterApiRequest extends FormRequest
         return [
             'name'                  => ['required', 'string', 'min:5'],
             'email'                 => ['required', 'email', 'unique:users,email'],
-            'password'              => ['required', 'min:6'],
+            'password'              => ['required', new StrongPassword()],
             'password_confirmation' => ['required', 'same:password'],
         ];
     }
@@ -36,7 +37,6 @@ class RegisterApiRequest extends FormRequest
             'email.email'                       => 'Invalid Email.',
             'email.unique'                      => 'This Email is used.',
             'password.required'                 => 'Password is required.',
-            'password.min'                      => 'Minimum length is 6.',
             'password_confirmation.required'    => 'Password Confirmation is required.',
             'password_confirmation.same'        => 'Password not matched.',
         ];

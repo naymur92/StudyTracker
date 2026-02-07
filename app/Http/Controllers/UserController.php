@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
+use App\Rules\StrongPassword;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -53,7 +54,7 @@ class UserController extends Controller
                 'user_type' => 'required',
                 'is_active' => 'required',
                 'roles'     => 'nullable|array',
-                'password'  => 'required|regex:/^\S*$/u|min:6|confirmed',
+                'password'  => ['required', new StrongPassword(), 'confirmed'],
             ],
             [
                 'name.required'         => 'Name is required!',
@@ -63,9 +64,7 @@ class UserController extends Controller
                 'is_active.required'    => 'Status is required!',
                 // 'roles.required'        => 'At least one role is required!',
                 'password.required'     => 'Password is required!',
-                'password.regex'        => 'Invalid input!',
-                'password.min'          => 'Minimum length is 6!',
-                'password.confirmed'    => 'Password Confirmation dose not match!',
+                'password.confirmed'    => 'Password Confirmation does not match!',
             ]
         );
 
@@ -243,13 +242,11 @@ class UserController extends Controller
         // validate
         $request->validate(
             [
-                'password' => ['required', 'regex:/^\S*$/u', 'min:6', 'confirmed']
+                'password' => ['required', new StrongPassword(), 'confirmed']
             ],
             [
                 'password.required'     => 'Password is required',
                 'password.confirmed'    => 'Password Confirmation does not match!',
-                'password.min'          => 'Minimum length is 6!',
-                'password.regex'        => 'Invalid input!',
             ]
         );
 

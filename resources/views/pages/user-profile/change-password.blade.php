@@ -29,6 +29,7 @@
                                 {{-- password --}}
                                 <div class="form-group col-12 col-lg-6 mb-3">
                                     <x-form.input type="password" id="_pass" name="password" label="Enter New Password" required placeholder="Password" />
+                                    <x-password-strength-indicator inputId="_pass" />
                                 </div>
 
                                 {{-- confirm password --}}
