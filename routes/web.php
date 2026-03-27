@@ -16,6 +16,11 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 use Laravel\Passport\Http\Controllers\AccessTokenController;
 
+// Homepage - Under Maintenance
+Route::get('/', function () {
+    return view('maintenance');
+})->name('maintenance');
+
 Route::group(['middleware' => ['auth', 'admin'], 'prefix' => 'admin'], function () {
     // Dashboard
     Route::get('/', [DashboardController::class, 'index'])->name('dashboard');

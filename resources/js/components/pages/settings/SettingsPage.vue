@@ -158,14 +158,16 @@
                                         <div class="card-body">
                                             <h6 class="card-title">Cache Information</h6>
                                             <table class="table table-sm">
-                                                <tr>
-                                                    <th>Cache Driver:</th>
-                                                    <td>{{ cacheInfo.driver || '-' }}</td>
-                                                </tr>
-                                                <tr>
-                                                    <th>Available Stores:</th>
-                                                    <td>{{ cacheInfo.stores?.join(', ') || '-' }}</td>
-                                                </tr>
+                                                <tbody>
+                                                    <tr>
+                                                        <th>Cache Driver:</th>
+                                                        <td>{{ cacheInfo.driver || '-' }}</td>
+                                                    </tr>
+                                                    <tr>
+                                                        <th>Available Stores:</th>
+                                                        <td>{{ cacheInfo.stores?.join(', ') || '-' }}</td>
+                                                    </tr>
+                                                </tbody>
                                             </table>
                                         </div>
                                     </div>
