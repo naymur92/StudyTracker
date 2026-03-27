@@ -1,9 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Show Role' . ' - ' . $role->name)
-
-@push('styles')
-@endpush
+@section('title', 'Role — ' . $role->name)
 
 @push('scripts')
     <script>
@@ -15,52 +12,44 @@
 
 @section('content')
     <div class="container-fluid">
-        <!-- Page Heading -->
-        <h1 class="h3 mb-2 text-gray-800">Show Role</h1>
-
         <div class="row justify-content-center">
-            <div class="col-6">
+            <div class="col-12 col-xl-7">
                 <div class="card shadow mb-4">
                     <div class="card-header py-3 d-flex justify-content-between align-items-center">
-                        <h5 class="m-0 font-weight-bold text-primary">{{ $role->name }}</h5>
+                        <h5 class="m-0 font-weight-bold text-primary">
+                            <i class="fas fa-shield-alt mr-1"></i>{{ $role->name }}
+                        </h5>
                         @can('role-list')
-                            <x-button.back href="{{ route('roles.index') }}"></x-button.back>
+                            <x-button.back href="{{ route('roles.index') }}">Back to Roles</x-button.back>
                         @endcan
                     </div>
 
                     <div class="card-body">
-                        <table class="table table-bordered table-hover">
-                            <tr>
-                                <th style="width: 20%;">Role Name</th>
-                                <td>{{ $role->name }}</td>
-                            </tr>
-                            <tr>
-                                <th>Permissions</th>
-                                <td>
-                                    @if ($role->permissions->count() > 0)
-                                        @foreach ($role->permissions as $p)
-                                            <label class="badge badge-primary">{{ $p->name }}</label>
-                                        @endforeach
-                                    @else
-                                        <label class="badge badge-danger">No Permission</label>
-                                    @endif
-                                </td>
-                            </tr>
-                            <tr>
-                        </table>
+                        <div class="mb-1">
+                            <p class="text-xs font-weight-bold text-uppercase text-muted mb-2">
+                                <i class="fas fa-key mr-1"></i>Assigned Permissions
+                            </p>
+                            @if ($role->permissions->count() > 0)
+                                <div class="d-flex flex-wrap" style="gap:.4rem;">
+                                    @foreach ($role->permissions as $p)
+                                        <span class="badge badge-primary p-2">{{ $p->name }}</span>
+                                    @endforeach
+                                </div>
+                            @else
+                                <span class="badge badge-danger p-2">No Permissions Assigned</span>
+                            @endif
+                        </div>
                     </div>
-                    <div class="card-footer d-flex justify-content-between">
+
+                    <div class="card-footer d-flex justify-content-between align-items-center flex-wrap" style="gap:.4rem;">
                         @can('role-edit')
                             <x-button.edit onclick="window.openEditRoleModal({{ $role->id }}); return false;" title="Edit" />
                         @endcan
 
                         @if ($role->name != 'Super Admin')
                             @can('role-delete')
-                                <form action="{{ route('roles.destroy', $role->id) }}" method="post"
-                                    onsubmit="swalConfirmationOnSubmit(event, 'Are you sure you want to delete this role?')">
-                                    @csrf
-                                    @method('delete')
-
+                                <form action="{{ route('roles.destroy', $role->id) }}" method="post" onsubmit="swalConfirmationOnSubmit(event, 'Delete this role?')">
+                                    @csrf @method('delete')
                                     <x-button.delete onclick="this.closest('form').requestSubmit()" title="Delete" />
                                 </form>
                             @endcan
@@ -68,7 +57,6 @@
                     </div>
                 </div>
             </div>
-
         </div>
     </div>
 

@@ -59,8 +59,11 @@ class AuthController extends Controller
             'scope'         => '',
         ]);
 
-        // Find user for login tracking
-        $user = User::where('email', $request->email)->where('is_active', 1)->where('type', 4)->first();
+        // Find user for login tracking — allow type 3 (User) and type 4 (API User)
+        $user = User::where('email', $request->email)
+            ->where('is_active', 1)
+            ->whereIn('type', [3, 4])
+            ->first();
 
         // handle response
         if ($response->successful()) {

@@ -54,7 +54,7 @@
                                                     $grantTypes = json_decode($client->grant_types, true) ?? [];
                                                 @endphp
                                                 @foreach ($grantTypes as $type)
-                                                    <span class="badge bg-primary text-white">{{ $type }}</span>
+                                                    <span class="badge badge-primary">{{ $type }}</span>
                                                 @endforeach
                                             </td>
                                             <td>{{ $client->provider ?? 'N/A' }}</td>
