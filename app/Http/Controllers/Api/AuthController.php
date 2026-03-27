@@ -3,15 +3,21 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\ResendVerificationRequest;
+use App\Http\Requests\RefreshTokenRequest;
 use App\Http\Requests\RegisterApiRequest;
 use App\Http\Requests\TokenGenerateApiRequest;
+use App\Models\EmailVerificationToken;
 use App\Models\User;
+use App\Notifications\VerifyEmailNotification;
 use App\Services\LoginTracker;
 use App\Traits\CustomResponseTrait;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 use Symfony\Component\HttpFoundation\Response as HttpResponse;
 
 class AuthController extends Controller
@@ -21,20 +27,33 @@ class AuthController extends Controller
     public function register(RegisterApiRequest $request)
     {
         try {
-            $user = User::create([
-                'name'      => $request->name,
-                'email'     => $request->email,
-                'type'      => 4,
-                'is_active' => 1,
-                'password'  => bcrypt($request->password),
-            ]);
+            ['user' => $user, 'token' => $token] = DB::transaction(function () use ($request) {
+                $user = User::create([
+                    'name'      => $request->name,
+                    'email'     => $request->email,
+                    'type'      => 3,
+                    'is_active' => 0,
+                    'password'  => bcrypt($request->password),
+                ]);
+
+                $token = $this->createEmailVerificationToken($user);
+
+                return [
+                    'user'  => $user,
+                    'token' => $token,
+                ];
+            });
+
+            $user->notify(new VerifyEmailNotification($token));
 
             return $this->jsonResponse(
                 flag: true,
-                message: "Success",
+                message: 'Registration successful. Please verify your email to activate your account.',
                 data: [
-                    'name'  => $user->name,
-                    'email' => $user->email
+                    'name'              => $user->name,
+                    'email'             => $user->email,
+                    'is_active'         => false,
+                    'email_verification_sent' => true,
                 ],
                 responseCode: HttpResponse::HTTP_CREATED
             );
@@ -43,13 +62,22 @@ class AuthController extends Controller
 
             return $this->jsonResponse(
                 message: $e->getMessage(),
-                responseCode: $e->getCode()
+                responseCode: (int) $e->getCode()
             );
         }
     }
 
     public function issueToken(TokenGenerateApiRequest $request)
     {
+        $loginUser = User::where('email', $request->email)->first();
+
+        if (! $loginUser || ! (bool) $loginUser->is_active || is_null($loginUser->email_verified_at)) {
+            return $this->jsonResponse(
+                message: 'Your account is inactive or email is not verified.',
+                responseCode: HttpResponse::HTTP_UNAUTHORIZED,
+            );
+        }
+
         $response = Http::asForm()->post(config('app.url') . '/oauth-admin-app/token', [
             'grant_type'    => 'password',
             'client_id'     => $request->header('X-Client-Id'),
@@ -60,7 +88,7 @@ class AuthController extends Controller
         ]);
 
         // Find user for login tracking — allow type 3 (User) and type 4 (API User)
-        $user = User::where('email', $request->email)
+        $user = User::where('id', $loginUser->id)
             ->where('is_active', 1)
             ->whereIn('type', [3, 4])
             ->first();
@@ -93,13 +121,8 @@ class AuthController extends Controller
         );
     }
 
-    public function refresh(Request $request)
+    public function refresh(RefreshTokenRequest $request)
     {
-        $request->validate(
-            ['refresh_token' => 'required'],
-            ['refresh_token.required' => 'Refresh Token is required.']
-        );
-
         $response = Http::asForm()->post(config('app.url') . '/oauth-admin-app/token', [
             'grant_type'    => 'refresh_token',
             'refresh_token' => $request->refresh_token,
@@ -133,6 +156,122 @@ class AuthController extends Controller
             message: $response->json('error_description', 'Invalid refresh token'),
             responseCode: 401,
         );
+    }
+
+    public function verifyEmailWeb(Request $request)
+    {
+        $request->validate([
+            'email' => ['required', 'email:rfc,dns'],
+            'token' => ['required', 'string', 'size:64'],
+        ]);
+
+        $frontendBase = rtrim((string) config('app.frontend_url', config('app.url')), '/');
+
+        $result = $this->verifyEmailCore(
+            email: (string) $request->query('email'),
+            token: (string) $request->query('token'),
+        );
+
+        if ($result['ok']) {
+            return redirect()->away($frontendBase . '/login?verified=1&message=' . urlencode($result['message']));
+        }
+
+        return redirect()->away($frontendBase . '/verify-error?message=' . urlencode($result['message']));
+    }
+
+    private function verifyEmailCore(string $email, string $token): array
+    {
+        $user = User::where('email', $email)->first();
+
+        if (! $user) {
+            return ['ok' => false, 'message' => 'Invalid verification link.'];
+        }
+
+        if (! is_null($user->email_verified_at) && (bool) $user->is_active) {
+            return ['ok' => true, 'message' => 'Email already verified.'];
+        }
+
+        $incomingHash = hash('sha256', $token);
+
+        $record = EmailVerificationToken::where('user_id', $user->id)
+            ->where('token_hash', $incomingHash)
+            ->whereNull('used_at')
+            ->orderByDesc('id')
+            ->first();
+
+        if (! $record || $record->isExpired()) {
+            return ['ok' => false, 'message' => 'Verification token is invalid or expired.'];
+        }
+
+        $record->update(['used_at' => now()]);
+
+        $user->forceFill([
+            'email_verified_at' => now(),
+            'is_active'         => 1,
+        ])->save();
+
+        return ['ok' => true, 'message' => 'Email verified successfully. Your account is now active.'];
+    }
+
+    public function resendVerification(ResendVerificationRequest $request)
+    {
+        $user = User::where('email', $request->email)->first();
+
+        if (! $user) {
+            return $this->jsonResponse(
+                message: 'User not found.',
+                responseCode: HttpResponse::HTTP_NOT_FOUND,
+            );
+        }
+
+        if (! is_null($user->email_verified_at) && (bool) $user->is_active) {
+            return $this->jsonResponse(
+                flag: true,
+                message: 'Email already verified.',
+                data: [],
+                responseCode: HttpResponse::HTTP_OK,
+            );
+        }
+
+        $latestToken = EmailVerificationToken::where('user_id', $user->id)
+            ->whereNull('used_at')
+            ->orderByDesc('id')
+            ->first();
+
+        if ($latestToken && $latestToken->created_at && $latestToken->created_at->gt(now()->subMinutes(10))) {
+            return $this->jsonResponse(
+                message: 'A verification email was already sent recently. Please wait 10 minutes before requesting again.',
+                data: [],
+                responseCode: HttpResponse::HTTP_TOO_MANY_REQUESTS,
+            );
+        }
+
+        $token = $this->createEmailVerificationToken($user);
+        $user->notify(new VerifyEmailNotification($token));
+
+        return $this->jsonResponse(
+            flag: true,
+            message: 'Verification email sent successfully.',
+            data: [],
+            responseCode: HttpResponse::HTTP_OK,
+        );
+    }
+
+    private function createEmailVerificationToken(User $user): string
+    {
+        $plainToken = Str::random(64);
+
+        EmailVerificationToken::where('user_id', $user->id)
+            ->whereNull('used_at')
+            ->update(['used_at' => Date::now()]);
+
+        EmailVerificationToken::create([
+            'user_id'    => $user->id,
+            'token_hash' => hash('sha256', $plainToken),
+            'expires_at' => now()->addMinutes(30),
+        ]);
+
+        return $plainToken;
     }
 
     /**

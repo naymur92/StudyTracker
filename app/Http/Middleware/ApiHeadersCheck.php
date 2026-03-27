@@ -23,24 +23,24 @@ class ApiHeadersCheck
             $accept         = $request->header('Accept');
 
             if (!$contentType || !$accept) {
-                throw new \Exception("Missing required headers", 401);
+                throw new \Exception("Missing required headers", 400);
             }
 
             // validate Content-Type header
             if ($contentType != 'application/json') {
-                throw new \Exception("Invalid Content Type", 401);
+                throw new \Exception("Invalid Content Type", 415);
             }
 
             // validate Accept header
             if ($accept != 'application/json') {
-                throw new \Exception("Invalid Accept header", 401);
+                throw new \Exception("Invalid Accept header", 406);
             }
 
             return $next($request);
         } catch (\Exception $e) {
             return $this->jsonResponse(
                 message: $e->getMessage(),
-                responseCode: $e->getCode()
+                responseCode: (int) $e->getCode()
             );
         }
     }

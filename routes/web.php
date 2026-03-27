@@ -5,6 +5,7 @@ use App\Http\Controllers\BackupController;
 use App\Http\Controllers\CacheController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\LoginHistoryController;
+use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\OAuthClientController;
 use App\Http\Controllers\PermissionController;
 use App\Http\Controllers\RoleController;
@@ -12,6 +13,7 @@ use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\SystemLogController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\UserProfileController;
+use App\Http\Controllers\AdminStudyTrackerController;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 use Laravel\Passport\Http\Controllers\AccessTokenController;
@@ -20,6 +22,11 @@ use Laravel\Passport\Http\Controllers\AccessTokenController;
 Route::get('/', function () {
     return view('maintenance');
 })->name('maintenance');
+
+// Public browser verification URL (outside API routes)
+Route::get('/email/verify', [AuthController::class, 'verifyEmailWeb'])
+    ->middleware('throttle:auth-verify')
+    ->name('email.verify');
 
 Route::group(['middleware' => ['auth', 'admin'], 'prefix' => 'admin'], function () {
     // Dashboard
@@ -108,6 +115,20 @@ Route::group(['middleware' => ['auth', 'admin'], 'prefix' => 'admin'], function 
         Route::post('/clear-all', [CacheController::class, 'clearAll'])->name('cache.clear-all');
         Route::post('/optimize', [CacheController::class, 'optimize'])->name('cache.optimize');
         Route::post('/clear-optimization', [CacheController::class, 'clearOptimization'])->name('cache.clear-optimization');
+    });
+
+
+    // ─────────────────────────────────────────────────────
+    // Study Tracker — Admin Overview & Reports
+    // ─────────────────────────────────────────────────────
+    Route::prefix('study-tracker')->name('study-tracker.')->group(function () {
+        Route::get('/',                     [AdminStudyTrackerController::class, 'overview'])->name('overview');
+        Route::get('/reports',              [AdminStudyTrackerController::class, 'reports'])->name('reports');
+        Route::get('/users-report',         [AdminStudyTrackerController::class, 'usersReport'])->name('users-report');
+        Route::get('/topics-report',        [AdminStudyTrackerController::class, 'topicsReport'])->name('topics-report');
+        Route::get('/categories-report',    [AdminStudyTrackerController::class, 'categoriesReport'])->name('categories-report');
+        Route::get('/tasks-report',         [AdminStudyTrackerController::class, 'tasksReport'])->name('tasks-report');
+        Route::get('/users/{user}',         [AdminStudyTrackerController::class, 'userReport'])->name('user-report');
     });
 });
 

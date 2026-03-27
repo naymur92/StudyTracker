@@ -3,10 +3,12 @@
 namespace App\Exceptions;
 
 use App\Traits\CustomResponseTrait;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Foundation\Exceptions\Handler as ExceptionHandler;
 use Illuminate\Validation\ValidationException;
+use Symfony\Component\HttpKernel\Exception\HttpException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Throwable;
 
@@ -53,8 +55,55 @@ class Handler extends ExceptionHandler
         }
 
         //  Otherwise it's a web route - redirect to login page
-        return redirect()
-            ->guest(route('login'))
-            ->with('error', 'Your session has expired or you have been logged out.');
+        // flash()->error('Your session has expired or you have been logged out.');
+        return redirect()->guest(route('login'));
+    }
+
+    /**
+     * Register custom exception render callbacks.
+     */
+    public function register(): void
+    {
+        $this->renderable(function (ModelNotFoundException $e, $request) {
+            if ($request->is('api/*')) {
+                return $this->jsonResponse(
+                    message: 'Resource not found.',
+                    responseCode: 404,
+                    data: [],
+                );
+            }
+        });
+
+        $this->renderable(function (NotFoundHttpException $e, $request) {
+            if ($request->is('api/*')) {
+                return $this->jsonResponse(
+                    message: 'Endpoint not found.',
+                    responseCode: 404,
+                    data: [],
+                );
+            }
+        });
+
+        $this->renderable(function (AuthorizationException $e, $request) {
+            if ($request->is('api/*')) {
+                return $this->jsonResponse(
+                    message: $e->getMessage() ?: 'Unauthorized action.',
+                    responseCode: 403,
+                    data: [],
+                );
+            }
+        });
+
+        $this->renderable(function (HttpException $e, $request) {
+            if ($request->is('api/*')) {
+                $status = $e->getStatusCode() ?: 500;
+
+                return $this->jsonResponse(
+                    message: $e->getMessage() ?: 'Request failed.',
+                    responseCode: $status,
+                    data: [],
+                );
+            }
+        });
     }
 }

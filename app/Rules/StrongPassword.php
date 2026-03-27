@@ -38,9 +38,10 @@ class StrongPassword implements ValidationRule
             return;
         }
 
-        // Check for at least one special character
-        if (!preg_match('/[!@#$%^&*(),.?":{}|<>_\-+=\[\]\\\/`~;]/', $value)) {
-            $fail('The :attribute must contain at least one special character (!@#$%^&*(),.?":{}|<>_-+=[]\/`~;).');
+        // Check for at least one non-alphanumeric character.
+        // This is safer than maintaining a long escaped symbol set.
+        if (!preg_match('/[^A-Za-z0-9\s]/', $value)) {
+            $fail('The :attribute must contain at least one special character.');
             return;
         }
 

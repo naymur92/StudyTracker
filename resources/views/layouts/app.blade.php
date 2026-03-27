@@ -137,6 +137,9 @@
     <script src="{{ asset('/') }}assets/vendor/moment.js/2.15.1/moment.min.js"></script>
     <script src="{{ asset('/') }}assets/vendor/moment.js/2.29.4/moment-with-locales.min.js"></script>
 
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
     <script src="{{ generateAssetPath('assets/js/number-inputs.js') }}" defer></script>
     <script src="{{ generateAssetPath('assets/js/customized-bootstrap-datepicker.js') }}" defer></script>
     <script src="{{ generateAssetPath('assets/js/custom.js') }}"></script>

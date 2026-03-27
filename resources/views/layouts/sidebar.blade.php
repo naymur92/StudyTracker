@@ -132,6 +132,62 @@
     @endcanany
 
 
+    <!-- Divider -->
+    <hr class="sidebar-divider">
+    <!-- Heading -->
+    <div class="sidebar-heading mb-2">
+        Study Tracker
+    </div>
+
+    @php
+        $isActiveSTOverview = request()->routeIs('study-tracker.overview');
+        $isActiveSTReports = request()->routeIs('study-tracker.reports');
+        $isActiveSTUser = request()->routeIs('study-tracker.user-report');
+        $isActiveSTMenu = $isActiveSTOverview || $isActiveSTReports || $isActiveSTUser;
+    @endphp
+
+    @php
+        $isActiveSTOverview = request()->routeIs('study-tracker.overview');
+        $isActiveSTReports = request()->routeIs('study-tracker.reports');
+        $isActiveSTUser = request()->routeIs('study-tracker.user-report');
+        $isActiveSTUsers = request()->routeIs('study-tracker.users-report');
+        $isActiveSTTopics = request()->routeIs('study-tracker.topics-report');
+        $isActiveSTCategories = request()->routeIs('study-tracker.categories-report');
+        $isActiveSTTasks = request()->routeIs('study-tracker.tasks-report');
+        $isActiveSTMenu = $isActiveSTOverview || $isActiveSTReports || $isActiveSTUser || $isActiveSTUsers || $isActiveSTTopics || $isActiveSTCategories || $isActiveSTTasks;
+    @endphp
+
+    <li class="nav-item {{ $isActiveSTMenu ? 'active' : '' }}">
+        <a class="nav-link {{ $isActiveSTMenu ? '' : 'collapsed' }}" href="#" data-toggle="collapse" data-target="#stMenu"
+            aria-expanded="{{ $isActiveSTMenu ? 'true' : 'false' }}" aria-controls="stMenu">
+            <i class="fas fa-fw fa-brain"></i>
+            <span>Study Tracker</span>
+        </a>
+        <div id="stMenu" class="collapse {{ $isActiveSTMenu ? 'show' : '' }}" aria-labelledby="headingST" data-parent="#accordionSidebar">
+            <div class="bg-white py-2 collapse-inner rounded">
+                <a class="collapse-item {{ $isActiveSTOverview ? 'active' : '' }}" href="{{ route('study-tracker.overview') }}">
+                    <i class="fas fa-chart-pie mr-2"></i>Overview
+                </a>
+                <h6 class="collapse-header px-3 mt-2 mb-1">Reports</h6>
+                <a class="collapse-item {{ $isActiveSTReports ? 'active' : '' }}" href="{{ route('study-tracker.reports') }}">
+                    <i class="fas fa-chart-line mr-2"></i>Trends &amp; Stats
+                </a>
+                <a class="collapse-item {{ $isActiveSTUsers ? 'active' : '' }}" href="{{ route('study-tracker.users-report') }}">
+                    <i class="fas fa-users mr-2"></i>Users Report
+                </a>
+                <a class="collapse-item {{ $isActiveSTTopics ? 'active' : '' }}" href="{{ route('study-tracker.topics-report') }}">
+                    <i class="fas fa-book mr-2"></i>Topics Report
+                </a>
+                <a class="collapse-item {{ $isActiveSTCategories ? 'active' : '' }}" href="{{ route('study-tracker.categories-report') }}">
+                    <i class="fas fa-folder mr-2"></i>Categories Report
+                </a>
+                <a class="collapse-item {{ $isActiveSTTasks ? 'active' : '' }}" href="{{ route('study-tracker.tasks-report') }}">
+                    <i class="fas fa-tasks mr-2"></i>Tasks Report
+                </a>
+            </div>
+        </div>
+    </li>
+
     <!-- Settings & Configuration -->
     @can('settings-view')
         <hr class="sidebar-divider">

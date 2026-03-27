@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Rules\DisposableEmail;
 use App\Rules\StrongPassword;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -21,7 +22,14 @@ class RegisterApiRequest extends FormRequest
     {
         return [
             'name'                  => ['required', 'string', 'min:5'],
-            'email'                 => ['required', 'email', 'unique:users,email'],
+            'email'                 => [
+                'required',
+                'string',
+                'max:255',
+                'email:rfc,dns,spoof,filter',
+                'unique:users,email',
+                new DisposableEmail(),
+            ],
             'password'              => ['required', new StrongPassword()],
             'password_confirmation' => ['required', 'same:password'],
         ];
@@ -35,6 +43,7 @@ class RegisterApiRequest extends FormRequest
             'name.min'                          => 'Minimum length is 5.',
             'email.required'                    => 'Email is required.',
             'email.email'                       => 'Invalid Email.',
+            'email.max'                         => 'Email length must be under 255 characters.',
             'email.unique'                      => 'This Email is used.',
             'password.required'                 => 'Password is required.',
             'password_confirmation.required'    => 'Password Confirmation is required.',

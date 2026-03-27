@@ -24,7 +24,7 @@ trait CustomResponseTrait
      *
      * @param bool   $flag        Success flag (true for success, false for error). Default: false.
      * @param string $message     Response message (e.g., error description or success note). Default: empty string.
-     * @param array  $data        Payload data (e.g., query results or resources). Default: empty array.
+     * @param mixed  $data        Payload data (e.g., query results, arrays, or API resources). Default: null.
      * @param int    $responseCode HTTP status code (e.g., 200, 404). Default: 404. Invalid codes (< 200) map to 500.
      * @param array  $extra       Optional key-value pairs to merge into the response (e.g., metadata like services or custom messages).
      *                           Uses array spread operator for unpacking; empty array adds no fields. Default: empty array.
@@ -68,7 +68,7 @@ trait CustomResponseTrait
     protected function jsonResponse(
         bool $flag = false,
         string $message = "",
-        ?array $data = null,
+        mixed $data = null,
         int $responseCode = 404,
         array $extra = []
     ): \Illuminate\Http\JsonResponse {

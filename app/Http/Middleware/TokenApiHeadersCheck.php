@@ -30,7 +30,7 @@ class TokenApiHeadersCheck
         } catch (\Exception $e) {
             return $this->jsonResponse(
                 message: $e->getMessage(),
-                responseCode: $e->getCode()
+                responseCode: (int) $e->getCode()
             );
         }
     }

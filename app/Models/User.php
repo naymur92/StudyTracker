@@ -111,4 +111,25 @@ class User extends Authenticatable implements OAuthenticatable
     {
         return $this->morphMany(\App\Models\ActivityLog::class, 'causer');
     }
+
+    // ── Study Tracker ──────────────────────────────────
+    public function categories()
+    {
+        return $this->hasMany(Category::class);
+    }
+
+    public function topics()
+    {
+        return $this->hasMany(Topic::class);
+    }
+
+    public function studyTasks()
+    {
+        return $this->hasMany(StudyTask::class);
+    }
+
+    public function practiceLogs()
+    {
+        return $this->hasMany(PracticeLog::class);
+    }
 }
