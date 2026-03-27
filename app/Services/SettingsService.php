@@ -64,20 +64,11 @@ class SettingsService
     }
 
     /**
-     * Cast value based on type
+     * Cast value based on type — delegates to Setting model to avoid duplication.
      */
     protected function castValue($value, $type)
     {
-        switch ($type) {
-            case 'boolean':
-                return filter_var($value, FILTER_VALIDATE_BOOLEAN);
-            case 'integer':
-                return (int) $value;
-            case 'json':
-                return json_decode($value, true);
-            default:
-                return $value;
-        }
+        return \App\Models\Setting::castValueStatic($value, $type);
     }
 
     /**

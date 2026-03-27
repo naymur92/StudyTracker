@@ -2,7 +2,7 @@
 
 namespace App\Http\Middleware;
 
-use App\Models\ActivityLog;
+use App\Services\ActivityLogger;
 use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -43,24 +43,18 @@ class LogActivity
         $description = $this->getDescription($request);
 
         if ($description) {
-            ActivityLog::create([
-                'log_name' => 'web',
-                'description' => $description,
-                'subject_type' => null,
-                'subject_id' => null,
-                'causer_type' => 'App\Models\User',
-                'causer_id' => auth()->id(),
-                'properties' => [
-                    'method' => $request->method(),
-                    'url' => $request->fullUrl(),
-                    'route' => $request->route()?->getName(),
+            ActivityLogger::log(
+                description: $description,
+                properties: [
+                    'method'      => $request->method(),
+                    'url'         => $request->fullUrl(),
+                    'route'       => $request->route()?->getName(),
                     'status_code' => $response->getStatusCode(),
-                    'input' => $this->sanitizeInput($request->except(['_token', 'password', 'password_confirmation'])),
+                    'input'       => $this->sanitizeInput($request->except(['_token', 'password', 'password_confirmation'])),
                 ],
-                'event' => $request->method(),
-                'ip_address' => $request->ip(),
-                'user_agent' => $request->userAgent(),
-            ]);
+                event: $request->method(),
+                logName: 'web'
+            );
         }
     }
 

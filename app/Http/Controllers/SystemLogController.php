@@ -8,6 +8,26 @@ use Illuminate\Support\Facades\File;
 class SystemLogController extends Controller
 {
     /**
+     * Resolve and validate a log filename stays within the logs directory.
+     * Aborts with 403 if path traversal or non-.log file is attempted.
+     */
+    private function resolveLogPath(string $filename): string
+    {
+        if (!str_ends_with($filename, '.log')) {
+            abort(404, 'Log file not found');
+        }
+
+        $logsDir  = realpath(storage_path('logs'));
+        $filePath = $logsDir . DIRECTORY_SEPARATOR . basename($filename);
+        $realPath = realpath($filePath);
+
+        if (!$realPath || !str_starts_with($realPath, $logsDir . DIRECTORY_SEPARATOR)) {
+            abort(403, 'Access denied.');
+        }
+
+        return $realPath;
+    }
+    /**
      * Display a listing of system logs.
      */
     public function index(Request $request)
@@ -42,9 +62,9 @@ class SystemLogController extends Controller
     {
         $this->authorize('system-log-view');
 
-        $logPath = storage_path('logs/' . $filename);
+        $logPath = $this->resolveLogPath($filename);
 
-        if (!File::exists($logPath) || !str_ends_with($filename, '.log')) {
+        if (!File::exists($logPath)) {
             abort(404, 'Log file not found');
         }
 
@@ -76,9 +96,9 @@ class SystemLogController extends Controller
     {
         $this->authorize('system-log-download');
 
-        $logPath = storage_path('logs/' . $filename);
+        $logPath = $this->resolveLogPath($filename);
 
-        if (!File::exists($logPath) || !str_ends_with($filename, '.log')) {
+        if (!File::exists($logPath)) {
             abort(404, 'Log file not found');
         }
 
@@ -92,9 +112,9 @@ class SystemLogController extends Controller
     {
         $this->authorize('system-log-delete');
 
-        $logPath = storage_path('logs/' . $filename);
+        $logPath = $this->resolveLogPath($filename);
 
-        if (!File::exists($logPath) || !str_ends_with($filename, '.log')) {
+        if (!File::exists($logPath)) {
             abort(404, 'Log file not found');
         }
 

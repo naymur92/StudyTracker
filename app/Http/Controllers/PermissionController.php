@@ -19,7 +19,7 @@ class PermissionController extends Controller
 
         setUnsetUniqueId();
 
-        $permissions = Permission::get();
+        $permissions = Permission::select(['id', 'name', 'created_at'])->get();
         return view('pages.permissions.index', compact('permissions'));
     }
 

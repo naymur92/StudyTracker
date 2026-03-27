@@ -12,6 +12,23 @@ class BackupController extends Controller
     private $backupPath = 'backups';
 
     /**
+     * Resolve and validate a filename stays within the backup directory.
+     * Aborts with 403 if path traversal is attempted.
+     */
+    private function resolveBackupPath(string $filename): string
+    {
+        $backupDir = realpath(storage_path('app/' . $this->backupPath));
+        $filePath  = $backupDir . DIRECTORY_SEPARATOR . basename($filename);
+        $realPath  = realpath($filePath);
+
+        if (!$realPath || !str_starts_with($realPath, $backupDir . DIRECTORY_SEPARATOR)) {
+            abort(403, 'Access denied.');
+        }
+
+        return $realPath;
+    }
+
+    /**
      * List all database backups
      */
     public function index()
@@ -68,18 +85,20 @@ class BackupController extends Controller
             $filename = 'backup_' . Carbon::now()->format('Y-m-d_His') . '.sql';
             $filePath = $backupDir . '/' . $filename;
 
-            // mysqldump command
+            // mysqldump command — password passed via env var to avoid exposure in process list
             $command = sprintf(
-                'mysqldump --user=%s --password=%s --host=%s --port=%s %s > %s',
+                'mysqldump --user=%s --host=%s --port=%s %s > %s 2>&1',
                 escapeshellarg($username),
-                escapeshellarg($password),
                 escapeshellarg($host),
                 escapeshellarg($port),
                 escapeshellarg($database),
                 escapeshellarg($filePath)
             );
 
+            putenv('MYSQL_PWD=' . $password);
+
             exec($command, $output, $returnVar);
+            putenv('MYSQL_PWD');
 
             if ($returnVar !== 0) {
                 // Delete partially created file if exists
@@ -135,7 +154,7 @@ class BackupController extends Controller
     {
         $this->authorize('backup-create');
 
-        $filePath = storage_path('app/' . $this->backupPath . '/' . $filename);
+        $filePath = $this->resolveBackupPath($filename);
 
         if (!File::exists($filePath)) {
             return response()->json([
@@ -154,7 +173,7 @@ class BackupController extends Controller
     {
         $this->authorize('backup-delete');
 
-        $filePath = storage_path('app/' . $this->backupPath . '/' . $filename);
+        $filePath = $this->resolveBackupPath($filename);
 
         if (!File::exists($filePath)) {
             return response()->json([
@@ -163,7 +182,6 @@ class BackupController extends Controller
             ], 404);
         }
 
-        $fileSize = File::size($filePath);
         File::delete($filePath);
 
         return response()->json([
@@ -180,7 +198,7 @@ class BackupController extends Controller
         $this->authorize('backup-restore');
 
         try {
-            $filePath = storage_path('app/' . $this->backupPath . '/' . $filename);
+            $filePath = $this->resolveBackupPath($filename);
 
             if (!File::exists($filePath)) {
                 return response()->json([
@@ -195,18 +213,19 @@ class BackupController extends Controller
             $host = config('database.connections.' . config('database.default') . '.host');
             $port = config('database.connections.' . config('database.default') . '.port') ?? 3306;
 
-            // mysql command to restore
+            // mysql command to restore — password passed via env var to avoid process list exposure
             $command = sprintf(
-                'mysql --user=%s --password=%s --host=%s --port=%s %s < %s',
+                'mysql --user=%s --host=%s --port=%s %s < %s 2>&1',
                 escapeshellarg($username),
-                escapeshellarg($password),
                 escapeshellarg($host),
                 escapeshellarg($port),
                 escapeshellarg($database),
                 escapeshellarg($filePath)
             );
 
+            putenv('MYSQL_PWD=' . $password);
             exec($command, $output, $returnVar);
+            putenv('MYSQL_PWD');
 
             if ($returnVar !== 0) {
                 return response()->json([

@@ -2,13 +2,13 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Setting;
+use App\Services\SettingsService;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 
 class SettingsController extends Controller
 {
+    public function __construct(protected SettingsService $settings) {}
     /**
      * Display settings page
      */
@@ -27,12 +27,12 @@ class SettingsController extends Controller
         $this->authorize('settings-view');
 
         $config = [
-            'app_name' => Setting::get('app_name', config('app.name')),
-            'app_logo' => Setting::get('app_logo'),
-            'timezone' => Setting::get('timezone', config('app.timezone')),
-            'app_description' => Setting::get('app_description'),
-            'contact_email' => Setting::get('contact_email'),
-            'contact_phone' => Setting::get('contact_phone'),
+            'app_name'        => $this->settings->get('app_name', config('app.name')),
+            'app_logo'        => $this->settings->get('app_logo'),
+            'timezone'        => $this->settings->get('timezone', config('app.timezone')),
+            'app_description' => $this->settings->get('app_description'),
+            'contact_email'   => $this->settings->get('contact_email'),
+            'contact_phone'   => $this->settings->get('contact_phone'),
         ];
 
         return response()->json(['success' => true, 'data' => $config]);
@@ -80,44 +80,44 @@ class SettingsController extends Controller
             $logo->move($uploadPath, $filename);
 
             // Delete old logo if exists
-            $oldLogo = Setting::get('app_logo');
+            $oldLogo = $this->settings->get('app_logo');
             if ($oldLogo && file_exists(public_path($oldLogo))) {
                 unlink(public_path($oldLogo));
             }
 
             // Store relative path
             $logoPath = 'uploads/site/' . $filename;
-            Setting::set('app_logo', $logoPath, 'string', 'site', 'Application logo');
+            $this->settings->set('app_logo', $logoPath, 'string', 'site', 'Application logo');
             $changes['app_logo'] = $filename;
         }
 
         // Update other settings
         if ($request->filled('app_name')) {
-            $oldValue = Setting::get('app_name');
-            Setting::set('app_name', $request->app_name, 'string', 'site', 'Application name');
+            $oldValue = $this->settings->get('app_name');
+            $this->settings->set('app_name', $request->app_name, 'string', 'site', 'Application name');
             $changes['app_name'] = ['old' => $oldValue, 'new' => $request->app_name];
         }
 
         if ($request->filled('timezone')) {
-            $oldValue = Setting::get('timezone');
-            Setting::set('timezone', $request->timezone, 'string', 'site', 'Application timezone');
+            $oldValue = $this->settings->get('timezone');
+            $this->settings->set('timezone', $request->timezone, 'string', 'site', 'Application timezone');
             $changes['timezone'] = ['old' => $oldValue, 'new' => $request->timezone];
         }
 
         if ($request->filled('app_description')) {
-            Setting::set('app_description', $request->app_description, 'string', 'site', 'Application description');
+            $this->settings->set('app_description', $request->app_description, 'string', 'site', 'Application description');
             $changes['app_description'] = 'updated';
         }
 
         if ($request->filled('contact_email')) {
-            $oldValue = Setting::get('contact_email');
-            Setting::set('contact_email', $request->contact_email, 'string', 'site', 'Contact email');
+            $oldValue = $this->settings->get('contact_email');
+            $this->settings->set('contact_email', $request->contact_email, 'string', 'site', 'Contact email');
             $changes['contact_email'] = ['old' => $oldValue, 'new' => $request->contact_email];
         }
 
         if ($request->filled('contact_phone')) {
-            $oldValue = Setting::get('contact_phone');
-            Setting::set('contact_phone', $request->contact_phone, 'string', 'site', 'Contact phone');
+            $oldValue = $this->settings->get('contact_phone');
+            $this->settings->set('contact_phone', $request->contact_phone, 'string', 'site', 'Contact phone');
             $changes['contact_phone'] = ['old' => $oldValue, 'new' => $request->contact_phone];
         }
 
@@ -148,7 +148,7 @@ class SettingsController extends Controller
             ], 422);
         }
 
-        $setting = Setting::set(
+        $setting = $this->settings->set(
             $key,
             $request->value,
             $request->type ?? 'string',
@@ -186,7 +186,7 @@ class SettingsController extends Controller
         }
 
         foreach ($request->settings as $settingData) {
-            Setting::set(
+            $this->settings->set(
                 $settingData['key'],
                 $settingData['value'],
                 $settingData['type'] ?? 'string',

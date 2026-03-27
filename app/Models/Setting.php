@@ -25,7 +25,7 @@ class Setting extends Model
             return $default;
         }
 
-        return self::castValue($setting->value, $setting->type);
+        return self::castValueStatic($setting->value, $setting->type);
     }
 
     /**
@@ -49,7 +49,7 @@ class Setting extends Model
     /**
      * Cast value based on type
      */
-    protected static function castValue($value, $type)
+    public static function castValueStatic($value, $type)
     {
         switch ($type) {
             case 'boolean':

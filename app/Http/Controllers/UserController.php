@@ -18,7 +18,7 @@ class UserController extends Controller
     {
         $this->authorize('user-list');
 
-        $users = User::get();
+        $users = User::select(['id', 'name', 'email', 'type', 'is_active', 'created_at', 'created_by'])->get();
         return view('pages.users.index', compact('users'));
     }
 
@@ -177,10 +177,7 @@ class UserController extends Controller
             ]);
 
             // sync roles
-            DB::table('model_has_roles')->where('model_id', $user->id)->delete();
-            if (!empty($request->input('roles'))) {
-                $user->assignRole($request->input('roles'));
-            }
+            $user->syncRoles($request->input('roles', []));
 
             DB::commit();
 

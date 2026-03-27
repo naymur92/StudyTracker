@@ -7,16 +7,13 @@ if (!function_exists('setUnsetUniqueId')) {
 
     function setUnsetUniqueId($operationType = null)
     {
-        // Session::put('unique_id', $uniqid);
         if ($operationType == 'get') {
-            $session_data = $_SESSION['unique_id'];
-
-            $_SESSION['unique_id'] = null;
-
+            $session_data = session('unique_id');
+            session()->forget('unique_id');
             return $session_data;
         } else {
             $uniqid = Str::random(30);
-            $_SESSION['unique_id'] = $uniqid;
+            session(['unique_id' => $uniqid]);
         }
     }
 }

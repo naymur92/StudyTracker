@@ -56,7 +56,7 @@ class User extends Authenticatable implements OAuthenticatable
 
     public function getStatusLabelAttribute()
     {
-        return match ($this->status) {
+        return match ((int) $this->is_active) {
             0 => 'Inactive',
             1 => 'Active',
             default => 'Unknown',
