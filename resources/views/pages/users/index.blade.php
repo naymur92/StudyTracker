@@ -3,7 +3,6 @@
 @section('title', 'Auth Users')
 
 @push('styles')
-    <link href="{{ asset('/') }}assets/vendor/datatables/dataTables.bootstrap4.css" rel="stylesheet">
     <style>
         .user-avatar {
             width: 36px;
@@ -30,9 +29,6 @@
 @endpush
 
 @push('scripts')
-    <script src="{{ asset('/') }}assets/vendor/datatables/jquery.dataTables.min.js"></script>
-    <script src="{{ asset('/') }}assets/vendor/datatables/dataTables.bootstrap4.min.js"></script>
-    <script src="{{ asset('/') }}assets/js/demo/datatables-demo.js"></script>
 @endpush
 
 @section('content')
@@ -50,8 +46,43 @@
                 </div>
             </div>
             <div class="card-body">
+                {{-- Filter form --}}
+                <form method="GET" action="{{ route('users.index') }}" class="mb-3">
+                    <div class="row g-2 align-items-end">
+                        <div class="col-md-4">
+                            <input type="text" name="search" class="form-control form-control-sm" placeholder="Search name or email…" value="{{ request('search') }}">
+                        </div>
+                        <div class="col-md-2">
+                            <select name="type" class="form-control form-control-sm">
+                                <option value="">All Types</option>
+                                <option value="1" {{ request('type') == '1' ? 'selected' : '' }}>Super Admin</option>
+                                <option value="2" {{ request('type') == '2' ? 'selected' : '' }}>Admin</option>
+                                <option value="3" {{ request('type') == '3' ? 'selected' : '' }}>User</option>
+                                <option value="4" {{ request('type') == '4' ? 'selected' : '' }}>API User</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <select name="status" class="form-control form-control-sm">
+                                <option value="">All Status</option>
+                                <option value="1" {{ request('status') === '1' ? 'selected' : '' }}>Active</option>
+                                <option value="0" {{ request('status') === '0' ? 'selected' : '' }}>Inactive</option>
+                            </select>
+                        </div>
+                        <div class="col-auto">
+                            <button type="submit" class="btn btn-sm btn-primary">
+                                <i class="fas fa-search mr-1"></i>Filter
+                            </button>
+                            @if (request()->hasAny(['search', 'type', 'status']))
+                                <a href="{{ route('users.index') }}" class="btn btn-sm btn-secondary ml-1">
+                                    <i class="fas fa-times mr-1"></i>Clear
+                                </a>
+                            @endif
+                        </div>
+                    </div>
+                </form>
+
                 <div class="table-responsive">
-                    <table class="table table-bordered table-hover text-nowrap align-middle" id="dataTable" width="100%" cellspacing="0">
+                    <table class="table table-bordered table-hover text-nowrap align-middle" width="100%" cellspacing="0">
                         <thead class="bg-primary text-white">
                             <tr class="text-center">
                                 <th style="width:5%">#</th>
@@ -73,7 +104,7 @@
                                     $bgColor = $bgColors[$user->id % count($bgColors)];
                                 @endphp
                                 <tr>
-                                    <td class="text-center" data-order="{{ $loop->iteration }}">{{ $loop->iteration }}</td>
+                                    <td class="text-center">{{ ($users->currentPage() - 1) * $users->perPage() + $loop->iteration }}</td>
                                     <td class="text-center">
                                         @if ($user->profilePicture)
                                             <img class="user-avatar" src="{{ asset('/') }}{{ $user->profilePicture->path . '/' . $user->profilePicture->name }}"
@@ -121,6 +152,13 @@
                             @endforeach
                         </tbody>
                     </table>
+                </div>
+
+                <div class="d-flex justify-content-between align-items-center mt-3">
+                    <small class="text-muted">
+                        Showing {{ $users->firstItem() }}–{{ $users->lastItem() }} of {{ $users->total() }} users
+                    </small>
+                    {{ $users->links() }}
                 </div>
             </div>
         </div>

@@ -13,13 +13,20 @@ class PermissionController extends Controller
      *
      * @return \Illuminate\Http\Response
      */
-    public function index()
+    public function index(Request $request)
     {
         $this->authorize('permission-list');
 
         setUnsetUniqueId();
 
-        $permissions = Permission::select(['id', 'name', 'created_at'])->get();
+        $query = Permission::select(['id', 'name', 'created_at'])->orderBy('name');
+
+        if ($request->filled('search')) {
+            $query->where('name', 'like', '%' . $request->search . '%');
+        }
+
+        $permissions = $query->paginate(25)->withQueryString();
+
         return view('pages.permissions.index', compact('permissions'));
     }
 

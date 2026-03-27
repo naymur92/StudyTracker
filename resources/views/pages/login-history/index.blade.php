@@ -3,13 +3,9 @@
 @section('title', 'Login History')
 
 @push('styles')
-    <link href="{{ asset('/') }}assets/vendor/datatables/dataTables.bootstrap4.css" rel="stylesheet">
 @endpush
 
 @push('scripts')
-    <script src="{{ asset('/') }}assets/vendor/datatables/jquery.dataTables.min.js"></script>
-    <script src="{{ asset('/') }}assets/vendor/datatables/dataTables.bootstrap4.min.js"></script>
-    <script src="{{ asset('/') }}assets/js/demo/datatables-demo.js"></script>
 @endpush
 
 @section('content')
@@ -84,20 +80,20 @@
             </div>
             <div class="card-body">
                 <!-- Filters -->
-                <form method="GET" action="{{ route('login-history.index') }}" class="mb-4">
-                    <div class="row g-3">
+                <form method="GET" action="{{ route('login-history.index') }}" class="mb-3">
+                    <div class="row g-2 align-items-end">
                         <div class="col-md-3">
-                            <input type="text" name="search" class="form-control" placeholder="Search IP address..." value="{{ request('search') }}">
+                            <input type="text" name="search" class="form-control form-control-sm" placeholder="Search IP address..." value="{{ request('search') }}">
                         </div>
                         <div class="col-md-2">
-                            <select name="is_successful" class="form-control">
+                            <select name="is_successful" class="form-control form-control-sm">
                                 <option value="">All Status</option>
                                 <option value="1" {{ request('is_successful') === '1' ? 'selected' : '' }}>Successful</option>
                                 <option value="0" {{ request('is_successful') === '0' ? 'selected' : '' }}>Failed</option>
                             </select>
                         </div>
                         <div class="col-md-2">
-                            <select name="login_method" class="form-control">
+                            <select name="login_method" class="form-control form-control-sm">
                                 <option value="">All Methods</option>
                                 <option value="web" {{ request('login_method') == 'web' ? 'selected' : '' }}>Web</option>
                                 <option value="api" {{ request('login_method') == 'api' ? 'selected' : '' }}>API</option>
@@ -106,19 +102,26 @@
                             </select>
                         </div>
                         <div class="col-md-2">
-                            <input type="date" name="start_date" class="form-control" value="{{ request('start_date') }}">
+                            <input type="date" name="start_date" class="form-control form-control-sm" value="{{ request('start_date') }}">
                         </div>
                         <div class="col-md-2">
-                            <input type="date" name="end_date" class="form-control" value="{{ request('end_date') }}">
+                            <input type="date" name="end_date" class="form-control form-control-sm" value="{{ request('end_date') }}">
                         </div>
-                        <div class="col-md-1">
-                            <button type="submit" class="btn btn-primary w-100">Filter</button>
+                        <div class="col-auto">
+                            <button type="submit" class="btn btn-sm btn-primary">
+                                <i class="fas fa-search mr-1"></i>Filter
+                            </button>
+                            @if (request()->hasAny(['search', 'is_successful', 'login_method', 'start_date', 'end_date']))
+                                <a href="{{ route('login-history.index') }}" class="btn btn-sm btn-secondary ml-1">
+                                    <i class="fas fa-times mr-1"></i>Clear
+                                </a>
+                            @endif
                         </div>
                     </div>
                 </form>
 
                 <div class="table-responsive">
-                    <table class="table table-bordered table-hover" id="dataTable">
+                    <table class="table table-bordered table-hover">
                         <thead>
                             <tr>
                                 <th style="width: 5%">ID</th>
@@ -164,7 +167,10 @@
                     </table>
                 </div>
 
-                <div class="mt-3">
+                <div class="d-flex justify-content-between align-items-center mt-3">
+                    <small class="text-muted">
+                        Showing {{ $logins->firstItem() }}–{{ $logins->lastItem() }} of {{ $logins->total() }} entries
+                    </small>
                     {{ $logins->links() }}
                 </div>
             </div>

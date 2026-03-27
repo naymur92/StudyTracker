@@ -3,14 +3,9 @@
 @section('title', 'Role Management')
 
 @push('styles')
-    <link href="{{ asset('/') }}assets/vendor/datatables/dataTables.bootstrap4.css" rel="stylesheet">
 @endpush
 
 @push('scripts')
-    <!-- Page level plugins -->
-    <script src="{{ asset('/') }}assets/vendor/datatables/jquery.dataTables.js"></script>
-    <script src="{{ asset('/') }}assets/vendor/datatables/dataTables.bootstrap4.js"></script>
-    <script src="{{ asset('/') }}assets/js/demo/datatables-demo.js"></script>
     <script>
         window.rolesData = {
             permissions: @json($permissions)
@@ -31,8 +26,27 @@
                         @endcan
                     </div>
                     <div class="card-body">
+                        {{-- Filter form --}}
+                        <form method="GET" action="{{ route('roles.index') }}" class="mb-3">
+                            <div class="row g-2 align-items-end">
+                                <div class="col">
+                                    <input type="text" name="search" class="form-control form-control-sm" placeholder="Search role name…" value="{{ request('search') }}">
+                                </div>
+                                <div class="col-auto">
+                                    <button type="submit" class="btn btn-sm btn-primary">
+                                        <i class="fas fa-search mr-1"></i>Filter
+                                    </button>
+                                    @if (request()->filled('search'))
+                                        <a href="{{ route('roles.index') }}" class="btn btn-sm btn-secondary ml-1">
+                                            <i class="fas fa-times mr-1"></i>Clear
+                                        </a>
+                                    @endif
+                                </div>
+                            </div>
+                        </form>
+
                         <div class="table-responsive">
-                            <table class="table table-bordered table-striped table-sm text-center" id="dataTable" width="100%">
+                            <table class="table table-bordered table-striped table-sm text-center" width="100%">
                                 <thead class="text-white bg-primary">
                                     <tr>
                                         <th style="width: 70px;">SL No</th>
@@ -69,6 +83,13 @@
                                     @endforelse
                                 </tbody>
                             </table>
+                        </div>
+
+                        <div class="d-flex justify-content-between align-items-center mt-3">
+                            <small class="text-muted">
+                                Showing {{ $roles->firstItem() }}–{{ $roles->lastItem() }} of {{ $roles->total() }} roles
+                            </small>
+                            {{ $roles->links() }}
                         </div>
                     </div>
                 </div>

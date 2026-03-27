@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\File;
 
 class SystemLogController extends Controller
@@ -51,6 +52,22 @@ class SystemLogController extends Controller
                 'modified_human' => \Carbon\Carbon::createFromTimestamp(File::lastModified($file))->diffForHumans(),
             ];
         });
+
+        // Filename search filter
+        if ($request->filled('search')) {
+            $search = strtolower($request->search);
+            $logs = $logs->filter(fn($l) => str_contains(strtolower($l['name']), $search))->values();
+        }
+
+        $perPage = 20;
+        $page    = (int) $request->get('page', 1);
+        $total   = $logs->count();
+        $paged   = $logs->forPage($page, $perPage)->values();
+
+        $logs = new LengthAwarePaginator($paged, $total, $perPage, $page, [
+            'path'  => $request->url(),
+            'query' => $request->query(),
+        ]);
 
         return view('pages.system-logs.index', compact('logs'));
     }

@@ -12,6 +12,34 @@ class BackupController extends Controller
     private $backupPath = 'backups';
 
     /**
+     * Resolve the mysqldump or mysql binary path.
+     * Checks: env var → Laragon location → system PATH.
+     */
+    private function resolveBinary(string $name): string
+    {
+        // 1. Explicit env override (MYSQLDUMP_PATH / MYSQL_PATH)
+        $envKey = strtoupper($name) . '_PATH';
+        if ($env = env($envKey)) {
+            return $env;
+        }
+
+        // 2. Laragon's bundled MySQL bin directory
+        $laragonBin = 'C:\\laragon\\bin\\mysql';
+        if (is_dir($laragonBin)) {
+            $dirs = glob($laragonBin . '\\*', GLOB_ONLYDIR);
+            foreach ($dirs as $dir) {
+                $candidate = $dir . '\\bin\\' . $name . '.exe';
+                if (file_exists($candidate)) {
+                    return $candidate;
+                }
+            }
+        }
+
+        // 3. Fall back to bare name (relies on system PATH)
+        return $name;
+    }
+
+    /**
      * Resolve and validate a filename stays within the backup directory.
      * Aborts with 403 if path traversal is attempted.
      */
@@ -85,20 +113,26 @@ class BackupController extends Controller
             $filename = 'backup_' . Carbon::now()->format('Y-m-d_His') . '.sql';
             $filePath = $backupDir . '/' . $filename;
 
-            // mysqldump command — password passed via env var to avoid exposure in process list
+            // Write credentials to a temp option file (cross-platform; avoids password in process list)
+            $optFile = tempnam(sys_get_temp_dir(), 'mysqlbak_');
+            $escapedPass = str_replace(['\\', '"'], ['\\\\', '\\"'], $password);
+            file_put_contents($optFile, "[client]\npassword=\"" . $escapedPass . "\"\n");
+
+            $mysqldump = $this->resolveBinary('mysqldump');
+
             $command = sprintf(
-                'mysqldump --user=%s --host=%s --port=%s %s > %s 2>&1',
+                '%s --defaults-extra-file=%s --user=%s --host=%s --port=%s %s > %s 2>&1',
+                escapeshellarg($mysqldump),
+                escapeshellarg($optFile),
                 escapeshellarg($username),
                 escapeshellarg($host),
-                escapeshellarg($port),
+                escapeshellarg((string) $port),
                 escapeshellarg($database),
                 escapeshellarg($filePath)
             );
 
-            putenv('MYSQL_PWD=' . $password);
-
             exec($command, $output, $returnVar);
-            putenv('MYSQL_PWD');
+            @unlink($optFile);
 
             if ($returnVar !== 0) {
                 // Delete partially created file if exists
@@ -107,7 +141,7 @@ class BackupController extends Controller
                 }
                 return response()->json([
                     'success' => false,
-                    'message' => 'Failed to create database backup'
+                    'message' => 'Failed to create database backup: ' . implode(' ', $output)
                 ], 500);
             }
 
@@ -213,24 +247,31 @@ class BackupController extends Controller
             $host = config('database.connections.' . config('database.default') . '.host');
             $port = config('database.connections.' . config('database.default') . '.port') ?? 3306;
 
-            // mysql command to restore — password passed via env var to avoid process list exposure
+            // Write credentials to a temp option file (cross-platform; avoids password in process list)
+            $optFile = tempnam(sys_get_temp_dir(), 'mysqlres_');
+            $escapedPass = str_replace(['\\', '"'], ['\\\\', '\\"'], $password);
+            file_put_contents($optFile, "[client]\npassword=\"" . $escapedPass . "\"\n");
+
+            $mysql = $this->resolveBinary('mysql');
+
             $command = sprintf(
-                'mysql --user=%s --host=%s --port=%s %s < %s 2>&1',
+                '%s --defaults-extra-file=%s --user=%s --host=%s --port=%s %s < %s 2>&1',
+                escapeshellarg($mysql),
+                escapeshellarg($optFile),
                 escapeshellarg($username),
                 escapeshellarg($host),
-                escapeshellarg($port),
+                escapeshellarg((string) $port),
                 escapeshellarg($database),
                 escapeshellarg($filePath)
             );
 
-            putenv('MYSQL_PWD=' . $password);
             exec($command, $output, $returnVar);
-            putenv('MYSQL_PWD');
+            @unlink($optFile);
 
             if ($returnVar !== 0) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Failed to restore database'
+                    'message' => 'Failed to restore database: ' . implode(' ', $output)
                 ], 500);
             }
 

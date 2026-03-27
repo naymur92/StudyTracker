@@ -23,6 +23,25 @@
                 <h5 class="m-0 text-primary">System Log Files</h5>
             </div>
             <div class="card-body">
+                {{-- Filename search filter --}}
+                <form method="GET" action="{{ route('system-logs.index') }}" class="mb-3">
+                    <div class="row g-2 align-items-end">
+                        <div class="col">
+                            <input type="text" name="search" class="form-control form-control-sm" placeholder="Search log file name…" value="{{ request('search') }}">
+                        </div>
+                        <div class="col-auto">
+                            <button type="submit" class="btn btn-sm btn-primary">
+                                <i class="fas fa-search mr-1"></i>Filter
+                            </button>
+                            @if (request()->filled('search'))
+                                <a href="{{ route('system-logs.index') }}" class="btn btn-sm btn-secondary ml-1">
+                                    <i class="fas fa-times mr-1"></i>Clear
+                                </a>
+                            @endif
+                        </div>
+                    </div>
+                </form>
+
                 <div class="table-responsive">
                     <table class="table table-bordered table-hover">
                         <thead>
@@ -59,6 +78,17 @@
                             @endforelse
                         </tbody>
                     </table>
+                </div>
+
+                <div class="d-flex justify-content-between align-items-center mt-3">
+                    <small class="text-muted">
+                        @if ($logs->total() > 0)
+                            Showing {{ $logs->firstItem() }}–{{ $logs->lastItem() }} of {{ $logs->total() }} files
+                        @else
+                            No log files found
+                        @endif
+                    </small>
+                    {{ $logs->links() }}
                 </div>
             </div>
         </div>

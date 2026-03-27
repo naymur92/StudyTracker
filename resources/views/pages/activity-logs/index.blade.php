@@ -3,13 +3,9 @@
 @section('title', 'Activity Logs')
 
 @push('styles')
-    <link href="{{ asset('/') }}assets/vendor/datatables/dataTables.bootstrap4.css" rel="stylesheet">
 @endpush
 
 @push('scripts')
-    <script src="{{ asset('/') }}assets/vendor/datatables/jquery.dataTables.min.js"></script>
-    <script src="{{ asset('/') }}assets/vendor/datatables/dataTables.bootstrap4.min.js"></script>
-    <script src="{{ asset('/') }}assets/js/demo/datatables-demo.js"></script>
 @endpush
 
 @section('content')
@@ -20,13 +16,13 @@
             </div>
             <div class="card-body">
                 <!-- Filters -->
-                <form method="GET" action="{{ route('activity-logs.index') }}" class="mb-4">
-                    <div class="row g-3">
+                <form method="GET" action="{{ route('activity-logs.index') }}" class="mb-3">
+                    <div class="row g-2 align-items-end">
                         <div class="col-md-3">
-                            <input type="text" name="search" class="form-control" placeholder="Search description..." value="{{ request('search') }}">
+                            <input type="text" name="search" class="form-control form-control-sm" placeholder="Search description..." value="{{ request('search') }}">
                         </div>
                         <div class="col-md-2">
-                            <select name="log_name" class="form-control">
+                            <select name="log_name" class="form-control form-control-sm">
                                 <option value="">All Log Types</option>
                                 @foreach ($logNames as $name)
                                     <option value="{{ $name }}" {{ request('log_name') == $name ? 'selected' : '' }}>{{ ucfirst($name) }}</option>
@@ -34,7 +30,7 @@
                             </select>
                         </div>
                         <div class="col-md-2">
-                            <select name="event" class="form-control">
+                            <select name="event" class="form-control form-control-sm">
                                 <option value="">All Events</option>
                                 @foreach ($events as $event)
                                     <option value="{{ $event }}" {{ request('event') == $event ? 'selected' : '' }}>{{ strtoupper($event) }}</option>
@@ -42,19 +38,26 @@
                             </select>
                         </div>
                         <div class="col-md-2">
-                            <input type="date" name="start_date" class="form-control" value="{{ request('start_date') }}">
+                            <input type="date" name="start_date" class="form-control form-control-sm" value="{{ request('start_date') }}">
                         </div>
                         <div class="col-md-2">
-                            <input type="date" name="end_date" class="form-control" value="{{ request('end_date') }}">
+                            <input type="date" name="end_date" class="form-control form-control-sm" value="{{ request('end_date') }}">
                         </div>
-                        <div class="col-md-1">
-                            <button type="submit" class="btn btn-primary w-100">Filter</button>
+                        <div class="col-auto">
+                            <button type="submit" class="btn btn-sm btn-primary">
+                                <i class="fas fa-search mr-1"></i>Filter
+                            </button>
+                            @if (request()->hasAny(['search', 'log_name', 'event', 'start_date', 'end_date']))
+                                <a href="{{ route('activity-logs.index') }}" class="btn btn-sm btn-secondary ml-1">
+                                    <i class="fas fa-times mr-1"></i>Clear
+                                </a>
+                            @endif
                         </div>
                     </div>
                 </form>
 
                 <div class="table-responsive">
-                    <table class="table table-bordered table-hover" id="dataTable">
+                    <table class="table table-bordered table-hover">
                         <thead>
                             <tr>
                                 <th style="width: 5%">ID</th>
@@ -98,7 +101,10 @@
                     </table>
                 </div>
 
-                <div class="mt-3">
+                <div class="d-flex justify-content-between align-items-center mt-3">
+                    <small class="text-muted">
+                        Showing {{ $logs->firstItem() }}–{{ $logs->lastItem() }} of {{ $logs->total() }} entries
+                    </small>
                     {{ $logs->links() }}
                 </div>
             </div>

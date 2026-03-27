@@ -14,11 +14,30 @@ class UserController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
         $this->authorize('user-list');
 
-        $users = User::select(['id', 'name', 'email', 'type', 'is_active', 'created_at', 'created_by'])->get();
+        $query = User::select(['id', 'name', 'email', 'type', 'is_active', 'created_at', 'created_by']);
+
+        if ($request->filled('search')) {
+            $term = $request->search;
+            $query->where(function ($q) use ($term) {
+                $q->where('name', 'like', "%{$term}%")
+                    ->orWhere('email', 'like', "%{$term}%");
+            });
+        }
+
+        if ($request->filled('type')) {
+            $query->where('type', $request->type);
+        }
+
+        if ($request->filled('status') && $request->status !== '') {
+            $query->where('is_active', $request->status);
+        }
+
+        $users = $query->orderBy('id', 'desc')->paginate(15)->withQueryString();
+
         return view('pages.users.index', compact('users'));
     }
 

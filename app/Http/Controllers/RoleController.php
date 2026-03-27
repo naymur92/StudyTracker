@@ -15,13 +15,19 @@ class RoleController extends Controller
      *
      * @return \Illuminate\Http\Response
      */
-    public function index()
+    public function index(Request $request)
     {
         $this->authorize('role-list');
 
         setUnsetUniqueId();
 
-        $roles = Role::orderBy('id', 'asc')->get();
+        $query = Role::orderBy('name', 'asc');
+
+        if ($request->filled('search')) {
+            $query->where('name', 'like', '%' . $request->search . '%');
+        }
+
+        $roles = $query->paginate(20)->withQueryString();
         $permissions = Permission::select('id', 'name')->get();
 
         return view('pages.roles.index', compact('roles', 'permissions'));

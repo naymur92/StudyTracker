@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use Carbon\CarbonInterval;
+use Illuminate\Pagination\Paginator;
 use Illuminate\Support\ServiceProvider;
 use Laravel\Passport\Passport;
 
@@ -28,6 +29,8 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        Paginator::useBootstrapFour();
+
         // Passport will use default storage/oauth keys location
         // Passport::loadKeysFrom(storage_path(''));
 

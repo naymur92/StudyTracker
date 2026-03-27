@@ -98,7 +98,7 @@
                     </div>
                 </div>
 
-                @if ($activityLog->properties && $activityLog->properties->count())
+                @if ($activityLog->properties && collect($activityLog->properties)->isNotEmpty())
                     <hr>
                     <div>
                         <p class="info-label mb-2"><i class="fas fa-code mr-1"></i>Properties</p>

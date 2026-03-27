@@ -4,23 +4,9 @@
 
 
 @push('styles')
-    <link href="{{ asset('/') }}assets/vendor/datatables/dataTables.bootstrap4.css" rel="stylesheet">
-
-    <style>
-        table tbody tr td {
-            padding: 0px !important;
-            vertical-align: middle !important;
-        }
-    </style>
 @endpush
 
 @push('scripts')
-    <!-- Page level plugins -->
-    <script src="{{ asset('/') }}assets/vendor/datatables/jquery.dataTables.js"></script>
-    <script src="{{ asset('/') }}assets/vendor/datatables/dataTables.bootstrap4.js"></script>
-
-    <!-- Page level custom scripts -->
-    <script src="{{ asset('/') }}assets/js/demo/datatables-demo.js"></script>
 @endpush
 
 
@@ -36,8 +22,27 @@
                         @endcan
                     </div>
                     <div class="card-body">
+                        {{-- Filter form --}}
+                        <form method="GET" action="{{ route('permissions.index') }}" class="mb-3">
+                            <div class="row g-2 align-items-end">
+                                <div class="col">
+                                    <input type="text" name="search" class="form-control form-control-sm" placeholder="Search permission name…" value="{{ request('search') }}">
+                                </div>
+                                <div class="col-auto">
+                                    <button type="submit" class="btn btn-sm btn-primary">
+                                        <i class="fas fa-search mr-1"></i>Filter
+                                    </button>
+                                    @if (request()->filled('search'))
+                                        <a href="{{ route('permissions.index') }}" class="btn btn-sm btn-secondary ml-1">
+                                            <i class="fas fa-times mr-1"></i>Clear
+                                        </a>
+                                    @endif
+                                </div>
+                            </div>
+                        </form>
+
                         <div class="table-responsive">
-                            <table data-page-length='25' class="table table-bordered table-striped text-center" id="dataTable" width="100%" cellspacing="0">
+                            <table class="table table-bordered table-striped text-center" width="100%" cellspacing="0">
                                 <thead class="text-white bg-primary">
                                     <tr>
                                         <th style="width: 70px;">SL No</th>
@@ -49,7 +54,7 @@
                                 <tbody>
                                     @foreach ($permissions as $item)
                                         <tr>
-                                            <td>{{ $loop->iteration }}</td>
+                                            <td>{{ ($permissions->currentPage() - 1) * $permissions->perPage() + $loop->iteration }}</td>
                                             <td>{{ $item->name }}</td>
                                             <td>
                                                 @if ($item->id > 8)
@@ -62,6 +67,13 @@
                                     @endforeach
                                 </tbody>
                             </table>
+                        </div>
+
+                        <div class="d-flex justify-content-between align-items-center mt-3">
+                            <small class="text-muted">
+                                Showing {{ $permissions->firstItem() }}–{{ $permissions->lastItem() }} of {{ $permissions->total() }} permissions
+                            </small>
+                            {{ $permissions->links() }}
                         </div>
                     </div>
                 </div>
