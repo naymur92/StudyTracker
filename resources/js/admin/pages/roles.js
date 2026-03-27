@@ -1,5 +1,5 @@
 import { createApp } from 'vue';
-import RoleCreateModal from './components/RoleCreateModal.vue';
+import RoleCreateModal from '../components/role/RoleCreateModal.vue';
 
 // Get data from the DOM element's data attributes or window object
 const roleModalEl = document.getElementById('role-modal-app');

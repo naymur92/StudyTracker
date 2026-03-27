@@ -5,10 +5,10 @@ import vue from '@vitejs/plugin-vue'
 export default defineConfig({
     plugins: [
         laravel({
-            // buildDirectory: '../../build',
             input: [
-                'resources/sass/app.scss',
+                'resources/css/app.css',
                 'resources/js/app.js',
+                'resources/js/admin/bootstrap.js',
             ],
             refresh: true,
         }),
@@ -23,6 +23,7 @@ export default defineConfig({
     ],
     resolve: {
         alias: {
+            '@': new URL('./resources/js', import.meta.url).pathname,
             vue: 'vue/dist/vue.esm-bundler.js',
         },
     },

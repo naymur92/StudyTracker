@@ -19,28 +19,30 @@ class ApiHeadersCheck
     public function handle(Request $request, Closure $next): Response
     {
         try {
-            $contentType    = $request->header('Content-Type');
-            $accept         = $request->header('Accept');
+            $contentType = $request->header('Content-Type');
+            $accept      = $request->header('Accept');
 
-            if (!$contentType || !$accept) {
-                throw new \Exception("Missing required headers", 400);
-            }
-
-            // validate Content-Type header
-            if ($contentType != 'application/json') {
-                throw new \Exception("Invalid Content Type", 415);
-            }
-
-            // validate Accept header
-            if ($accept != 'application/json') {
+            // Accept must always be application/json
+            if (!$accept || !str_contains($accept, 'application/json')) {
                 throw new \Exception("Invalid Accept header", 406);
+            }
+
+            // Content-Type is required ONLY for body requests
+            if (in_array($request->method(), ['POST', 'PUT', 'PATCH'])) {
+
+                if (
+                    !$contentType ||
+                    !str_contains($contentType, 'application/json')
+                ) {
+                    throw new \Exception("Invalid Content Type", 415);
+                }
             }
 
             return $next($request);
         } catch (\Exception $e) {
             return $this->jsonResponse(
                 message: $e->getMessage(),
-                responseCode: (int) $e->getCode()
+                responseCode: $e->getCode() ?: 401
             );
         }
     }

@@ -1,6 +1,16 @@
 # StudyTracker
 
-A full-featured **spaced repetition study management** application built with Laravel 12. Track topics, manage revision schedules, log practice sessions, and monitor progress — all backed by a REST API with OAuth 2.0 authentication and a comprehensive admin panel.
+A full-featured **spaced repetition study management** application with Laravel 12 backend and Vue 3 frontend. Track topics, manage revision schedules, log practice sessions, and monitor progress — all powered by a REST API with OAuth 2.0 authentication and a beautiful responsive UI.
+
+---
+
+## Quick Links
+
+- **🚀 Frontend Setup**: See [`FRONTEND_README.md`](FRONTEND_README.md) for Vue.js frontend docs
+- **⚡ Quick Start**: [`FRONTEND_QUICKSTART.md`](FRONTEND_QUICKSTART.md) for 5-minute setup
+- **✅ Verification**: [`FRONTEND_CHECKLIST.md`](FRONTEND_CHECKLIST.md) to verify everything works
+- **📚 Full Frontend Docs**: [`FRONTEND_SETUP.md`](FRONTEND_SETUP.md)
+- **🔌 API Endpoints**: [`API-DOCUMENTATION.md`](API-DOCUMENTATION.md)
 
 ---
 
@@ -13,6 +23,7 @@ A full-featured **spaced repetition study management** application built with La
 - [Installation](#installation)
 - [Configuration](#configuration)
 - [API Documentation](#api-documentation)
+- [Frontend Application](#frontend-application)
 - [Admin Panel](#admin-panel)
 - [Scheduled Commands](#scheduled-commands)
 - [Rate Limiting](#rate-limiting)
@@ -23,7 +34,7 @@ A full-featured **spaced repetition study management** application built with La
 
 ## Features
 
-### Study Tracker (API)
+### Study Tracker (API + Vue.js Frontend)
 
 - **Topic Management** — Create, update, archive, and browse study topics with categories, difficulty levels, tags, and source links
 - **Spaced Repetition Engine** — Automatically generates revision tasks at Day +1, +7, +30, +90 based on the Ebbinghaus forgetting curve
@@ -88,8 +99,12 @@ A full-featured **spaced repetition study management** application built with La
 | Database         | MySQL 5.7+ / MariaDB 10.3+                  |
 | Authentication   | Laravel Passport (OAuth 2.0 Password Grant) |
 | Authorization    | Spatie Laravel Permission                   |
+| Frontend         | Vue 3 + Vue Router + Pinia + Tailwind CSS   |
+| Frontend Build   | Vite 7 with HMR                             |
 | Admin UI         | SB Admin 2, Bootstrap 4, Chart.js 4.4       |
-| Frontend Build   | Vite 7, Sass                                |
+| HTTP Client      | Axios with token injection                  |
+| Styling          | Tailwind CSS 3 (mobile-first responsive)    |
+| Date Handling    | date-fns                                    |
 | Device Detection | jenssegers/agent                            |
 | Notifications    | PHP Flasher                                 |
 
@@ -186,6 +201,22 @@ DB_PASSWORD=
 CACHE_STORE=database
 ```
 
+### Frontend Configuration
+
+For the Vue.js frontend, set these environment variables:
+
+```env
+VITE_API_URL=http://studytracker.test/api
+VITE_OAUTH_CLIENT_ID=your-oauth-client-id
+VITE_OAUTH_CLIENT_SECRET=your-oauth-client-secret
+```
+
+Get OAuth credentials from the admin panel or create with:
+
+```bash
+php artisan passport:client --password
+```
+
 ### Scheduler (Production)
 
 Add to crontab for automatic overdue task marking:
@@ -193,6 +224,46 @@ Add to crontab for automatic overdue task marking:
 ```bash
 * * * * * cd /path-to-project && php artisan schedule:run >> /dev/null 2>&1
 ```
+
+---
+
+## Frontend Application
+
+A modern, responsive Vue 3 web application for managing your study tracker.
+
+### Quick Start
+
+```bash
+# Install dependencies
+npm install
+
+# Start development server (with hot reload)
+npm run dev
+
+# Build for production
+npm run build
+```
+
+The app runs at `http://localhost:5173` and connects to the REST API at `http://studytracker.test/api`.
+
+### Frontend Features
+
+✅ **Responsive Design** — Mobile-first, works on all devices
+✅ **Authentication** — Secure signup, login, email verification
+✅ **Dashboard** — Daily overview, stats, and task agenda
+✅ **Topic Management** — Create, edit, delete study topics
+✅ **Categories** — Organize with custom colors and icons
+✅ **Study Tasks** — Track daily assignments with spaced repetition
+✅ **Practice Logs** — Record study sessions with details
+✅ **Calendar View** — Mountain visualization of progress
+✅ **User Profile** — View statistics and manage account
+
+### Frontend Documentation
+
+- **Quick Start**: [`FRONTEND_QUICKSTART.md`](FRONTEND_QUICKSTART.md) (5 minutes)
+- **Setup Checklist**: [`FRONTEND_CHECKLIST.md`](FRONTEND_CHECKLIST.md)
+- **Full Guide**: [`FRONTEND_SETUP.md`](FRONTEND_SETUP.md)
+- **Index & Navigation**: [`FRONTEND_README.md`](FRONTEND_README.md)
 
 ---
 

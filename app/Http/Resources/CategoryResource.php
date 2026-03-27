@@ -22,7 +22,7 @@ class CategoryResource extends JsonResource
             'icon'      => $this->icon,
             'user_id'   => $this->user_id ? IdHasher::encode($this->user_id) : null,
             'is_system' => is_null($this->user_id),
-            'topic_count' => $this->whenCounted('topics'),
+            'topics_count' => $this->whenCounted('topics'),
             'created_at' => $this->created_at?->format('Y-m-d H:i:s'),
             'updated_at' => $this->updated_at?->format('Y-m-d H:i:s'),
         ];

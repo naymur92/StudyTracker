@@ -33,7 +33,7 @@ class TopicApiController extends Controller
     public function index(IndexTopicRequest $request): JsonResponse
     {
         $userId = $request->user()->id;
-        $query  = Topic::with('category')->where('user_id', $userId)->latest();
+        $query  = Topic::with('category')->withCount('studyTasks')->where('user_id', $userId)->latest();
 
         if ($request->filled('search')) {
             $query->where('title', 'like', '%' . $request->search . '%');

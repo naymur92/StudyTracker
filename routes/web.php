@@ -18,10 +18,12 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 use Laravel\Passport\Http\Controllers\AccessTokenController;
 
-// Homepage - Under Maintenance
-Route::get('/', function () {
-    return view('maintenance');
-})->name('maintenance');
+// Main Vue App - Study Tracker
+Route::get('/{vue_route?}', function () {
+    return view('app');
+})
+    ->where('vue_route', '^(?!api|admin).*')
+    ->name('app.index');
 
 // Public browser verification URL (outside API routes)
 Route::get('/email/verify', [AuthController::class, 'verifyEmailWeb'])
