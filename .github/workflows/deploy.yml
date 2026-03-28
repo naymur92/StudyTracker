@@ -1,31 +1,18 @@
-name: CI / CD – Build, Test & Deploy to AWS EC2
+name: CI/CD - Test, Build, Deploy to EC2
 
-# ─────────────────────────────────────────────
-# Triggers
-# ─────────────────────────────────────────────
 on:
-  push:
-    branches: [main]
   pull_request:
     branches: [main]
+  push:
+    branches: [main]
 
-# ─────────────────────────────────────────────
-# Global environment
-# ─────────────────────────────────────────────
-env:
-  AWS_REGION: us-east-1 # change to your AWS region
-  ECR_REPOSITORY: studytracker # your ECR repository name
-  IMAGE_TAG: ${{ github.sha }}
+concurrency:
+  group: studytracker-${{ github.ref }}
+  cancel-in-progress: true
 
-# ─────────────────────────────────────────────
-# Jobs
-# ─────────────────────────────────────────────
 jobs:
-  # ═══════════════════════════════════════════
-  # 1. Run PHPUnit tests
-  # ═══════════════════════════════════════════
-  test:
-    name: PHP Tests
+  ci:
+    name: CI (Laravel tests + frontend build)
     runs-on: ubuntu-latest
 
     services:
@@ -36,179 +23,114 @@ jobs:
           MYSQL_DATABASE: study_tracker_test
           MYSQL_USER: st_user
           MYSQL_PASSWORD: st_secret
-        ports: ["3306:3306"]
+        ports:
+          - 3306:3306
         options: >-
-          --health-cmd="mysqladmin ping -h localhost -u root -ptesting_root"
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -u root -ptesting_root"
           --health-interval=10s
           --health-timeout=5s
           --health-retries=10
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-      - name: Set up PHP 8.3
+      - name: Setup PHP 8.3
         uses: shivammathur/setup-php@v2
         with:
           php-version: "8.3"
-          extensions: pdo, pdo_mysql, mbstring, exif, pcntl, bcmath, gd, zip, intl, redis
+          extensions: pdo, pdo_mysql, mbstring, bcmath, gd, zip, intl, redis
           coverage: none
           tools: composer:v2
 
-      - name: Cache Composer packages
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Cache Composer dependencies
         uses: actions/cache@v4
         with:
           path: vendor
-          key: composer-${{ hashFiles('composer.lock') }}
-          restore-keys: composer-
+          key: composer-${{ runner.os }}-${{ hashFiles('composer.lock') }}
+          restore-keys: |
+            composer-${{ runner.os }}-
 
-      - name: Install PHP dependencies
-        run: composer install --no-interaction --prefer-dist --optimize-autoloader
+      - name: Install dependencies
+        run: |
+          composer install --no-interaction --prefer-dist --optimize-autoloader
+          npm ci
 
-      - name: Set up .env for testing
+      - name: Prepare test environment
         run: |
           cp .env.example .env
-          php artisan key:generate
-          # Override DB values for the GitHub Actions MySQL service
-          sed -i 's|^DB_HOST=.*|DB_HOST=127.0.0.1|'           .env
-          sed -i 's|^DB_PORT=.*|DB_PORT=3306|'                 .env
+          php artisan key:generate --force
+          sed -i 's|^APP_ENV=.*|APP_ENV=testing|' .env
+          sed -i 's|^APP_DEBUG=.*|APP_DEBUG=false|' .env
+          sed -i 's|^DB_HOST=.*|DB_HOST=127.0.0.1|' .env
+          sed -i 's|^DB_PORT=.*|DB_PORT=3306|' .env
           sed -i 's|^DB_DATABASE=.*|DB_DATABASE=study_tracker_test|' .env
-          sed -i 's|^DB_USERNAME=.*|DB_USERNAME=st_user|'      .env
-          sed -i 's|^DB_PASSWORD=.*|DB_PASSWORD=st_secret|'    .env
+          sed -i 's|^DB_USERNAME=.*|DB_USERNAME=st_user|' .env
+          sed -i 's|^DB_PASSWORD=.*|DB_PASSWORD=st_secret|' .env
 
-      - name: Run database migrations
-        run: php artisan migrate --force
-
-      - name: Execute PHPUnit tests
-        run: php artisan test --parallel
-
-  # ═══════════════════════════════════════════
-  # 2. Build Docker image and push to AWS ECR
-  #    (only on push to main, after tests pass)
-  # ═══════════════════════════════════════════
-  build-and-push:
-    name: Build & Push to ECR
-    runs-on: ubuntu-latest
-    needs: test
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-
-    outputs:
-      image_uri: ${{ steps.build.outputs.image_uri }}
-      ecr_registry: ${{ steps.login-ecr.outputs.registry }}
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ env.AWS_REGION }}
-
-      - name: Log in to Amazon ECR
-        id: login-ecr
-        uses: aws-actions/amazon-ecr-login@v2
-
-      - name: Build, tag, and push Docker image
-        id: build
-        env:
-          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+      - name: Run backend tests
         run: |
-          IMAGE_URI="${ECR_REGISTRY}/${ECR_REPOSITORY}:${IMAGE_TAG}"
-          LATEST_URI="${ECR_REGISTRY}/${ECR_REPOSITORY}:latest"
+          php artisan migrate --force
+          php artisan test
 
-          docker build \
-            --cache-from "${LATEST_URI}" \
-            --tag "${IMAGE_URI}" \
-            --tag "${LATEST_URI}" \
-            .
+      - name: Build frontend assets
+        run: npm run build
 
-          docker push "${IMAGE_URI}"
-          docker push "${LATEST_URI}"
+      - name: Validate Docker compose file
+        run: docker compose config --quiet
 
-          echo "image_uri=${IMAGE_URI}" >> "$GITHUB_OUTPUT"
-
-  # ═══════════════════════════════════════════
-  # 3. Deploy to AWS EC2 via SSH
-  #    Prerequisites on the EC2 instance:
-  #      - Docker + Docker Compose v2 installed
-  #      - AWS CLI installed & configured
-  #        (or instance IAM role with ECR:GetAuthorizationToken, ecr:BatchGetImage, etc.)
-  #      - App directory: /opt/studytracker/
-  #      - Production .env placed at /opt/studytracker/.env
-  #      - docker-compose.yml placed at /opt/studytracker/
-  # ═══════════════════════════════════════════
   deploy:
-    name: Deploy to EC2
+    name: CD (Deploy to EC2)
     runs-on: ubuntu-latest
-    needs: build-and-push
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    needs: ci
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    environment: production
 
     steps:
-      - uses: actions/checkout@v4
-
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ env.AWS_REGION }}
-
-      # Copy the latest docker-compose.yml to the server
-      - name: Deploy docker-compose.yml to EC2
-        uses: appleboy/scp-action@v0.1.7
+      - name: Deploy over SSH
+        uses: appleboy/ssh-action@v1.2.0
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USERNAME }}
           key: ${{ secrets.EC2_SSH_PRIVATE_KEY }}
-          source: "docker-compose.yml,docker/"
-          target: "/opt/studytracker"
-
-      - name: Pull image and restart services on EC2
-        uses: appleboy/ssh-action@v1
-        with:
-          host: ${{ secrets.EC2_HOST }}
-          username: ${{ secrets.EC2_USERNAME }}
-          key: ${{ secrets.EC2_SSH_PRIVATE_KEY }}
-          envs: AWS_REGION,ECR_REPOSITORY,IMAGE_TAG
+          port: ${{ secrets.EC2_SSH_PORT || 22 }}
+          script_stop: true
           script: |
             set -e
 
-            ECR_REGISTRY=$(aws ecr describe-repositories \
-              --repository-names "${ECR_REPOSITORY}" \
-              --region "${AWS_REGION}" \
-              --query 'repositories[0].repositoryUri' \
-              --output text | sed 's|/.*||')
+            APP_DIR="${{ secrets.EC2_APP_PATH }}"
 
-            # Authenticate Docker with ECR
-            aws ecr get-login-password --region "${AWS_REGION}" \
-              | docker login --username AWS --password-stdin "${ECR_REGISTRY}"
+            if [ ! -d "$APP_DIR/.git" ]; then
+              echo "Repository not found at $APP_DIR"
+              exit 1
+            fi
 
-            cd /opt/studytracker
+            cd "$APP_DIR"
+            git fetch origin main
+            git checkout main
+            git pull --ff-only origin main
 
-            # Write the resolved image tag into the env so compose uses it
-            export APP_IMAGE="${ECR_REGISTRY}/${ECR_REPOSITORY}:${IMAGE_TAG}"
+            docker compose up -d --build --remove-orphans
 
-            # Pull new images
-            docker compose pull
+            docker compose exec -T study_tracker_app php artisan migrate --force
+            docker compose exec -T study_tracker_app php artisan config:cache
+            docker compose exec -T study_tracker_app php artisan route:cache
+            docker compose exec -T study_tracker_app php artisan view:cache
 
-            # Zero-downtime restart
-            docker compose up -d --remove-orphans
-
-            # Prune dangling images to save disk space
             docker image prune -f
 
-            echo "Deployment complete (${IMAGE_TAG})"
+            echo "Deploy finished: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
 
-# ─────────────────────────────────────────────
-# Required GitHub Secrets
-# ─────────────────────────────────────────────
-# AWS_ACCESS_KEY_ID          – IAM user access key with ECR push + describe permissions
-# AWS_SECRET_ACCESS_KEY      – IAM user secret key
-# EC2_HOST                   – Public IP or hostname of your EC2 instance
-# EC2_USERNAME               – SSH user (e.g. ubuntu, ec2-user)
-# EC2_SSH_PRIVATE_KEY        – PEM private key content for SSH access
-#
-# Optional (set in repo Variables, not Secrets):
-# AWS_REGION                 – defaults to us-east-1
-# ECR_REPOSITORY             – defaults to "studytracker"
+# Required GitHub repository secrets:
+# EC2_HOST            -> public IP or hostname of EC2
+# EC2_USERNAME        -> SSH user (ubuntu/ec2-user)
+# EC2_SSH_PRIVATE_KEY -> private key content (PEM)
+# EC2_APP_PATH        -> absolute app path on EC2 (example: /var/www/StudyTracker)
+# Optional:
+# EC2_SSH_PORT        -> defaults to 22
