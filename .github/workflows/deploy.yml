@@ -74,13 +74,13 @@ jobs:
           sed -i 's|^DB_USERNAME=.*|DB_USERNAME=st_user|' .env
           sed -i 's|^DB_PASSWORD=.*|DB_PASSWORD=st_secret|' .env
 
+      - name: Build frontend assets
+        run: npm run build
+
       - name: Run backend tests
         run: |
           php artisan migrate --force
           php artisan test
-
-      - name: Build frontend assets
-        run: npm run build
 
       - name: Validate Docker compose file
         run: docker compose config --quiet
