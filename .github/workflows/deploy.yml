@@ -116,14 +116,25 @@ jobs:
             git checkout main
             git pull --ff-only origin main
 
-            docker compose up -d --build --remove-orphans
+            # Use sudo for docker only when the SSH user lacks direct socket access.
+            if docker info >/dev/null 2>&1; then
+              DOCKER="docker"
+            elif sudo -n docker info >/dev/null 2>&1; then
+              DOCKER="sudo docker"
+            else
+              echo "Docker access failed for this SSH user."
+              echo "Fix on EC2: sudo usermod -aG docker $USER && newgrp docker"
+              exit 1
+            fi
 
-            docker compose exec -T study_tracker_app php artisan migrate --force
-            docker compose exec -T study_tracker_app php artisan config:cache
-            docker compose exec -T study_tracker_app php artisan route:cache
-            docker compose exec -T study_tracker_app php artisan view:cache
+            $DOCKER compose up -d --build --remove-orphans
 
-            docker image prune -f
+            $DOCKER compose exec -T study_tracker_app php artisan migrate --force
+            $DOCKER compose exec -T study_tracker_app php artisan config:cache
+            $DOCKER compose exec -T study_tracker_app php artisan route:cache
+            $DOCKER compose exec -T study_tracker_app php artisan view:cache
+
+            $DOCKER image prune -f
 
             echo "Deploy finished: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
 
