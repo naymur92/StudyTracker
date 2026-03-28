@@ -18,13 +18,6 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 use Laravel\Passport\Http\Controllers\AccessTokenController;
 
-// Main Vue App - Study Tracker
-Route::get('/{vue_route?}', function () {
-    return view('app');
-})
-    ->where('vue_route', '^(?!api|admin).*')
-    ->name('app.index');
-
 // Public browser verification URL (outside API routes)
 Route::get('/email/verify', [AuthController::class, 'verifyEmailWeb'])
     ->middleware('throttle:auth-verify')
@@ -141,3 +134,10 @@ Auth::routes([
 ]);
 
 Route::post('oauth-admin-app/token', [AccessTokenController::class, 'issueToken'])->middleware(['throttle:60,2']);
+
+// Main Vue App - Study Tracker fallback.
+Route::get('/{vue_route?}', function () {
+    return view('app');
+})
+    ->where('vue_route', '^(?!api|admin).*')
+    ->name('app.index');

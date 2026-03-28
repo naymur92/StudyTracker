@@ -37,7 +37,7 @@
     <link href="{{ generateAssetPath('assets/css/customized-bootstrap-datepicker.css') }}" rel="stylesheet">
 
     <!-- Styles -->
-    @vite('resources/sass/app.scss')
+    @vite('resources/css/app.css')
 
     @stack('styles')
     <link href="{{ generateAssetPath('assets/css/custom.css') }}" rel="stylesheet">
@@ -156,7 +156,7 @@
 
     @stack('scripts')
 
-    @vite('resources/js/app.js')
+    @vite(['resources/js/app.js', 'resources/js/admin/bootstrap.js'])
 
 </body>
 

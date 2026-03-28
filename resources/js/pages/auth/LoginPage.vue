@@ -2,8 +2,12 @@
     <div>
         <h2 class="text-2xl font-bold text-gray-900 mb-6">Sign In</h2>
 
+        <div v-if="verificationMessage" class="mb-4 p-4 bg-green-50 border border-green-200 rounded-lg">
+            <p class="text-sm text-green-700">{{ verificationMessage }}</p>
+        </div>
+
         <div v-if="showResetSuccess" class="mb-4 p-4 bg-green-50 border border-green-200 rounded-lg">
-            <p class="text-sm text-green-700">Password reset successful. Please sign in with your new password.</p>
+            <p class="text-sm text-green-700">{{ resetMessage }}</p>
         </div>
 
         <form @submit.prevent="handleLogin" class="space-y-4">
@@ -20,7 +24,8 @@
                 <input v-model="form.password" type="password" required class="input-base" placeholder="••••••••" />
                 <span v-if="errors.password" class="text-sm text-red-500">{{ errors.password[0] }}</span>
                 <div class="mt-2 text-right">
-                    <router-link to="/auth/forgot-password" class="text-sm text-primary-600 hover:text-primary-700 font-medium">
+                    <router-link to="/auth/forgot-password"
+                        class="text-sm text-primary-600 hover:text-primary-700 font-medium">
                         Forgot password?
                     </router-link>
                 </div>
@@ -29,8 +34,6 @@
             <!-- Error message -->
             <div v-if="error" class="p-4 bg-red-50 border border-red-200 rounded-lg">
                 <p class="text-sm text-red-700">{{ error }}</p>
-                <p class="text-xs text-red-600 mt-1">Check that your OAuth credentials are configured in the auth store,
-                    or set VITE_OAUTH_CLIENT_ID and VITE_OAUTH_CLIENT_SECRET environment variables.</p>
             </div>
 
             <!-- Submit Button -->
@@ -67,7 +70,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue'
+import { computed, ref, reactive, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 
@@ -79,6 +82,16 @@ const loading = ref(false)
 const error = ref(null)
 const showResetSuccess = ref(false)
 const errors = reactive({})
+
+const verificationMessage = computed(() => {
+    if (route.query.verified !== '1') {
+        return null
+    }
+
+    return route.query.message || 'Email verified successfully. You can now sign in.'
+})
+
+const resetMessage = computed(() => route.query.message || 'Password reset successful. Please sign in with your new password.')
 
 const form = reactive({
     email: 'user@example.com',
@@ -98,7 +111,7 @@ const handleLogin = async () => {
         if (err.errors) {
             Object.assign(errors, err.errors)
         } else {
-            error.value = err.message || 'Login failed. Please try again.'
+            error.value = err.msg || err.message || 'Login failed. Please try again.'
         }
     } finally {
         loading.value = false

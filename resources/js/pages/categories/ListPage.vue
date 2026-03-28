@@ -22,7 +22,8 @@
         </div>
 
         <!-- Categories Grid -->
-        <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div v-else-if="categories && categories.length > 0"
+            class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             <div v-for="category in categories" :key="category.id" :style="{ borderLeftColor: category.color }"
                 class="card p-6 border-l-4">
                 <div class="flex items-start justify-between mb-4">
@@ -47,6 +48,17 @@
                 </div>
                 <p class="text-gray-600 text-sm">{{ category.topics_count || 0 }} topics</p>
             </div>
+        </div>
+
+        <!-- Empty state -->
+        <div v-else class="text-center py-12">
+            <svg class="w-16 h-16 text-gray-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V7z" />
+            </svg>
+            <h3 class="text-lg font-semibold text-gray-900 mb-2">No categories yet</h3>
+            <p class="text-gray-600 mb-6">Create your first category to organize your topics</p>
+            <button @click="showCreateModal = true" class="btn-primary">Create Category</button>
         </div>
 
         <!-- Create Modal -->

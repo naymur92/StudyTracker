@@ -8,6 +8,10 @@
                 verification link.
             </p>
 
+            <div v-if="initialMessage" class="p-4 bg-green-50 border border-green-200 rounded-lg">
+                <p class="text-sm text-green-700">{{ initialMessage }}</p>
+            </div>
+
             <div class="p-4 bg-blue-50 border border-blue-200 rounded-lg">
                 <p class="text-sm text-blue-700">Didn't receive the email? Check your spam folder or try again.</p>
             </div>
@@ -57,7 +61,7 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 
@@ -69,6 +73,7 @@ const error = ref(null)
 const success = ref(null)
 const verified = ref(false)
 const email = ref(router.currentRoute.value.query.email || '')
+const initialMessage = computed(() => router.currentRoute.value.query.message || null)
 
 const handleResendVerification = async () => {
     loading.value = true
@@ -79,7 +84,7 @@ const handleResendVerification = async () => {
         await authStore.resendVerification(email.value)
         success.value = 'Verification email sent! Check your inbox.'
     } catch (err) {
-        error.value = err.message || 'Failed to resend verification email'
+        error.value = err.msg || err.message || 'Failed to resend verification email'
     } finally {
         loading.value = false
     }

@@ -16,6 +16,7 @@ use App\Notifications\ForgotPasswordCodeNotification;
 use App\Notifications\VerifyEmailNotification;
 use App\Services\LoginTracker;
 use App\Traits\CustomResponseTrait;
+use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
@@ -83,14 +84,23 @@ class AuthController extends Controller
             );
         }
 
-        $response = Http::asForm()->post(config('app.url') . '/oauth-admin-app/token', [
-            'grant_type'    => 'password',
-            'client_id'     => $request->header('X-Client-Id'),
-            'client_secret' => $request->header('X-Client-Secret'),
-            'username'      => $request->email,
-            'password'      => $request->password,
-            'scope'         => '',
-        ]);
+        try {
+            $response = $this->requestOauthToken([
+                'grant_type'    => 'password',
+                'client_id'     => $request->header('X-Client-Id'),
+                'client_secret' => $request->header('X-Client-Secret'),
+                'username'      => $request->email,
+                'password'      => $request->password,
+                'scope'         => '',
+            ]);
+        } catch (ConnectionException $exception) {
+            report($exception);
+
+            return $this->jsonResponse(
+                message: 'Authentication service is unavailable. Please try again shortly.',
+                responseCode: HttpResponse::HTTP_SERVICE_UNAVAILABLE,
+            );
+        }
 
         // Find user for login tracking — allow type 3 (User) and type 4 (API User)
         $user = User::where('id', $loginUser->id)
@@ -121,20 +131,29 @@ class AuthController extends Controller
 
         // If request failed, decode JSON error
         return $this->jsonResponse(
-            message: $response->json('error_description', 'Invalid credentials'),
+            message: 'Invalid credentials',
             responseCode: 401,
         );
     }
 
     public function refresh(RefreshTokenRequest $request)
     {
-        $response = Http::asForm()->post(config('app.url') . '/oauth-admin-app/token', [
-            'grant_type'    => 'refresh_token',
-            'refresh_token' => $request->refresh_token,
-            'client_id'     => $request->header('X-Client-Id'),
-            'client_secret' => $request->header('X-Client-Secret'),
-            'scope'         => '',
-        ]);
+        try {
+            $response = $this->requestOauthToken([
+                'grant_type'    => 'refresh_token',
+                'refresh_token' => $request->refresh_token,
+                'client_id'     => $request->header('X-Client-Id'),
+                'client_secret' => $request->header('X-Client-Secret'),
+                'scope'         => '',
+            ]);
+        } catch (ConnectionException $exception) {
+            report($exception);
+
+            return $this->jsonResponse(
+                message: 'Authentication service is unavailable. Please try again shortly.',
+                responseCode: HttpResponse::HTTP_SERVICE_UNAVAILABLE,
+            );
+        }
 
         if ($response->successful()) {
             $tokenData = $response->json();
@@ -178,10 +197,17 @@ class AuthController extends Controller
         );
 
         if ($result['ok']) {
-            return redirect()->away($frontendBase . '/login?verified=1&message=' . urlencode($result['message']));
+            return redirect()->away($frontendBase . '/auth/login?' . http_build_query([
+                'verified' => 1,
+                'message' => $result['message'],
+                'email' => (string) $request->query('email'),
+            ]));
         }
 
-        return redirect()->away($frontendBase . '/verify-error?message=' . urlencode($result['message']));
+        return redirect()->away($frontendBase . '/auth/verify-error?' . http_build_query([
+            'message' => $result['message'],
+            'email' => (string) $request->query('email'),
+        ]));
     }
 
     private function verifyEmailCore(string $email, string $token): array
@@ -366,6 +392,33 @@ class AuthController extends Controller
         ]);
 
         return $plainToken;
+    }
+
+    private function requestOauthToken(array $payload)
+    {
+        $lastException = null;
+
+        foreach ($this->oauthBaseUrls() as $baseUrl) {
+            try {
+                return Http::asForm()->post($baseUrl . '/oauth-admin-app/token', $payload);
+            } catch (ConnectionException $exception) {
+                $lastException = $exception;
+            }
+        }
+
+        throw $lastException ?? new ConnectionException('Unable to reach OAuth server.');
+    }
+
+    private function oauthBaseUrls(): array
+    {
+        return array_values(array_filter(array_unique(array_map(
+            static fn($url) => rtrim((string) $url, '/'),
+            [
+                config('app.internal_url'),
+                config('app.url'),
+                'http://nginx',
+            ]
+        ))));
     }
 
     /**

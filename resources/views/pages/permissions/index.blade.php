@@ -88,7 +88,7 @@
     </form>
 
     <!-- Vue Permission Create Modal -->
-    <permission-create-modal :create-url="'{{ route('permissions.store') }}'"></permission-create-modal>
+    <div data-vue-component="permission/PermissionCreateModal" data-create-url="{{ route('permissions.store') }}"></div>
 @endsection
 
 @push('scripts')

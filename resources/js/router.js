@@ -9,6 +9,7 @@ import AuthLayout from '@/layouts/AuthLayout.vue'
 import LoginPage from '@/pages/auth/LoginPage.vue'
 import RegisterPage from '@/pages/auth/RegisterPage.vue'
 import VerifyEmailPage from '@/pages/auth/VerifyEmailPage.vue'
+import VerifyErrorPage from '@/pages/auth/VerifyErrorPage.vue'
 import ForgotPasswordPage from '@/pages/auth/ForgotPasswordPage.vue'
 import DashboardPage from '@/pages/DashboardPage.vue'
 import TopicsListPage from '@/pages/topics/ListPage.vue'
@@ -105,6 +106,11 @@ const routes = [
                 path: 'verify-email',
                 name: 'VerifyEmail',
                 component: VerifyEmailPage,
+            },
+            {
+                path: 'verify-error',
+                name: 'VerifyError',
+                component: VerifyErrorPage,
             },
             {
                 path: 'forgot-password',

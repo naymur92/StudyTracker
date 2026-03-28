@@ -104,10 +104,10 @@
     </form>
 
     <!-- Add Role Modal (Vue Component) -->
-    <role-create-modal :permissions='@json($permissions)' :create-url="'{{ route('roles.store') }}'"></role-create-modal>
+    <div data-vue-component="role/RoleCreateModal" data-permissions='@json($permissions)' data-create-url="{{ route('roles.store') }}"></div>
 
     <!-- Edit Role Modal (Vue Component) -->
-    <role-edit-modal :permissions='@json($permissions)' :update-url="'{{ route('roles.update', 0) }}'"></role-edit-modal>
+    <div data-vue-component="role/RoleEditModal" data-permissions='@json($permissions)' data-update-url="{{ route('roles.update', 0) }}"></div>
 @endsection
 
 @push('scripts')

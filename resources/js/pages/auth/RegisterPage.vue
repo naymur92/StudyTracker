@@ -32,7 +32,7 @@
                 <input v-model="form.password_confirmation" type="password" required class="input-base"
                     placeholder="••••••••" />
                 <span v-if="errors.password_confirmation" class="text-sm text-red-500">{{
-                    errors.password_confirmation[0] }}</span>
+            errors.password_confirmation[0] }}</span>
             </div>
 
             <!-- Error message -->
@@ -85,18 +85,24 @@ const handleRegister = async () => {
     Object.keys(errors).forEach(key => delete errors[key])
 
     try {
-        await authStore.register(
+        const result = await authStore.register(
             form.name,
             form.email,
             form.password,
             form.password_confirmation
         )
-        router.push({ name: 'VerifyEmail', query: { email: form.email } })
+        router.push({
+            name: 'VerifyEmail',
+            query: {
+                email: form.email,
+                message: result.msg || result.message || 'Registration successful. Please verify your email to activate your account.',
+            },
+        })
     } catch (err) {
         if (err.errors) {
             Object.assign(errors, err.errors)
         } else {
-            error.value = err.message || 'Registration failed. Please try again.'
+            error.value = err.msg || err.message || 'Registration failed. Please try again.'
         }
     } finally {
         loading.value = false

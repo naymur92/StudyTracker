@@ -2,6 +2,10 @@ import { defineConfig } from 'vite';
 import laravel from 'laravel-vite-plugin';
 import vue from '@vitejs/plugin-vue'
 
+const viteHost = process.env.VITE_DEV_SERVER_HOST || '0.0.0.0'
+const viteHmrHost = process.env.VITE_HMR_HOST || 'localhost'
+const vitePort = Number(process.env.VITE_PORT || 5173)
+
 export default defineConfig({
     plugins: [
         laravel({
@@ -28,9 +32,15 @@ export default defineConfig({
         },
     },
     server: {
-        host: '127.0.0.1',
+        host: viteHost,
+        port: vitePort,
+        strictPort: true,
+        watch: {
+            usePolling: true,
+        },
         hmr: {
-            host: '127.0.0.1',
+            host: viteHmrHost,
+            port: vitePort,
         },
     },
 });

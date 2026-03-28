@@ -3,5 +3,5 @@
 @section('title', 'Settings')
 
 @section('content')
-    <settings-page></settings-page>
+    <div data-vue-component="settings/SettingsPage"></div>
 @endsection

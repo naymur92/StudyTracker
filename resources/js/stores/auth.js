@@ -1,10 +1,11 @@
 import { defineStore } from 'pinia'
 import axios from 'axios'
+import { resolveApiBaseUrl } from '@/config/urls'
 
 let refreshRequestPromise = null
 
 const api = axios.create({
-    baseURL: import.meta.env.VITE_API_URL || 'http://localhost:8000/api',
+    baseURL: resolveApiBaseUrl(),
     headers: {
         'Accept': 'application/json',
         'Content-Type': 'application/json',

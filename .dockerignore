@@ -1,0 +1,50 @@
+# Version control
+.git/
+.gitattributes
+.gitignore
+
+# Dev dependencies
+vendor/
+node_modules/
+
+# Environment files (injected at runtime)
+.env
+.env.local
+.env.*.local
+
+# Local build artefacts
+public/hot
+public/build/
+
+# Laravel runtime caches (generated inside container)
+bootstrap/cache/*.php
+storage/framework/cache/
+storage/framework/sessions/
+storage/framework/views/
+storage/logs/
+
+# Tests
+tests/
+phpunit.xml
+.phpunit.result.cache
+
+# Documentation & markdown
+*.md
+CHANGELOG
+LICENSE
+
+# IDE / editor configs
+.editorconfig
+.vscode/
+.idea/
+*.swp
+
+# OS artefacts
+.DS_Store
+Thumbs.db
+
+# CI/CD (not needed inside the image)
+.github/
+
+# Docker compose files (only Dockerfile is needed)
+docker-compose*.yml

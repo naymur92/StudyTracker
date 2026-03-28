@@ -53,10 +53,23 @@ document.addEventListener('DOMContentLoaded', () => {
             app.component('submit-button', SubmitButton)
             app.component('select2', Select2)
 
-            // Pass data attributes as props
+            // Pass data attributes as props.
+            // Values that look like JSON arrays/objects are auto-parsed so
+            // array/object props (e.g. data-permissions='[{"id":1}]') work.
             const props = {}
             for (const [key, value] of Object.entries(element.dataset)) {
-                if (key !== 'vueComponent') {
+                if (key === 'vueComponent') continue
+                try {
+                    const trimmed = value.trim()
+                    if (
+                        (trimmed.startsWith('[') && trimmed.endsWith(']')) ||
+                        (trimmed.startsWith('{') && trimmed.endsWith('}'))
+                    ) {
+                        props[key] = JSON.parse(trimmed)
+                    } else {
+                        props[key] = value
+                    }
+                } catch {
                     props[key] = value
                 }
             }
