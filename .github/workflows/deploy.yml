@@ -87,7 +87,9 @@ jobs:
           php artisan test
 
       - name: Validate Docker compose file
-        run: docker compose config --quiet
+        run: |
+          docker compose config --quiet
+          docker compose --profile local-infra --profile workers config --quiet
 
   deploy:
     name: CD (Build image + Deploy to EC2)
@@ -178,17 +180,16 @@ jobs:
             # Pull images and start app+nginx with local db.
             $COMPOSE --profile local-infra pull study_tracker_app nginx db
 
-            # Start containers. Compose waits for db health due to depends_on condition.
-            if $DOCKER compose up --help | grep -q -- "--wait"; then
-              $COMPOSE --profile local-infra up -d --no-build --remove-orphans --wait --wait-timeout 120
-            else
-              $COMPOSE --profile local-infra up -d --no-build --remove-orphans
-              sleep 10
-            fi
+            # Start containers. Entrypoint waits for DB readiness internally.
+            $COMPOSE --profile local-infra up -d --no-build --remove-orphans
+
+            # Give DB time to pass healthcheck before running migrations.
+            echo "Waiting for database to become healthy..."
+            sleep 30
 
             $COMPOSE ps
 
-            # Run migrations only once db is confirmed healthy.
+            # Run migrations.
             $COMPOSE exec -T study_tracker_app php artisan migrate --force
 
             $DOCKER image prune -f

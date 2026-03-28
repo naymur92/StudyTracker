@@ -28,7 +28,7 @@ services:
       DB_PASSWORD: ${DB_PASSWORD:-st_secret}
       REDIS_HOST: ${REDIS_HOST:-redis}
       REDIS_PORT: ${REDIS_PORT:-6379}
-    mem_limit: 300m
+    mem_limit: 256m
     volumes:
       - public_data:/var/www/html/public
       - storage_data:/var/www/html/storage/app
@@ -37,16 +37,13 @@ services:
       - bootstrap_cache:/var/www/html/bootstrap/cache
     networks:
       - studytracker
-    depends_on:
-      db:
-        condition: service_healthy
 
   # ── Nginx Web Server ─────────────────────────
   nginx:
     image: nginx:1.27-alpine
     container_name: studytracker_nginx
     restart: unless-stopped
-    mem_limit: 100m
+    mem_limit: 64m
     ports:
       - "${APP_HTTP_PORT:-8080}:80"
       - "${APP_HTTPS_PORT:-8443}:443"
@@ -65,7 +62,7 @@ services:
     container_name: studytracker_db
     restart: unless-stopped
     profiles: ["local-infra"]
-    mem_limit: 350m
+    mem_limit: 300m
     environment:
       MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-secret_root_pass}
       MYSQL_DATABASE: ${DB_DATABASE:-study_tracker}
@@ -91,7 +88,7 @@ services:
     container_name: studytracker_redis
     restart: unless-stopped
     profiles: ["local-infra"]
-    mem_limit: 100m
+    mem_limit: 64m
     command: redis-server --appendonly yes --maxmemory 128mb --maxmemory-policy allkeys-lru
     ports:
       - "${REDIS_HOST_PORT:-6380}:6379"
@@ -126,16 +123,13 @@ services:
       DB_PASSWORD: ${DB_PASSWORD:-st_secret}
       REDIS_HOST: ${REDIS_HOST:-redis}
       REDIS_PORT: ${REDIS_PORT:-6379}
-    mem_limit: 200m
+    mem_limit: 150m
     volumes:
       - storage_data:/var/www/html/storage/app
       - framework_cache:/var/www/html/storage/framework
       - logs_data:/var/www/html/storage/logs
     networks:
       - studytracker
-    depends_on:
-      db:
-        condition: service_healthy
 
   # ── Scheduler Worker ─────────────────────────
   scheduler:
@@ -158,16 +152,13 @@ services:
       DB_PASSWORD: ${DB_PASSWORD:-st_secret}
       REDIS_HOST: ${REDIS_HOST:-redis}
       REDIS_PORT: ${REDIS_PORT:-6379}
-    mem_limit: 150m
+    mem_limit: 128m
     volumes:
       - storage_data:/var/www/html/storage/app
       - framework_cache:/var/www/html/storage/framework
       - logs_data:/var/www/html/storage/logs
     networks:
       - studytracker
-    depends_on:
-      db:
-        condition: service_healthy
 
 # ── Networks ──────────────────────────────────
 networks:
