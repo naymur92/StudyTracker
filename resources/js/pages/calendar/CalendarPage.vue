@@ -28,22 +28,23 @@
         </div>
 
         <!-- Calendar Grid -->
-        <div class="bg-white rounded-lg shadow p-6">
-            <div class="grid grid-cols-7 gap-2 mb-4">
+        <div class="bg-white rounded-lg shadow p-3 md:p-6">
+            <div class="hidden md:grid grid-cols-7 gap-2 mb-4">
                 <div v-for="day in ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']" :key="day"
                     class="text-center font-semibold text-gray-700 py-2">
                     {{ day }}
                 </div>
             </div>
 
-            <div class="grid grid-cols-7 gap-2">
+            <div class="grid grid-cols-7 gap-1 md:gap-2">
                 <div v-for="date in calendarDays" :key="date.toString()" :class="[
-                    'p-4 rounded-lg border border-gray-200 text-center min-h-20 cursor-pointer hover:bg-primary-50 transition-colors',
-                    formatDate(date) === formatDate(today.value) ? 'bg-primary-100 border-primary-600' : '',
+                    'p-1.5 md:p-4 rounded-lg border border-gray-200 text-center min-h-[58px] md:min-h-20 cursor-pointer hover:bg-primary-50 transition-colors',
+                    formatDate(date) === formatDate(today) ? 'bg-primary-100 border-primary-600' : '',
                     date.getMonth() !== currentMonth ? 'bg-gray-50 text-gray-400' : ''
                 ]">
-                    <p class="font-semibold">{{ date.getDate() }}</p>
-                    <p class="text-xs text-gray-500 mt-1">{{ getTaskCount(date) }} tasks</p>
+                    <p class="font-semibold text-sm md:text-base leading-none">{{ date.getDate() }}</p>
+                    <p class="text-[10px] md:hidden mt-1 leading-none text-gray-600">{{ getTaskCount(date) }}</p>
+                    <p class="hidden md:block text-xs text-gray-500 mt-1">{{ getTaskCount(date) }} tasks</p>
                 </div>
             </div>
         </div>
@@ -82,7 +83,15 @@ const calendarDays = computed(() => {
     })
 })
 
-const formatDate = (date) => format(date, 'yyyy-MM-dd')
+const formatDate = (date) => {
+    const normalizedDate = date instanceof Date ? date : new Date(date)
+
+    if (Number.isNaN(normalizedDate.getTime())) {
+        return ''
+    }
+
+    return format(normalizedDate, 'yyyy-MM-dd')
+}
 
 const fetchCalendar = async () => {
     error.value = null

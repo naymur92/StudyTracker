@@ -36,6 +36,38 @@ export const useUserStore = defineStore('user', {
             }
         },
 
+        async updateProfile(api, payload) {
+            this.setLoading(true)
+            try {
+                const response = await api.patch('/user', payload)
+                this.profile = {
+                    ...(this.profile || {}),
+                    ...(response.data.data || {}),
+                }
+                this.setError(null)
+                return response.data
+            } catch (error) {
+                this.setError(error.response?.data?.msg || 'Failed to update profile')
+                throw error.response?.data || error
+            } finally {
+                this.setLoading(false)
+            }
+        },
+
+        async changePassword(api, payload) {
+            this.setLoading(true)
+            try {
+                const response = await api.post('/user/change-password', payload)
+                this.setError(null)
+                return response.data
+            } catch (error) {
+                this.setError(error.response?.data?.msg || 'Failed to change password')
+                throw error.response?.data || error
+            } finally {
+                this.setLoading(false)
+            }
+        },
+
         setProfile(profile) {
             this.profile = profile
         },

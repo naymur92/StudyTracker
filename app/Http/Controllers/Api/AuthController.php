@@ -3,18 +3,23 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\ForgotPasswordRequest;
+use App\Http\Requests\ForgotPasswordVerifyRequest;
 use App\Http\Requests\ResendVerificationRequest;
 use App\Http\Requests\RefreshTokenRequest;
 use App\Http\Requests\RegisterApiRequest;
 use App\Http\Requests\TokenGenerateApiRequest;
 use App\Models\EmailVerificationToken;
+use App\Models\ForgotPasswordCode;
 use App\Models\User;
+use App\Notifications\ForgotPasswordCodeNotification;
 use App\Notifications\VerifyEmailNotification;
 use App\Services\LoginTracker;
 use App\Traits\CustomResponseTrait;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
@@ -257,6 +262,95 @@ class AuthController extends Controller
         );
     }
 
+    public function requestForgotPassword(ForgotPasswordRequest $request)
+    {
+        $user = User::where('email', $request->email)->first();
+
+        // Keep the response generic for unknown emails.
+        if (! $user) {
+            return $this->jsonResponse(
+                flag: true,
+                message: 'If this email exists, a password reset code has been sent.',
+                data: [],
+                responseCode: HttpResponse::HTTP_OK,
+            );
+        }
+
+        $latestCode = ForgotPasswordCode::where('user_id', $user->id)
+            ->orderByDesc('id')
+            ->first();
+
+        if ($latestCode && $latestCode->created_at && $latestCode->created_at->gt(now()->subMinutes(30))) {
+            return $this->jsonResponse(
+                message: 'A password reset code was already sent recently. Please wait 30 minutes before requesting again.',
+                data: [],
+                responseCode: HttpResponse::HTTP_TOO_MANY_REQUESTS,
+            );
+        }
+
+        $code = $this->createForgotPasswordCode($user);
+        $user->notify(new ForgotPasswordCodeNotification($code));
+
+        return $this->jsonResponse(
+            flag: true,
+            message: 'If this email exists, a password reset code has been sent.',
+            data: [],
+            responseCode: HttpResponse::HTTP_OK,
+        );
+    }
+
+    public function verifyForgotPassword(ForgotPasswordVerifyRequest $request)
+    {
+        $user = User::where('email', $request->email)->first();
+
+        if (! $user) {
+            return $this->jsonResponse(
+                message: 'Invalid email or verification code.',
+                data: [],
+                responseCode: HttpResponse::HTTP_UNPROCESSABLE_ENTITY,
+            );
+        }
+
+        if ($this->getSuccessfulMonthlyResetsCount($user) >= 5) {
+            return $this->jsonResponse(
+                message: 'Monthly password reset limit reached (5 times). Please try again next month.',
+                data: [],
+                responseCode: HttpResponse::HTTP_TOO_MANY_REQUESTS,
+            );
+        }
+
+        $incomingHash = hash('sha256', $request->code);
+
+        $record = ForgotPasswordCode::where('user_id', $user->id)
+            ->where('code_hash', $incomingHash)
+            ->whereNull('used_at')
+            ->orderByDesc('id')
+            ->first();
+
+        if (! $record || $record->isExpired()) {
+            return $this->jsonResponse(
+                message: 'Invalid email or verification code.',
+                data: [],
+                responseCode: HttpResponse::HTTP_UNPROCESSABLE_ENTITY,
+            );
+        }
+
+        DB::transaction(function () use ($record, $user, $request) {
+            $record->update(['used_at' => now()]);
+
+            $user->forceFill([
+                'password' => Hash::make($request->password),
+            ])->save();
+        });
+
+        return $this->jsonResponse(
+            flag: true,
+            message: 'Password reset successful. You can now login with your new password.',
+            data: [],
+            responseCode: HttpResponse::HTTP_OK,
+        );
+    }
+
     private function createEmailVerificationToken(User $user): string
     {
         $plainToken = Str::random(64);
@@ -370,5 +464,31 @@ class AuthController extends Controller
         }
 
         return null;
+    }
+
+    private function createForgotPasswordCode(User $user): string
+    {
+        $plainCode = str_pad((string) random_int(0, 999999), 6, '0', STR_PAD_LEFT);
+
+        // Close previously issued unused codes.
+        ForgotPasswordCode::where('user_id', $user->id)
+            ->whereNull('used_at')
+            ->update(['used_at' => Date::now()]);
+
+        ForgotPasswordCode::create([
+            'user_id'   => $user->id,
+            'code_hash' => hash('sha256', $plainCode),
+            'expires_at' => now()->addMinutes(30),
+        ]);
+
+        return $plainCode;
+    }
+
+    private function getSuccessfulMonthlyResetsCount(User $user): int
+    {
+        return ForgotPasswordCode::where('user_id', $user->id)
+            ->whereNotNull('used_at')
+            ->whereBetween('used_at', [now()->startOfMonth(), now()->endOfMonth()])
+            ->count();
     }
 }

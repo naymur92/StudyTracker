@@ -2,6 +2,10 @@
     <div>
         <h2 class="text-2xl font-bold text-gray-900 mb-6">Sign In</h2>
 
+        <div v-if="showResetSuccess" class="mb-4 p-4 bg-green-50 border border-green-200 rounded-lg">
+            <p class="text-sm text-green-700">Password reset successful. Please sign in with your new password.</p>
+        </div>
+
         <form @submit.prevent="handleLogin" class="space-y-4">
             <!-- Email -->
             <div>
@@ -15,6 +19,11 @@
                 <label class="block text-sm font-medium text-gray-700 mb-1">Password</label>
                 <input v-model="form.password" type="password" required class="input-base" placeholder="••••••••" />
                 <span v-if="errors.password" class="text-sm text-red-500">{{ errors.password[0] }}</span>
+                <div class="mt-2 text-right">
+                    <router-link to="/auth/forgot-password" class="text-sm text-primary-600 hover:text-primary-700 font-medium">
+                        Forgot password?
+                    </router-link>
+                </div>
             </div>
 
             <!-- Error message -->
@@ -59,14 +68,16 @@
 
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 
 const router = useRouter()
+const route = useRoute()
 const authStore = useAuthStore()
 
 const loading = ref(false)
 const error = ref(null)
+const showResetSuccess = ref(false)
 const errors = reactive({})
 
 const form = reactive({
@@ -96,6 +107,8 @@ const handleLogin = async () => {
 
 // Initialize OAuth credentials from environment or set defaults
 onMounted(() => {
+    showResetSuccess.value = route.query.reset === '1'
+
     const clientId = import.meta.env.VITE_OAUTH_CLIENT_ID
     const clientSecret = import.meta.env.VITE_OAUTH_CLIENT_SECRET
 

@@ -37,11 +37,11 @@
                 <div v-for="task in group.tasks" :key="task.id" class="card p-4 flex items-center justify-between">
                     <div class="flex items-center gap-4 flex-1">
                         <input type="checkbox" :checked="task.status === 'completed'"
-                            :disabled="task.status === 'completed'" @change="completeTask(task)"
-                            class="w-5 h-5 text-primary-600 rounded" />
+                            :disabled="task.status === 'completed' || task.status === 'skipped'"
+                            @change="completeTask(task)" class="w-5 h-5 text-primary-600 rounded" />
                         <div>
                             <p class="font-medium text-gray-900">{{ task.topic?.title || task.topic_title || task.title
-                            }}</p>
+                                }}</p>
                             <p class="text-sm text-gray-600">{{ task.notes }}</p>
                         </div>
                     </div>
@@ -49,10 +49,11 @@
                         {{ capitalizeFirst(task.status) }}
                     </span>
                     <div class="flex items-center gap-2 ml-4" v-if="task.status !== 'completed'">
-                        <button @click="skipTask(task)" class="px-2 py-1 text-xs rounded bg-gray-100 hover:bg-gray-200">
+                        <button v-if="task.status === 'pending' || task.status === 'missed'" @click="skipTask(task)"
+                            class="px-2 py-1 text-xs rounded bg-gray-100 hover:bg-gray-200">
                             Skip
                         </button>
-                        <button @click="openRescheduleModal(task)"
+                        <button v-if="task.status !== 'skipped'" @click="openRescheduleModal(task)"
                             class="px-2 py-1 text-xs rounded bg-blue-100 text-blue-700 hover:bg-blue-200">
                             Reschedule
                         </button>
@@ -104,7 +105,8 @@ const getStatusColor = (status) => {
     const colors = {
         pending: 'bg-gray-100 text-gray-800',
         completed: 'bg-success-100 text-success-800',
-        skipped: 'bg-gray-100 text-gray-800',
+        skipped: 'bg-amber-100 text-amber-800',
+        missed: 'bg-red-100 text-red-800',
     }
     return colors[status] || 'bg-gray-100 text-gray-800'
 }
@@ -171,12 +173,12 @@ const completeTask = async (task) => {
                 notes: '',
                 difficulty_feedback: 'medium',
             })
-            fetchTasks()
+            await fetchTasks()
             await showSuccess('Task marked as completed.')
         }
     } catch (err) {
         console.error(err)
-        await showError(err.response?.data?.message || 'Failed to complete task')
+        await showError(err.response?.data?.msg || err.response?.data?.message || 'Failed to complete task')
     }
 }
 
@@ -184,11 +186,13 @@ const skipTask = async (task) => {
     actionError.value = null
     try {
         const api = authStore.getApiClient()
-        await taskStore.skipTask(api, task.id)
+        await taskStore.skipTask(api, task.id, {
+            reason: '',
+        })
         await fetchTasks()
         await showSuccess('Task skipped successfully.')
     } catch (err) {
-        actionError.value = err.response?.data?.message || 'Failed to skip task'
+        actionError.value = err.response?.data?.msg || err.response?.data?.message || 'Failed to skip task'
         await showError(actionError.value)
     }
 }
@@ -211,7 +215,7 @@ const submitReschedule = async () => {
         await fetchTasks()
         await showSuccess('Task rescheduled successfully.')
     } catch (err) {
-        actionError.value = err.response?.data?.message || 'Failed to reschedule task'
+        actionError.value = err.response?.data?.msg || err.response?.data?.message || 'Failed to reschedule task'
         await showError(actionError.value)
     }
 }

@@ -1,8 +1,8 @@
-﻿{
+{
     "info": {
         "name": "Study Tracker API",
-        "description": "REST API for Study Tracker with email verification flow and encoded ID support",
-        "version": "1.1.0",
+        "description": "REST API for Study Tracker with email verification, forgot-password code flow, and encoded ID support",
+        "version": "1.2.0",
         "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
     },
     "auth": {
@@ -35,8 +35,14 @@
                         ],
                         "url": {
                             "raw": "{{url}}/api/auth/register",
-                            "host": ["{{url}}"],
-                            "path": ["api", "auth", "register"]
+                            "host": [
+                                "{{url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "auth",
+                                "register"
+                            ]
                         },
                         "description": "Register account (initially inactive) and send verification email",
                         "auth": {
@@ -65,8 +71,14 @@
                         ],
                         "url": {
                             "raw": "{{url}}/api/auth/resend-verification",
-                            "host": ["{{url}}"],
-                            "path": ["api", "auth", "resend-verification"]
+                            "host": [
+                                "{{url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "auth",
+                                "resend-verification"
+                            ]
                         },
                         "description": "Resend verification email for unverified user",
                         "auth": {
@@ -103,8 +115,14 @@
                         ],
                         "url": {
                             "raw": "{{url}}/api/auth/token",
-                            "host": ["{{url}}"],
-                            "path": ["api", "auth", "token"]
+                            "host": [
+                                "{{url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "auth",
+                                "token"
+                            ]
                         },
                         "description": "Authenticate verified active user and get access token",
                         "auth": {
@@ -141,8 +159,15 @@
                         ],
                         "url": {
                             "raw": "{{url}}/api/auth/token/refresh",
-                            "host": ["{{url}}"],
-                            "path": ["api", "auth", "token", "refresh"]
+                            "host": [
+                                "{{url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "auth",
+                                "token",
+                                "refresh"
+                            ]
                         },
                         "description": "Refresh access token using refresh token",
                         "auth": {
@@ -154,6 +179,80 @@
                         }
                     },
                     "response": []
+                },
+                {
+                    "name": "Forgot Password - Request Code",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{url}}/api/auth/forgot-password/request",
+                            "host": [
+                                "{{url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "auth",
+                                "forgot-password",
+                                "request"
+                            ]
+                        },
+                        "description": "Send 6-digit reset code to email (max one email every 30 minutes per user).",
+                        "auth": {
+                            "type": "noauth"
+                        },
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"email\": \"{{forgot_email}}\"\n}"
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Forgot Password - Verify and Reset",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{url}}/api/auth/forgot-password/verify",
+                            "host": [
+                                "{{url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "auth",
+                                "forgot-password",
+                                "verify"
+                            ]
+                        },
+                        "description": "Verify reset code and set new password (max 5 successful resets per month).",
+                        "auth": {
+                            "type": "noauth"
+                        },
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"email\": \"{{forgot_email}}\",\n  \"code\": \"{{reset_code}}\",\n  \"password\": \"{{new_password}}\",\n  \"password_confirmation\": \"{{new_password}}\"\n}"
+                        }
+                    },
+                    "response": []
                 }
             ]
         },
@@ -161,7 +260,7 @@
             "name": "Dashboard",
             "item": [
                 {
-                    "name": "Get Dashboard \u0026 Daily Agenda",
+                    "name": "Get Dashboard & Daily Agenda",
                     "request": {
                         "method": "GET",
                         "header": [
@@ -176,8 +275,14 @@
                         ],
                         "url": {
                             "raw": "{{url}}/api/study/dashboard?date=2026-03-27",
-                            "host": ["{{url}}"],
-                            "path": ["api", "study", "dashboard"],
+                            "host": [
+                                "{{url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "study",
+                                "dashboard"
+                            ],
                             "query": [
                                 {
                                     "key": "date",
@@ -205,9 +310,15 @@
                             }
                         ],
                         "url": {
-                            "raw": "{{url}}/api/study/calendar?year=2026\u0026month=3",
-                            "host": ["{{url}}"],
-                            "path": ["api", "study", "calendar"],
+                            "raw": "{{url}}/api/study/calendar?year=2026&month=3",
+                            "host": [
+                                "{{url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "study",
+                                "calendar"
+                            ],
                             "query": [
                                 {
                                     "key": "year",
@@ -243,8 +354,14 @@
                         ],
                         "url": {
                             "raw": "{{url}}/api/study/categories",
-                            "host": ["{{url}}"],
-                            "path": ["api", "study", "categories"]
+                            "host": [
+                                "{{url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "study",
+                                "categories"
+                            ]
                         },
                         "description": "Get all categories (user-owned + system)"
                     },
@@ -270,8 +387,14 @@
                         },
                         "url": {
                             "raw": "{{url}}/api/study/categories",
-                            "host": ["{{url}}"],
-                            "path": ["api", "study", "categories"]
+                            "host": [
+                                "{{url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "study",
+                                "categories"
+                            ]
                         }
                     },
                     "response": []
@@ -296,7 +419,9 @@
                         },
                         "url": {
                             "raw": "{{url}}/api/study/categories/{{category_id}}",
-                            "host": ["{{url}}"],
+                            "host": [
+                                "{{url}}"
+                            ],
                             "path": [
                                 "api",
                                 "study",
@@ -323,7 +448,9 @@
                         ],
                         "url": {
                             "raw": "{{url}}/api/study/categories/{{category_id}}",
-                            "host": ["{{url}}"],
+                            "host": [
+                                "{{url}}"
+                            ],
                             "path": [
                                 "api",
                                 "study",
@@ -354,9 +481,15 @@
                             }
                         ],
                         "url": {
-                            "raw": "{{url}}/api/study/topics?page=1\u0026per_page=15\u0026status=active\u0026search=calculus",
-                            "host": ["{{url}}"],
-                            "path": ["api", "study", "topics"],
+                            "raw": "{{url}}/api/study/topics?page=1&per_page=15&status=active&search=calculus",
+                            "host": [
+                                "{{url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "study",
+                                "topics"
+                            ],
                             "query": [
                                 {
                                     "key": "page",
@@ -408,8 +541,15 @@
                         ],
                         "url": {
                             "raw": "{{url}}/api/study/topics/{{topic_id}}",
-                            "host": ["{{url}}"],
-                            "path": ["api", "study", "topics", "{{topic_id}}"]
+                            "host": [
+                                "{{url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "study",
+                                "topics",
+                                "{{topic_id}}"
+                            ]
                         },
                         "description": "Get detailed topic info with all related tasks and practice logs"
                     },
@@ -435,8 +575,14 @@
                         },
                         "url": {
                             "raw": "{{url}}/api/study/topics",
-                            "host": ["{{url}}"],
-                            "path": ["api", "study", "topics"]
+                            "host": [
+                                "{{url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "study",
+                                "topics"
+                            ]
                         },
                         "description": "Create new topic with automatic revision tasks (day 1, 7, 30, 90)"
                     },
@@ -462,8 +608,15 @@
                         },
                         "url": {
                             "raw": "{{url}}/api/study/topics/{{topic_id}}",
-                            "host": ["{{url}}"],
-                            "path": ["api", "study", "topics", "{{topic_id}}"]
+                            "host": [
+                                "{{url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "study",
+                                "topics",
+                                "{{topic_id}}"
+                            ]
                         }
                     },
                     "response": []
@@ -484,8 +637,15 @@
                         ],
                         "url": {
                             "raw": "{{url}}/api/study/topics/{{topic_id}}",
-                            "host": ["{{url}}"],
-                            "path": ["api", "study", "topics", "{{topic_id}}"]
+                            "host": [
+                                "{{url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "study",
+                                "topics",
+                                "{{topic_id}}"
+                            ]
                         },
                         "description": "Mark topic as archived (soft delete)"
                     },
@@ -512,8 +672,14 @@
                         ],
                         "url": {
                             "raw": "{{url}}/api/study/daily-tasks?date=2026-03-27",
-                            "host": ["{{url}}"],
-                            "path": ["api", "study", "daily-tasks"],
+                            "host": [
+                                "{{url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "study",
+                                "daily-tasks"
+                            ],
                             "query": [
                                 {
                                     "key": "date",
@@ -545,7 +711,9 @@
                         },
                         "url": {
                             "raw": "{{url}}/api/study/tasks/{{task_id}}/complete",
-                            "host": ["{{url}}"],
+                            "host": [
+                                "{{url}}"
+                            ],
                             "path": [
                                 "api",
                                 "study",
@@ -578,7 +746,9 @@
                         },
                         "url": {
                             "raw": "{{url}}/api/study/tasks/{{task_id}}/skip",
-                            "host": ["{{url}}"],
+                            "host": [
+                                "{{url}}"
+                            ],
                             "path": [
                                 "api",
                                 "study",
@@ -610,7 +780,9 @@
                         },
                         "url": {
                             "raw": "{{url}}/api/study/tasks/{{task_id}}/reschedule",
-                            "host": ["{{url}}"],
+                            "host": [
+                                "{{url}}"
+                            ],
                             "path": [
                                 "api",
                                 "study",
@@ -643,9 +815,15 @@
                             }
                         ],
                         "url": {
-                            "raw": "{{url}}/api/study/practice-logs?page=1\u0026per_page=20\u0026topic_id=1\u0026practice_type=problem_solving\u0026date_from=2026-03-01\u0026date_to=2026-03-31",
-                            "host": ["{{url}}"],
-                            "path": ["api", "study", "practice-logs"],
+                            "raw": "{{url}}/api/study/practice-logs?page=1&per_page=20&topic_id=1&practice_type=problem_solving&date_from=2026-03-01&date_to=2026-03-31",
+                            "host": [
+                                "{{url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "study",
+                                "practice-logs"
+                            ],
                             "query": [
                                 {
                                     "key": "page",
@@ -701,8 +879,14 @@
                         },
                         "url": {
                             "raw": "{{url}}/api/study/practice-logs",
-                            "host": ["{{url}}"],
-                            "path": ["api", "study", "practice-logs"]
+                            "host": [
+                                "{{url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "study",
+                                "practice-logs"
+                            ]
                         }
                     },
                     "response": []
@@ -727,7 +911,9 @@
                         },
                         "url": {
                             "raw": "{{url}}/api/study/practice-logs/{{practice_log_id}}",
-                            "host": ["{{url}}"],
+                            "host": [
+                                "{{url}}"
+                            ],
                             "path": [
                                 "api",
                                 "study",
@@ -754,7 +940,9 @@
                         ],
                         "url": {
                             "raw": "{{url}}/api/study/practice-logs/{{practice_log_id}}",
-                            "host": ["{{url}}"],
+                            "host": [
+                                "{{url}}"
+                            ],
                             "path": [
                                 "api",
                                 "study",
@@ -786,10 +974,80 @@
                         ],
                         "url": {
                             "raw": "{{url}}/api/user",
-                            "host": ["{{url}}"],
-                            "path": ["api", "user"]
+                            "host": [
+                                "{{url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "user"
+                            ]
                         },
                         "description": "Get selected useful profile fields for authenticated user"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Update User Profile",
+                    "request": {
+                        "method": "PATCH",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"name\": \"John Updated\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{url}}/api/user",
+                            "host": [
+                                "{{url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "user"
+                            ]
+                        },
+                        "description": "Update profile fields (email cannot be changed)."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Change Password (Authenticated)",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"current_password\": \"{{current_password}}\",\n  \"new_password\": \"{{new_password}}\",\n  \"new_password_confirmation\": \"{{new_password}}\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{url}}/api/user/change-password",
+                            "host": [
+                                "{{url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "user",
+                                "change-password"
+                            ]
+                        },
+                        "description": "Change current user password."
                     },
                     "response": []
                 }
@@ -814,8 +1072,14 @@
                         ],
                         "url": {
                             "raw": "{{url}}/api/study/revision-templates",
-                            "host": ["{{url}}"],
-                            "path": ["api", "study", "revision-templates"]
+                            "host": [
+                                "{{url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "study",
+                                "revision-templates"
+                            ]
                         },
                         "description": "Get current user revision spacing configuration (or fallback defaults)."
                     },
@@ -841,8 +1105,14 @@
                         },
                         "url": {
                             "raw": "{{url}}/api/study/revision-templates",
-                            "host": ["{{url}}"],
-                            "path": ["api", "study", "revision-templates"]
+                            "host": [
+                                "{{url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "study",
+                                "revision-templates"
+                            ]
                         },
                         "description": "Replace user revision spacing configuration."
                     },
@@ -864,7 +1134,9 @@
                         ],
                         "url": {
                             "raw": "{{url}}/api/study/revision-templates/reset",
-                            "host": ["{{url}}"],
+                            "host": [
+                                "{{url}}"
+                            ],
                             "path": [
                                 "api",
                                 "study",
@@ -963,6 +1235,30 @@
             "value": "",
             "type": "string",
             "description": "Encoded practice log id from API response"
+        },
+        {
+            "key": "forgot_email",
+            "value": "user@example.com",
+            "type": "string",
+            "description": "Email used for forgot password flow"
+        },
+        {
+            "key": "reset_code",
+            "value": "",
+            "type": "string",
+            "description": "6-digit reset code received by email"
+        },
+        {
+            "key": "new_password",
+            "value": "NewPassword@123",
+            "type": "string",
+            "description": "New password used in reset/change password endpoints"
+        },
+        {
+            "key": "current_password",
+            "value": "Password@123",
+            "type": "string",
+            "description": "Current password for authenticated password change"
         }
     ]
 }

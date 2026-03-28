@@ -51,6 +51,10 @@ class AppServiceProvider extends ServiceProvider
             return Limit::perMinute(6)->by('auth-verify:' . $request->ip());
         });
 
+        RateLimiter::for('auth-forgot', function (Request $request) {
+            return Limit::perMinute(5)->by('auth-forgot:' . $request->ip());
+        });
+
         RateLimiter::for('study-read', function (Request $request) {
             $key = $request->user()?->id ?: $request->ip();
 

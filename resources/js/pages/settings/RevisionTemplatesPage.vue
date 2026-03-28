@@ -91,7 +91,7 @@ const loadTemplates = async () => {
         await revisionTemplateStore.fetchTemplates(api)
         templates.value = normalizeTemplates(revisionTemplateStore.templates)
     } catch (err) {
-        error.value = err.response?.data?.message || 'Failed to load revision templates'
+        error.value = err.response?.data?.msg || err.response?.data?.message || 'Failed to load revision templates'
         await showError(error.value)
     } finally {
         loading.value = false
@@ -127,7 +127,7 @@ const saveTemplates = async () => {
         templates.value = normalizeTemplates(revisionTemplateStore.templates)
         await showSuccess('Revision templates saved successfully.')
     } catch (err) {
-        error.value = err.response?.data?.message || 'Failed to save revision templates'
+        error.value = err.response?.data?.msg || err.response?.data?.message || 'Failed to save revision templates'
         await showError(error.value)
     } finally {
         loading.value = false
@@ -143,7 +143,7 @@ const resetTemplates = async () => {
         templates.value = normalizeTemplates(revisionTemplateStore.templates)
         await showSuccess('Revision templates reset to defaults.')
     } catch (err) {
-        error.value = err.response?.data?.message || 'Failed to reset revision templates'
+        error.value = err.response?.data?.msg || err.response?.data?.message || 'Failed to reset revision templates'
         await showError(error.value)
     } finally {
         loading.value = false

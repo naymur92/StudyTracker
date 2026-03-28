@@ -16,10 +16,10 @@
             </div>
         </header>
 
-        <div class="flex h-full">
+        <div class="flex min-h-screen">
             <!-- Sidebar -->
             <nav :class="[
-                'fixed inset-y-0 left-0 z-50 w-64 bg-white border-r border-gray-200 transform transition-transform md:translate-x-0 md:static overflow-y-auto',
+                'fixed inset-y-0 left-0 z-50 w-64 bg-white border-r border-gray-200 transform transition-transform md:translate-x-0 md:static md:min-h-screen overflow-y-auto flex flex-col',
                 sidebarOpen ? 'translate-x-0' : '-translate-x-full'
             ]">
                 <!-- Logo -->
@@ -38,7 +38,7 @@
                 </div>
 
                 <!-- Navigation -->
-                <nav class="px-3 py-4">
+                <nav class="px-3 py-4 pb-28">
                     <router-link v-for="item in navigationItems" :key="item.name" :to="item.to"
                         @click="sidebarOpen = false" :class="[
                             'flex items-center gap-3 px-4 py-3 rounded-lg transition-colors mb-2',
@@ -79,7 +79,7 @@
                 </nav>
 
                 <!-- User section -->
-                <div class="absolute bottom-0 left-0 right-0 p-4 border-t border-gray-200 bg-white">
+                <div class="p-4 border-t border-gray-200 bg-white mt-auto">
                     <button @click="handleLogout"
                         class="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

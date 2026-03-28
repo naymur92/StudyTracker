@@ -16,6 +16,8 @@ Route::prefix('auth')->group(function () {
     Route::post('/token', [AuthController::class, 'issueToken'])->middleware(['throttle:auth-token', 'api.token.headers']);
     Route::post('/token/refresh', [AuthController::class, 'refresh'])->middleware(['throttle:auth-refresh', 'api.token.headers']);
     Route::post('/resend-verification', [AuthController::class, 'resendVerification'])->middleware(['throttle:auth-verify', 'api.headers']);
+    Route::post('/forgot-password/request', [AuthController::class, 'requestForgotPassword'])->middleware(['throttle:auth-forgot', 'api.headers']);
+    Route::post('/forgot-password/verify', [AuthController::class, 'verifyForgotPassword'])->middleware(['throttle:auth-forgot', 'api.headers']);
 });
 
 
@@ -23,6 +25,8 @@ Route::prefix('auth')->group(function () {
 Route::middleware('auth:api')->group(function () {
 
     Route::get('/user', [UserApiController::class, 'profile'])->middleware('throttle:api-profile');
+    Route::patch('/user', [UserApiController::class, 'updateProfile'])->middleware('throttle:api-profile');
+    Route::post('/user/change-password', [UserApiController::class, 'changePassword'])->middleware('throttle:api-profile');
 
     // ─────────────────────────────────────────────────────
     // Study Tracker API  (prefix: /api/study/)

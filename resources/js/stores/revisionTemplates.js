@@ -54,7 +54,7 @@ export const useRevisionTemplateStore = defineStore('revisionTemplates', {
 
         async resetTemplates(api) {
             try {
-                const response = await api.post('/study/revision-templates/reset')
+                const response = await api.post('/study/revision-templates/reset', {})
                 this.templates = response.data.data || []
                 this.setError(null)
                 return this.templates
