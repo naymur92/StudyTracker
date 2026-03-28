@@ -177,7 +177,7 @@ jobs:
 
             # Micro mode defaults to app + nginx. If DB_HOST points to local db,
             # include local-infra profile and start db as a temporary fallback.
-            DB_HOST_VALUE="$(awk -F= '/^DB_HOST=/{print $2}' .env | tail -n1 | tr -d '"' | tr -d '\r')"
+            DB_HOST_VALUE=$(grep '^DB_HOST=' .env | tail -1 | cut -d= -f2 | tr -d '\r' | tr -d '"' || echo "")
             if [ -z "$DB_HOST_VALUE" ]; then
               DB_HOST_VALUE="db"
             fi
@@ -217,11 +217,11 @@ jobs:
             # Keep server-side work minimal on small EC2 instances.
             $COMPOSE exec -T study_tracker_app php artisan migrate --force
 
-            APP_HTTP_PORT_VALUE="$(awk -F= '/^APP_HTTP_PORT=/{print $2}' .env | tail -n1 | tr -d '"' | tr -d '\r')"
+            APP_HTTP_PORT_VALUE=$(grep '^APP_HTTP_PORT=' .env | tail -1 | cut -d= -f2 | tr -d '\r' | tr -d '"' || echo "")
             if [ -z "$APP_HTTP_PORT_VALUE" ]; then
               APP_HTTP_PORT_VALUE="8080"
             fi
-            curl -fsS "http://127.0.0.1:${APP_HTTP_PORT_VALUE}/healthz" >/dev/null
+            curl -fsS http://127.0.0.1:"${APP_HTTP_PORT_VALUE}"/healthz >/dev/null
 
             $DOCKER image prune -f
 
