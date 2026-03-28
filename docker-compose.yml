@@ -2,13 +2,16 @@
 # StudyTracker – Docker Compose (local / prod)
 # ──────────────────────────────────────────────
 # Copy .env.example → .env and fill in values
-# before running `docker compose up -d --build`
+# before running `docker compose up -d`
+# Local DB/Redis are optional via `--profile local-infra`
+# Queue/scheduler are optional via `--profile workers`
 # ──────────────────────────────────────────────
 
 services:
 
   # ── PHP-FPM Application ──────────────────────
   study_tracker_app:
+    image: ${APP_IMAGE:-ghcr.io/naymur/studytracker}:${APP_IMAGE_TAG:-latest}
     build:
       context: .
       dockerfile: Dockerfile
@@ -18,13 +21,14 @@ services:
     env_file:
       - .env
     environment:
-      DB_HOST: db
-      DB_PORT: 3306
+      DB_HOST: ${DB_HOST:-db}
+      DB_PORT: ${DB_PORT:-3306}
       DB_DATABASE: ${DB_DATABASE:-study_tracker}
       DB_USERNAME: ${DB_USERNAME:-st_user}
       DB_PASSWORD: ${DB_PASSWORD:-st_secret}
-      REDIS_HOST: redis
-      REDIS_PORT: 6379
+      REDIS_HOST: ${REDIS_HOST:-redis}
+      REDIS_PORT: ${REDIS_PORT:-6379}
+    mem_limit: 300m
     volumes:
       - public_data:/var/www/html/public
       - storage_data:/var/www/html/storage/app
@@ -33,17 +37,13 @@ services:
       - bootstrap_cache:/var/www/html/bootstrap/cache
     networks:
       - studytracker
-    depends_on:
-      db:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
 
   # ── Nginx Web Server ─────────────────────────
   nginx:
     image: nginx:1.27-alpine
     container_name: studytracker_nginx
     restart: unless-stopped
+    mem_limit: 100m
     ports:
       - "${APP_HTTP_PORT:-8080}:80"
       - "${APP_HTTPS_PORT:-8443}:443"
@@ -61,6 +61,8 @@ services:
     image: mysql:8.0
     container_name: studytracker_db
     restart: unless-stopped
+    profiles: ["local-infra"]
+    mem_limit: 350m
     environment:
       MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-secret_root_pass}
       MYSQL_DATABASE: ${DB_DATABASE:-study_tracker}
@@ -85,6 +87,8 @@ services:
     image: redis:7-alpine
     container_name: studytracker_redis
     restart: unless-stopped
+    profiles: ["local-infra"]
+    mem_limit: 100m
     command: redis-server --appendonly yes --maxmemory 128mb --maxmemory-policy allkeys-lru
     ports:
       - "${REDIS_HOST_PORT:-6380}:6379"
@@ -100,65 +104,61 @@ services:
 
   # ── Queue Worker ─────────────────────────────
   queue:
+    image: ${APP_IMAGE:-ghcr.io/naymur/studytracker}:${APP_IMAGE_TAG:-latest}
     build:
       context: .
       dockerfile: Dockerfile
       target: app
     container_name: studytracker_queue
     restart: unless-stopped
+    profiles: ["workers"]
     command: php artisan queue:work --queue=emails,default --sleep=3 --tries=3 --max-time=3600 --memory=256
     env_file:
       - .env
     environment:
-      DB_HOST: db
-      DB_PORT: 3306
+      DB_HOST: ${DB_HOST:-db}
+      DB_PORT: ${DB_PORT:-3306}
       DB_DATABASE: ${DB_DATABASE:-study_tracker}
       DB_USERNAME: ${DB_USERNAME:-st_user}
       DB_PASSWORD: ${DB_PASSWORD:-st_secret}
-      REDIS_HOST: redis
-      REDIS_PORT: 6379
+      REDIS_HOST: ${REDIS_HOST:-redis}
+      REDIS_PORT: ${REDIS_PORT:-6379}
+    mem_limit: 200m
     volumes:
       - storage_data:/var/www/html/storage/app
       - framework_cache:/var/www/html/storage/framework
       - logs_data:/var/www/html/storage/logs
     networks:
       - studytracker
-    depends_on:
-      db:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
 
   # ── Scheduler Worker ─────────────────────────
   scheduler:
+    image: ${APP_IMAGE:-ghcr.io/naymur/studytracker}:${APP_IMAGE_TAG:-latest}
     build:
       context: .
       dockerfile: Dockerfile
       target: app
     container_name: studytracker_scheduler
     restart: unless-stopped
+    profiles: ["workers"]
     command: php artisan schedule:work
     env_file:
       - .env
     environment:
-      DB_HOST: db
-      DB_PORT: 3306
+      DB_HOST: ${DB_HOST:-db}
+      DB_PORT: ${DB_PORT:-3306}
       DB_DATABASE: ${DB_DATABASE:-study_tracker}
       DB_USERNAME: ${DB_USERNAME:-st_user}
       DB_PASSWORD: ${DB_PASSWORD:-st_secret}
-      REDIS_HOST: redis
-      REDIS_PORT: 6379
+      REDIS_HOST: ${REDIS_HOST:-redis}
+      REDIS_PORT: ${REDIS_PORT:-6379}
+    mem_limit: 150m
     volumes:
       - storage_data:/var/www/html/storage/app
       - framework_cache:/var/www/html/storage/framework
       - logs_data:/var/www/html/storage/logs
     networks:
       - studytracker
-    depends_on:
-      db:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
 
 # ── Networks ──────────────────────────────────
 networks:
