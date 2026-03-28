@@ -37,6 +37,9 @@ services:
       - bootstrap_cache:/var/www/html/bootstrap/cache
     networks:
       - studytracker
+    depends_on:
+      db:
+        condition: service_healthy
 
   # ── Nginx Web Server ─────────────────────────
   nginx:
@@ -130,6 +133,9 @@ services:
       - logs_data:/var/www/html/storage/logs
     networks:
       - studytracker
+    depends_on:
+      db:
+        condition: service_healthy
 
   # ── Scheduler Worker ─────────────────────────
   scheduler:
@@ -159,6 +165,9 @@ services:
       - logs_data:/var/www/html/storage/logs
     networks:
       - studytracker
+    depends_on:
+      db:
+        condition: service_healthy
 
 # ── Networks ──────────────────────────────────
 networks:

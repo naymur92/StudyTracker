@@ -178,12 +178,17 @@ jobs:
             # Pull images and start app+nginx with local db.
             $COMPOSE --profile local-infra pull study_tracker_app nginx db
 
-            # Start containers. Entrypoint waits for DB before app becomes healthy.
-            $COMPOSE --profile local-infra up -d --no-build --remove-orphans study_tracker_app nginx db
+            # Start containers. Compose waits for db health due to depends_on condition.
+            if $DOCKER compose up --help | grep -q -- "--wait"; then
+              $COMPOSE --profile local-infra up -d --no-build --remove-orphans --wait --wait-timeout 120
+            else
+              $COMPOSE --profile local-infra up -d --no-build --remove-orphans
+              sleep 10
+            fi
 
             $COMPOSE ps
 
-            # Run migrations.
+            # Run migrations only once db is confirmed healthy.
             $COMPOSE exec -T study_tracker_app php artisan migrate --force
 
             $DOCKER image prune -f
