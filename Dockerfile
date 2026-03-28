@@ -6,12 +6,7 @@ FROM node:20-alpine AS frontend-builder
 WORKDIR /app
 
 ARG VITE_API_URL
-ARG VITE_OAUTH_CLIENT_ID
-ARG VITE_OAUTH_CLIENT_SECRET
-
 ENV VITE_API_URL=$VITE_API_URL
-ENV VITE_OAUTH_CLIENT_ID=$VITE_OAUTH_CLIENT_ID
-ENV VITE_OAUTH_CLIENT_SECRET=$VITE_OAUTH_CLIENT_SECRET
 
 # Install dependencies first (layer cache)
 COPY package.json package-lock.json ./
@@ -22,7 +17,13 @@ COPY vite.config.js tailwind.config.js postcss.config.js ./
 COPY resources/ resources/
 COPY public/ public/
 
-RUN npm run build
+# OAuth secrets are mounted at build time (not baked into image layers).
+# Locally without secrets, Vite reads from .env automatically.
+RUN --mount=type=secret,id=VITE_OAUTH_CLIENT_ID \
+    --mount=type=secret,id=VITE_OAUTH_CLIENT_SECRET \
+    VITE_OAUTH_CLIENT_ID=$(cat /run/secrets/VITE_OAUTH_CLIENT_ID 2>/dev/null || echo "") \
+    VITE_OAUTH_CLIENT_SECRET=$(cat /run/secrets/VITE_OAUTH_CLIENT_SECRET 2>/dev/null || echo "") \
+    npm run build
 
 # ============================================================
 # Stage 2: Production PHP-FPM application

@@ -75,8 +75,18 @@ Create these secrets:
 - `EC2_SSH_PRIVATE_KEY`: contents of your `.pem` key
 - `EC2_APP_PATH`: absolute app path on EC2 (example: `/var/www/StudyTracker`)
 - `EC2_SSH_PORT` (optional): SSH port, default `22`
+- `VITE_API_URL`: full API base URL baked into the JS bundle at build time (e.g. `http://<EC2_PUBLIC_IP>:8080/api`)
+- `VITE_OAUTH_CLIENT_ID`: Laravel Passport password-grant client ID
+- `VITE_OAUTH_CLIENT_SECRET`: Laravel Passport password-grant client secret
 - `GHCR_USERNAME` (optional): only needed when package is private
 - `GHCR_PAT` (optional): token with `read:packages` for private GHCR pull
+
+> **Why VITE\_\* secrets?** Vite replaces `import.meta.env.VITE_*` at **build time**.
+> Since `.env` is excluded from the Docker image (`.dockerignore`), these values
+> must be injected during the CI image build step.
+> `VITE_API_URL` is passed as a build-arg (non-sensitive URL).
+> `VITE_OAUTH_CLIENT_ID` and `VITE_OAUTH_CLIENT_SECRET` are passed as
+> BuildKit `--mount=type=secret` so they never leak into image layers.
 
 No extra registry secret is required for image push because workflow uses built-in `GITHUB_TOKEN`.
 
