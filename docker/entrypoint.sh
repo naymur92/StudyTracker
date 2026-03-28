@@ -71,6 +71,11 @@ if [ -d "$DEFAULTS_SRC" ]; then
     cp -rn "${DEFAULTS_SRC}/." /var/www/html/public/ 2>/dev/null || true
 fi
 
+# Force production/static Vite assets when not in local environment.
+if [ "${APP_ENV:-production}" != "local" ]; then
+    rm -f /var/www/html/public/hot /var/www/html/storage/framework/vite.hot
+fi
+
 # Ensure Laravel writable directories exist when using fresh Docker volumes.
 mkdir -p /var/www/html/storage/framework/cache
 mkdir -p /var/www/html/storage/framework/sessions

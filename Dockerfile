@@ -71,10 +71,11 @@ COPY . .
 # Overlay compiled frontend assets from Stage 1
 COPY --from=frontend-builder /app/public/build ./public/build
 
-# Store a copy of seeded public assets (uploads defaults, etc.) in a path
-# that is NOT covered by the public_data volume mount.  The entrypoint copies
-# these back at runtime so they survive across volume recreations.
-RUN mkdir -p /var/www/html-image-defaults && cp -r ./public/uploads /var/www/html-image-defaults/uploads
+# Store a copy of seeded public assets in a path that is NOT covered by the
+# public_data volume mount. The entrypoint copies missing files back at runtime.
+RUN mkdir -p /var/www/html-image-defaults \
+    && cp -r ./public/uploads /var/www/html-image-defaults/uploads \
+    && cp -r ./public/build /var/www/html-image-defaults/build
 
 # Run Composer post-install hooks (generates IDE helpers, etc.)
 RUN composer run-script post-autoload-dump 2>/dev/null || true
