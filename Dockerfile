@@ -5,6 +5,14 @@ FROM node:20-alpine AS frontend-builder
 
 WORKDIR /app
 
+ARG VITE_API_URL
+ARG VITE_OAUTH_CLIENT_ID
+ARG VITE_OAUTH_CLIENT_SECRET
+
+ENV VITE_API_URL=$VITE_API_URL
+ENV VITE_OAUTH_CLIENT_ID=$VITE_OAUTH_CLIENT_ID
+ENV VITE_OAUTH_CLIENT_SECRET=$VITE_OAUTH_CLIENT_SECRET
+
 # Install dependencies first (layer cache)
 COPY package.json package-lock.json ./
 RUN npm ci

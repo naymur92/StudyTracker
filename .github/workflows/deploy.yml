@@ -129,6 +129,10 @@ jobs:
           tags: |
             ${{ steps.image.outputs.name }}:${{ steps.image.outputs.tag }}
             ${{ steps.image.outputs.name }}:latest
+          build-args: |
+            VITE_API_URL=${{ secrets.VITE_API_URL }}
+            VITE_OAUTH_CLIENT_ID=${{ secrets.VITE_OAUTH_CLIENT_ID }}
+            VITE_OAUTH_CLIENT_SECRET=${{ secrets.VITE_OAUTH_CLIENT_SECRET }}
 
       - name: Deploy over SSH
         uses: appleboy/ssh-action@v1.2.0
