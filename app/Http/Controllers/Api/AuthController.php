@@ -295,8 +295,8 @@ class AuthController extends Controller
         // Keep the response generic for unknown emails.
         if (! $user) {
             return $this->jsonResponse(
-                flag: true,
-                message: 'If this email exists, a password reset code has been sent.',
+                flag: false,
+                message: 'Not registered yet.',
                 data: [],
                 responseCode: HttpResponse::HTTP_OK,
             );

@@ -65,10 +65,18 @@ for src in \
         :  # file genuinely absent pre-volume; skip silently
     fi
 done
-# Concrete fix: seed user.png from a well-known location in the image.
+# Seed default public assets from the image into the volume.
 DEFAULTS_SRC="/var/www/html-image-defaults"
 if [ -d "$DEFAULTS_SRC" ]; then
-    cp -rn "${DEFAULTS_SRC}/." /var/www/html/public/ 2>/dev/null || true
+    # Build assets MUST be replaced on every deploy (they contain baked-in
+    # environment values and cache-busted filenames). Force-overwrite.
+    if [ -d "${DEFAULTS_SRC}/build" ]; then
+        rm -rf /var/www/html/public/build
+        cp -r "${DEFAULTS_SRC}/build" /var/www/html/public/build
+    fi
+    # User uploads and other static placeholders: no-clobber to preserve
+    # any files uploaded at runtime.
+    cp -rn "${DEFAULTS_SRC}/uploads/." /var/www/html/public/uploads/ 2>/dev/null || true
 fi
 
 # Force production/static Vite assets when not in local environment.
