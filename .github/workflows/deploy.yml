@@ -127,12 +127,23 @@ jobs:
               exit 1
             fi
 
-            $DOCKER compose up -d --build --remove-orphans
+            # Deploy with the base compose file only. This avoids loading
+            # docker-compose.override.yml (dev-only services such as vite).
+            COMPOSE="$DOCKER compose -f docker-compose.yml"
 
-            $DOCKER compose exec -T study_tracker_app php artisan migrate --force
-            $DOCKER compose exec -T study_tracker_app php artisan config:cache
-            $DOCKER compose exec -T study_tracker_app php artisan route:cache
-            $DOCKER compose exec -T study_tracker_app php artisan view:cache
+            # Wait for health checks when supported to avoid racing artisan commands.
+            if $DOCKER compose up --help | grep -q -- "--wait"; then
+              $COMPOSE up -d --build --remove-orphans --wait --wait-timeout 180
+            else
+              $COMPOSE up -d --build --remove-orphans
+            fi
+
+            $COMPOSE ps
+
+            $COMPOSE exec -T study_tracker_app php artisan migrate --force
+            $COMPOSE exec -T study_tracker_app php artisan config:cache
+            $COMPOSE exec -T study_tracker_app php artisan route:cache
+            $COMPOSE exec -T study_tracker_app php artisan view:cache
 
             $DOCKER image prune -f
 
