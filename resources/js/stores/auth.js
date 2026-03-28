@@ -4,6 +4,26 @@ import { resolveApiBaseUrl } from '@/config/urls'
 
 let refreshRequestPromise = null
 
+const AUTH_ENDPOINTS = [
+    '/auth/token',
+    '/auth/token/refresh',
+    '/auth/register',
+    '/auth/resend-verification',
+    '/auth/forgot-password/request',
+    '/auth/forgot-password/verify',
+]
+
+const isAuthEndpoint = (requestUrl = '') => AUTH_ENDPOINTS.some((path) => requestUrl.includes(path))
+
+const setDefaultAuthorizationHeader = (token) => {
+    if (token) {
+        api.defaults.headers.common.Authorization = `Bearer ${token}`
+        return
+    }
+
+    delete api.defaults.headers.common.Authorization
+}
+
 const api = axios.create({
     baseURL: resolveApiBaseUrl(),
     headers: {
@@ -50,12 +70,23 @@ export const useAuthStore = defineStore('auth', {
         },
 
         getTokenPayload(responseData) {
-            // Supports both current flat format and nested payload fallback.
             if (responseData?.access_token) {
                 return responseData
             }
 
-            return responseData?.data || {}
+            if (responseData?.extra?.access_token) {
+                return responseData.extra
+            }
+
+            if (responseData?.data?.access_token) {
+                return responseData.data
+            }
+
+            return {}
+        },
+
+        getUserPayload(responseData) {
+            return responseData?.user || responseData?.data?.user || null
         },
 
         isTokenExpired() {
@@ -77,6 +108,62 @@ export const useAuthStore = defineStore('auth', {
             } else {
                 this.tokenExpiresAt = null
             }
+
+            setDefaultAuthorizationHeader(this.token)
+        },
+
+        async queueRefreshRequest() {
+            if (!refreshRequestPromise) {
+                refreshRequestPromise = this.refreshAccessToken().finally(() => {
+                    refreshRequestPromise = null
+                })
+            }
+
+            return refreshRequestPromise
+        },
+
+        async ensureValidAccessToken() {
+            if (this.token && !this.isTokenExpired()) {
+                setDefaultAuthorizationHeader(this.token)
+                return this.token
+            }
+
+            if (!this.refreshToken) {
+                if (this.token && this.isTokenExpired()) {
+                    this.logout()
+                }
+
+                return this.token
+            }
+
+            await this.queueRefreshRequest()
+            return this.token
+        },
+
+        async restoreSession() {
+            this.initializeApiInterceptors()
+            this.ensureClientCredentials()
+
+            if (!this.token && !this.refreshToken) {
+                return false
+            }
+
+            if (this.token && !this.isTokenExpired()) {
+                setDefaultAuthorizationHeader(this.token)
+                return true
+            }
+
+            if (!this.refreshToken) {
+                this.logout()
+                return false
+            }
+
+            try {
+                await this.queueRefreshRequest()
+                return !!this.token
+            } catch (_) {
+                return false
+            }
         },
 
         initializeApiInterceptors() {
@@ -89,26 +176,11 @@ export const useAuthStore = defineStore('auth', {
             api.interceptors.request.use(async (config) => {
                 const requestUrl = config.url || ''
 
-                const isAuthEndpoint = [
-                    '/auth/token',
-                    '/auth/token/refresh',
-                    '/auth/register',
-                    '/auth/resend-verification',
-                    '/auth/forgot-password/request',
-                    '/auth/forgot-password/verify',
-                ].some((path) => requestUrl.includes(path))
-
-                if (!isAuthEndpoint && this.refreshToken && this.isTokenExpired()) {
-                    if (!refreshRequestPromise) {
-                        refreshRequestPromise = this.refreshAccessToken().finally(() => {
-                            refreshRequestPromise = null
-                        })
-                    }
-
-                    await refreshRequestPromise
+                if (!isAuthEndpoint(requestUrl)) {
+                    await this.ensureValidAccessToken()
                 }
 
-                if (this.token && !isAuthEndpoint) {
+                if (this.token && !isAuthEndpoint(requestUrl)) {
                     config.headers = config.headers || {}
                     config.headers.Authorization = `Bearer ${this.token}`
                 }
@@ -123,29 +195,14 @@ export const useAuthStore = defineStore('auth', {
                     const status = error.response?.status
                     const requestUrl = originalRequest.url || ''
 
-                    const isAuthEndpoint = [
-                        '/auth/token',
-                        '/auth/token/refresh',
-                        '/auth/register',
-                        '/auth/resend-verification',
-                        '/auth/forgot-password/request',
-                        '/auth/forgot-password/verify',
-                    ].some((path) => requestUrl.includes(path))
-
-                    if (status !== 401 || originalRequest._retry || isAuthEndpoint || !this.refreshToken) {
+                    if (status !== 401 || originalRequest._retry || isAuthEndpoint(requestUrl) || !this.refreshToken) {
                         return Promise.reject(error)
                     }
 
                     originalRequest._retry = true
 
                     try {
-                        if (!refreshRequestPromise) {
-                            refreshRequestPromise = this.refreshAccessToken().finally(() => {
-                                refreshRequestPromise = null
-                            })
-                        }
-
-                        await refreshRequestPromise
+                        await this.queueRefreshRequest()
 
                         originalRequest.headers = originalRequest.headers || {}
                         originalRequest.headers.Authorization = `Bearer ${this.token}`
@@ -188,10 +245,7 @@ export const useAuthStore = defineStore('auth', {
 
                 const tokenPayload = this.getTokenPayload(response.data)
                 this.setTokenState(tokenPayload)
-                this.user = response.data.user
-
-                // Set default auth header
-                api.defaults.headers.common['Authorization'] = `Bearer ${this.token}`
+                this.user = this.getUserPayload(response.data)
 
                 return response.data
             } catch (error) {
@@ -214,6 +268,14 @@ export const useAuthStore = defineStore('auth', {
             try {
                 this.ensureClientCredentials()
 
+                if (!this.refreshToken) {
+                    throw new Error('Refresh token is not available.')
+                }
+
+                if (!this.clientId || !this.clientSecret) {
+                    throw new Error('OAuth client credentials are not configured.')
+                }
+
                 const response = await api.post('/auth/token/refresh', {
                     refresh_token: this.refreshToken,
                 }, {
@@ -229,8 +291,6 @@ export const useAuthStore = defineStore('auth', {
                 if (!this.token || !this.refreshToken) {
                     throw new Error('Invalid refresh token response payload.')
                 }
-
-                api.defaults.headers.common['Authorization'] = `Bearer ${this.token}`
 
                 return response.data
             } catch (error) {
@@ -269,15 +329,16 @@ export const useAuthStore = defineStore('auth', {
             this.refreshToken = null
             this.tokenExpiresAt = null
             this.user = null
-            delete api.defaults.headers.common['Authorization']
+            setDefaultAuthorizationHeader(null)
         },
 
         getApiClient() {
             this.initializeApiInterceptors()
 
             if (this.token) {
-                api.defaults.headers.common['Authorization'] = `Bearer ${this.token}`
+                setDefaultAuthorizationHeader(this.token)
             }
+
             return api
         },
     },

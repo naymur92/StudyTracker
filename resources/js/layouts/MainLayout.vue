@@ -19,9 +19,9 @@
         <div class="flex min-h-screen">
             <!-- Sidebar -->
             <nav :class="[
-                'fixed inset-y-0 left-0 z-50 w-64 bg-white border-r border-gray-200 transform transition-transform md:translate-x-0 md:static md:min-h-screen overflow-y-auto flex flex-col',
-                sidebarOpen ? 'translate-x-0' : '-translate-x-full'
-            ]">
+                    'fixed inset-y-0 left-0 z-50 w-64 bg-white border-r border-gray-200 transform transition-transform md:translate-x-0 md:static md:min-h-screen overflow-y-auto flex flex-col',
+                    sidebarOpen ? 'translate-x-0' : '-translate-x-full'
+                ]">
                 <!-- Logo -->
                 <div class="flex items-center justify-between p-6 border-b border-gray-200">
                     <div class="flex items-center gap-2">
@@ -41,11 +41,11 @@
                 <nav class="px-3 py-4 pb-28">
                     <router-link v-for="item in navigationItems" :key="item.name" :to="item.to"
                         @click="sidebarOpen = false" :class="[
-                            'flex items-center gap-3 px-4 py-3 rounded-lg transition-colors mb-2',
-                            isActive(item)
-                                ? 'bg-primary-50 text-primary-600 font-medium'
-                                : 'text-gray-700 hover:bg-gray-100'
-                        ]">
+                    'flex items-center gap-3 px-4 py-3 rounded-lg transition-colors mb-2',
+                    isActive(item)
+                        ? 'bg-primary-50 text-primary-600 font-medium'
+                        : 'text-gray-700 hover:bg-gray-100'
+                ]">
                         <svg :class="`w-5 h-5 ${item.icon}`" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path v-if="item.name === 'Dashboard'" stroke-linecap="round" stroke-linejoin="round"
                                 stroke-width="2"
@@ -65,6 +65,9 @@
                             <path v-else-if="item.name === 'Calendar'" stroke-linecap="round" stroke-linejoin="round"
                                 stroke-width="2"
                                 d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            <path v-else-if="item.name === 'Reports'" stroke-linecap="round" stroke-linejoin="round"
+                                stroke-width="2"
+                                d="M7 20h10a2 2 0 002-2V6.828a2 2 0 00-.586-1.414l-2.828-2.828A2 2 0 0014.172 2H7a2 2 0 00-2 2v14a2 2 0 002 2zM9 13h6M9 17h6M9 9h2" />
                             <path v-else-if="item.name === 'RevisionTemplates'" stroke-linecap="round"
                                 stroke-linejoin="round" stroke-width="2"
                                 d="M9.75 3a3 3 0 00-2.995 2.824L6.75 6v.086a2.25 2.25 0 01-1.062 1.914l-.074.044-.074.043a2.25 2.25 0 00-1.058 2.66l.026.08.026.08a2.25 2.25 0 010 1.506l-.026.08-.026.08a2.25 2.25 0 001.058 2.66l.074.043.074.044a2.25 2.25 0 011.062 1.914V18l.005.176A3 3 0 009.75 21h.5a3 3 0 002.995-2.824L13.25 18v-.086a2.25 2.25 0 011.062-1.914l.074-.044.074-.043a2.25 2.25 0 001.058-2.66l-.026-.08-.026-.08a2.25 2.25 0 010-1.506l.026-.08.026-.08a2.25 2.25 0 00-1.058-2.66l-.074-.043-.074-.044a2.25 2.25 0 01-1.062-1.914V6l-.005-.176A3 3 0 0010.25 3h-.5zM10 9.75a2.25 2.25 0 100 4.5 2.25 2.25 0 000-4.5z" />
@@ -121,6 +124,7 @@ const navigationItems = [
     { name: 'Categories', label: 'Categories', to: '/categories', icon: 'IconCategories' },
     { name: 'PracticeLogs', label: 'Practice Logs', to: '/practice-logs', icon: 'IconLogs' },
     { name: 'Calendar', label: 'Calendar', to: '/calendar', icon: 'IconCalendar' },
+    { name: 'Reports', label: 'Reports', to: '/reports', icon: 'IconReports' },
     { name: 'RevisionTemplates', label: 'Revision Templates', to: '/revision-templates', icon: 'IconSettings' },
     { name: 'Profile', label: 'Profile', to: '/profile', icon: 'IconProfile' },
 ]

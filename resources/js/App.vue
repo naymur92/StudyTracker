@@ -1,13 +1,21 @@
 <template>
     <div id="app" class="min-h-screen bg-gray-50">
-        <router-view />
+        <div v-if="sessionLoading" class="min-h-screen flex items-center justify-center">
+            <div class="inline-block h-8 w-8 animate-spin rounded-full border-b-2 border-primary-600"></div>
+        </div>
+        <router-view v-else />
     </div>
 </template>
 
 <script setup>
+import { onMounted, ref } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 
 const authStore = useAuthStore()
+const sessionLoading = ref(true)
+const route = useRoute()
+const router = useRouter()
 
 authStore.initializeApiInterceptors()
 
@@ -19,11 +27,20 @@ if (clientId && clientSecret) {
     authStore.setClientCredentials(clientId, clientSecret)
 }
 
-// Initialize API client with stored token if available
-if (authStore.token) {
-    const api = authStore.getApiClient()
-    api.defaults.headers.common['Authorization'] = `Bearer ${authStore.token}`
-}
+onMounted(async () => {
+    try {
+        const restored = await authStore.restoreSession()
+
+        if (!restored && route.meta.requiresAuth) {
+            await router.replace({
+                name: 'Login',
+                query: { redirect: route.fullPath },
+            })
+        }
+    } finally {
+        sessionLoading.value = false
+    }
+})
 </script>
 
 <style scoped></style>

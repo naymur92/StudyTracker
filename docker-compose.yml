@@ -108,7 +108,38 @@ services:
       target: app
     container_name: studytracker_queue
     restart: unless-stopped
-    command: php artisan queue:work --sleep=3 --tries=3 --max-time=3600 --memory=256
+    command: php artisan queue:work --queue=emails,default --sleep=3 --tries=3 --max-time=3600 --memory=256
+    env_file:
+      - .env
+    environment:
+      DB_HOST: db
+      DB_PORT: 3306
+      DB_DATABASE: ${DB_DATABASE:-study_tracker}
+      DB_USERNAME: ${DB_USERNAME:-st_user}
+      DB_PASSWORD: ${DB_PASSWORD:-st_secret}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+    volumes:
+      - storage_data:/var/www/html/storage/app
+      - framework_cache:/var/www/html/storage/framework
+      - logs_data:/var/www/html/storage/logs
+    networks:
+      - studytracker
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  # ── Scheduler Worker ─────────────────────────
+  scheduler:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: app
+    container_name: studytracker_scheduler
+    restart: unless-stopped
+    command: php artisan schedule:work
     env_file:
       - .env
     environment:

@@ -36,6 +36,14 @@ services:
       - framework_cache:/var/www/html/storage/framework
       - logs_data:/var/www/html/storage/logs
 
+  scheduler:
+    volumes:
+      - .:/var/www/html
+      - /var/www/html/vendor
+      - storage_data:/var/www/html/storage/app
+      - framework_cache:/var/www/html/storage/framework
+      - logs_data:/var/www/html/storage/logs
+
   vite:
     image: node:20-alpine
     container_name: studytracker_vite

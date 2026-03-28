@@ -20,6 +20,7 @@ import CategoriesPage from '@/pages/categories/ListPage.vue'
 import DailyTasksPage from '@/pages/tasks/DailyPage.vue'
 import PracticeLogsPage from '@/pages/practice-logs/ListPage.vue'
 import CalendarPage from '@/pages/calendar/CalendarPage.vue'
+import ReportsPage from '@/pages/reports/ReportsPage.vue'
 import ProfilePage from '@/pages/ProfilePage.vue'
 import RevisionTemplatesPage from '@/pages/settings/RevisionTemplatesPage.vue'
 import NotFoundPage from '@/pages/NotFoundPage.vue'
@@ -74,6 +75,11 @@ const routes = [
                 path: 'calendar',
                 name: 'Calendar',
                 component: CalendarPage,
+            },
+            {
+                path: 'reports',
+                name: 'Reports',
+                component: ReportsPage,
             },
             {
                 path: 'profile',

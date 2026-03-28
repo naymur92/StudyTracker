@@ -31,6 +31,7 @@
         <!-- Tasks -->
         <div v-else class="space-y-6">
             <!-- Group by type -->
+            <div v-if="taskGroups.length === 0" class="text-center py-4 text-gray-500">No tasks</div>
             <div v-for="group in taskGroups" :key="group.type" class="space-y-3">
                 <h3 class="text-lg font-semibold text-gray-900 capitalize">{{ group.label }}</h3>
                 <div v-if="group.tasks.length === 0" class="text-center py-4 text-gray-500">No tasks</div>

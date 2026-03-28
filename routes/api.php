@@ -5,6 +5,7 @@ use App\Http\Controllers\Api\UserApiController;
 use App\Http\Controllers\Api\StudyTracker\CategoryApiController;
 use App\Http\Controllers\Api\StudyTracker\DashboardApiController;
 use App\Http\Controllers\Api\StudyTracker\PracticeLogApiController;
+use App\Http\Controllers\Api\StudyTracker\ReportApiController;
 use App\Http\Controllers\Api\StudyTracker\RevisionTemplateApiController;
 use App\Http\Controllers\Api\StudyTracker\StudyTaskApiController;
 use App\Http\Controllers\Api\StudyTracker\TopicApiController;
@@ -36,6 +37,8 @@ Route::middleware('auth:api')->group(function () {
         // Dashboard & Calendar
         Route::get('/dashboard',   [DashboardApiController::class, 'index'])->middleware('throttle:study-read')->name('dashboard');
         Route::get('/calendar',    [DashboardApiController::class, 'calendar'])->middleware('throttle:study-read')->name('calendar');
+        Route::get('/reports/download', [ReportApiController::class, 'download'])->middleware('throttle:study-read')->name('reports.download');
+        Route::post('/reports/email', [ReportApiController::class, 'queueEmail'])->middleware('throttle:study-write')->name('reports.email');
 
         // Daily task agenda for a date: GET /api/study/daily-tasks?date=YYYY-MM-DD
         Route::get('/daily-tasks', [StudyTaskApiController::class, 'daily'])->middleware('throttle:study-read')->name('daily-tasks');

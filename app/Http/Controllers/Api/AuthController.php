@@ -9,11 +9,11 @@ use App\Http\Requests\ResendVerificationRequest;
 use App\Http\Requests\RefreshTokenRequest;
 use App\Http\Requests\RegisterApiRequest;
 use App\Http\Requests\TokenGenerateApiRequest;
+use App\Jobs\SendForgotPasswordCodeEmailJob;
+use App\Jobs\SendVerificationEmailJob;
 use App\Models\EmailVerificationToken;
 use App\Models\ForgotPasswordCode;
 use App\Models\User;
-use App\Notifications\ForgotPasswordCodeNotification;
-use App\Notifications\VerifyEmailNotification;
 use App\Services\LoginTracker;
 use App\Traits\CustomResponseTrait;
 use Illuminate\Http\Client\ConnectionException;
@@ -50,7 +50,7 @@ class AuthController extends Controller
                 ];
             });
 
-            $user->notify(new VerifyEmailNotification($token));
+            SendVerificationEmailJob::dispatch((int) $user->id, $token);
 
             return $this->jsonResponse(
                 flag: true,
@@ -278,7 +278,7 @@ class AuthController extends Controller
         }
 
         $token = $this->createEmailVerificationToken($user);
-        $user->notify(new VerifyEmailNotification($token));
+        SendVerificationEmailJob::dispatch((int) $user->id, $token);
 
         return $this->jsonResponse(
             flag: true,
@@ -315,7 +315,7 @@ class AuthController extends Controller
         }
 
         $code = $this->createForgotPasswordCode($user);
-        $user->notify(new ForgotPasswordCodeNotification($code));
+        SendForgotPasswordCodeEmailJob::dispatch((int) $user->id, $code);
 
         return $this->jsonResponse(
             flag: true,
