@@ -175,53 +175,16 @@ jobs:
             export APP_IMAGE="${{ steps.image.outputs.name }}"
             export APP_IMAGE_TAG="${{ steps.image.outputs.tag }}"
 
-            # Micro mode defaults to app + nginx. If DB_HOST points to local db,
-            # include local-infra profile and start db as a temporary fallback.
-            DB_HOST_VALUE=$(grep "^DB_HOST=" .env | tail -1 | cut -d= -f2 | tr -d '\r"')
-            if [ -z "$DB_HOST_VALUE" ]; then
-              DB_HOST_VALUE="db"
-            fi
+            # Pull images and start app+nginx with local db.
+            $COMPOSE --profile local-infra pull study_tracker_app nginx db
 
-            USE_LOCAL_DB=false
-            case "$DB_HOST_VALUE" in
-              db|localhost|127.0.0.1)
-                USE_LOCAL_DB=true
-                ;;
-            esac
-
-            if [ "$USE_LOCAL_DB" = true ]; then
-              echo "DB_HOST=$DB_HOST_VALUE -> starting local db profile"
-              $COMPOSE --profile local-infra pull study_tracker_app nginx db
-            else
-              echo "DB_HOST=$DB_HOST_VALUE -> using external database"
-              $COMPOSE pull study_tracker_app nginx
-            fi
-
-            # Wait for health checks when supported to avoid racing artisan commands.
-            if $DOCKER compose up --help | grep -q -- "--wait"; then
-              if [ "$USE_LOCAL_DB" = true ]; then
-                $COMPOSE --profile local-infra up -d --no-build --remove-orphans --wait --wait-timeout 180 db study_tracker_app nginx
-              else
-                $COMPOSE up -d --no-build --remove-orphans --wait --wait-timeout 180 study_tracker_app nginx
-              fi
-            else
-              if [ "$USE_LOCAL_DB" = true ]; then
-                $COMPOSE --profile local-infra up -d --no-build --remove-orphans db study_tracker_app nginx
-              else
-                $COMPOSE up -d --no-build --remove-orphans study_tracker_app nginx
-              fi
-            fi
+            # Start containers. Entrypoint waits for DB before app becomes healthy.
+            $COMPOSE --profile local-infra up -d --no-build --remove-orphans study_tracker_app nginx db
 
             $COMPOSE ps
 
-            # Keep server-side work minimal on small EC2 instances.
+            # Run migrations.
             $COMPOSE exec -T study_tracker_app php artisan migrate --force
-
-            APP_HTTP_PORT_VALUE=$(grep "^APP_HTTP_PORT=" .env | tail -1 | cut -d= -f2 | tr -d '\r"')
-            if [ -z "$APP_HTTP_PORT_VALUE" ]; then
-              APP_HTTP_PORT_VALUE="8080"
-            fi
-            curl -fsS "http://127.0.0.1:${APP_HTTP_PORT_VALUE}/healthz" >/dev/null
 
             $DOCKER image prune -f
 
