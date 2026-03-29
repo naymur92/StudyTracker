@@ -1,7 +1,8 @@
 <template>
     <div class="space-y-6">
         <div class="mb-8">
-            <router-link :to="`/topics/${route.params.id}`" class="text-primary-600 hover:text-primary-700 font-medium">
+            <router-link :to="`/app/topics/${route.params.id}`"
+                class="text-primary-600 hover:text-primary-700 font-medium">
                 ← Back to Topic
             </router-link>
             <h1 class="text-3xl font-bold text-gray-900 mt-4">Edit Topic</h1>
@@ -77,7 +78,7 @@
                         <span v-if="saving">Saving...</span>
                         <span v-else>Save Changes</span>
                     </button>
-                    <router-link :to="`/topics/${route.params.id}`" class="btn-secondary">Cancel</router-link>
+                    <router-link :to="`/app/topics/${route.params.id}`" class="btn-secondary">Cancel</router-link>
                 </div>
             </form>
         </div>

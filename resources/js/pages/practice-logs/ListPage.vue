@@ -4,8 +4,9 @@
 
         <div class="bg-white rounded-lg shadow p-4 space-y-4">
             <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <input v-model="filters.date_from" type="date" @change="applyFilters" class="input-base" />
-                <input v-model="filters.date_to" type="date" @change="applyFilters" class="input-base" />
+                <DatePicker v-model="filters.date_from" placeholder="From date" @change="applyFilters" />
+                <DatePicker v-model="filters.date_to" placeholder="To date" :min-date="filters.date_from || null"
+                    @change="applyFilters" />
                 <select v-model="filters.practice_type" @change="applyFilters" class="input-base">
                     <option value="">All Types</option>
                     <option value="problem_solving">Problem Solving</option>
@@ -42,7 +43,7 @@
                     <tr v-for="log in logs" :key="log.id" class="hover:bg-gray-50">
                         <td class="px-6 py-4 text-sm font-medium text-gray-900">{{ log.topic?.title }}</td>
                         <td class="px-6 py-4 text-sm text-gray-600">{{ log.practice_type_label ||
-                            capitalizeFirst(log.practice_type) }}</td>
+                    capitalizeFirst(log.practice_type) }}</td>
                         <td class="px-6 py-4 text-sm text-gray-600 truncate">{{ log.details }}</td>
                         <td class="px-6 py-4 text-sm text-gray-600">{{ log.duration_minutes || 0 }} min</td>
                         <td class="px-6 py-4 text-sm text-gray-600">{{ formatDate(log.practiced_on) }}</td>
@@ -99,7 +100,7 @@
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-2">Date *</label>
-                            <input v-model="logForm.practiced_on" type="date" class="input-base" required />
+                            <DatePicker v-model="logForm.practiced_on" placeholder="Practice date" :required="true" />
                         </div>
                     </div>
 
@@ -134,6 +135,7 @@
 <script setup>
 import { ref, computed, onMounted, reactive } from 'vue'
 import { format } from 'date-fns'
+import DatePicker from '@/components/DatePicker.vue'
 import { useAuthStore } from '@/stores/auth'
 import { usePracticeLogStore } from '@/stores/practiceLogs'
 import { showConfirm, showError, showSuccess } from '@/helpers/alerts'

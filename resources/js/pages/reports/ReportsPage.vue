@@ -25,7 +25,12 @@
 
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">End Month</label>
-                        <MonthPicker v-model="downloadForm.endMonth" placeholder="Select end month" />
+                        <MonthPicker v-model="downloadForm.endMonth" placeholder="Select end month"
+                            :min-date="downloadForm.startMonth ? startMonthAsDate : null"
+                            :max-date="downloadForm.startMonth ? maxEndMonthDate : null" />
+                        <p v-if="downloadForm.startMonth" class="text-xs text-gray-500 mt-1">
+                            Max range: 2 months from start
+                        </p>
                     </div>
 
                     <button type="submit" :disabled="downloading" class="btn-primary">
@@ -37,36 +42,46 @@
 
             <section class="bg-white rounded-lg shadow p-6 space-y-4">
                 <h2 class="text-xl font-semibold text-gray-900">Email Report</h2>
-                <p class="text-sm text-gray-600">
-                    Select one or more months. You can request emailed reports up to 2 times per month.
-                </p>
 
-                <form class="space-y-4" @submit.prevent="requestEmailReport">
-                    <div>
-                        <p class="block text-sm font-medium text-gray-700 mb-2">Months</p>
-                        <div class="max-h-64 overflow-auto border border-gray-200 rounded-lg p-3 space-y-2">
-                            <label v-for="month in monthOptions" :key="month.value"
-                                class="flex items-center gap-3 text-sm text-gray-700">
-                                <input v-model="emailForm.months" type="checkbox" :value="month.value"
-                                    class="rounded border-gray-300 text-primary-600 focus:ring-primary-500" />
-                                <span>{{ month.label }}</span>
-                            </label>
+                <div v-if="authStore.isDemoUser"
+                    class="flex items-start gap-3 rounded-lg border border-yellow-200 bg-yellow-50 p-4 text-sm text-yellow-800">
+                    <i class="fa-solid fa-circle-info mt-0.5"></i>
+                    <span>Email reports are not available for demo accounts. <a href="/auth/register"
+                            class="font-medium underline">Register for a full account</a> to unlock this feature.</span>
+                </div>
+
+                <template v-else>
+                    <p class="text-sm text-gray-600">
+                        Select one or more months. You can request emailed reports up to 2 times per month.
+                    </p>
+
+                    <form class="space-y-4" @submit.prevent="requestEmailReport">
+                        <div>
+                            <p class="block text-sm font-medium text-gray-700 mb-2">Months</p>
+                            <div class="max-h-64 overflow-auto border border-gray-200 rounded-lg p-3 space-y-2">
+                                <label v-for="month in monthOptions" :key="month.value"
+                                    class="flex items-center gap-3 text-sm text-gray-700">
+                                    <input v-model="emailForm.months" type="checkbox" :value="month.value"
+                                        class="rounded border-gray-300 text-primary-600 focus:ring-primary-500" />
+                                    <span>{{ month.label }}</span>
+                                </label>
+                            </div>
                         </div>
-                    </div>
 
-                    <button type="submit" :disabled="sendingEmail" class="btn-primary">
-                        <span v-if="sendingEmail">Queueing...</span>
-                        <span v-else>Send Report To My Email</span>
-                    </button>
-                </form>
+                        <button type="submit" :disabled="sendingEmail" class="btn-primary">
+                            <span v-if="sendingEmail">Queueing...</span>
+                            <span v-else>Send Report To My Email</span>
+                        </button>
+                    </form>
+                </template>
             </section>
         </div>
     </div>
 </template>
 
 <script setup>
-import { computed, ref } from 'vue'
-import { format, subMonths } from 'date-fns'
+import { computed, ref, watch } from 'vue'
+import { format, subMonths, addMonths, parseISO } from 'date-fns'
 import { useAuthStore } from '@/stores/auth'
 import MonthPicker from '@/components/MonthPicker.vue'
 
@@ -79,8 +94,29 @@ const errorMessage = ref('')
 const currentMonth = format(new Date(), 'yyyy-MM')
 
 const downloadForm = ref({
-    startMonth: currentMonth,
-    endMonth: currentMonth,
+    startMonth: null,
+    endMonth: null,
+})
+
+// Derived dates for min/max constraints on end month picker
+const startMonthAsDate = computed(() => {
+    if (!downloadForm.value.startMonth) return null
+    return parseISO(downloadForm.value.startMonth + '-01')
+})
+
+const maxEndMonthDate = computed(() => {
+    if (!startMonthAsDate.value) return null
+    return addMonths(startMonthAsDate.value, 1)
+})
+
+// Reset end month if it goes out of range when start month changes
+watch(() => downloadForm.value.startMonth, (newStart) => {
+    if (!newStart || !downloadForm.value.endMonth) return
+    const start = parseISO(newStart + '-01')
+    const end = parseISO(downloadForm.value.endMonth + '-01')
+    if (end < start || end > addMonths(start, 1)) {
+        downloadForm.value.endMonth = newStart
+    }
 })
 
 const emailForm = ref({

@@ -58,6 +58,8 @@ return [
 
     'frontend_url' => env('APP_FRONTEND_URL', env('APP_URL', 'http://localhost')),
 
+    'demo_user_password' => env('DEMO_USER_PASSWORD', 'DemoPass@2026'),
+
     /*
     |--------------------------------------------------------------------------
     | Application Timezone

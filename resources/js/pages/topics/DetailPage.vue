@@ -2,11 +2,11 @@
     <div class="space-y-6">
         <!-- Header -->
         <div class="flex items-center justify-between mb-8">
-            <router-link to="/topics" class="text-primary-600 hover:text-primary-700 font-medium">
+            <router-link to="/app/topics" class="text-primary-600 hover:text-primary-700 font-medium">
                 ← Back to Topics
             </router-link>
             <div class="flex items-center gap-3">
-                <router-link :to="`/topics/${route.params.id}/edit`"
+                <router-link :to="`/app/topics/${route.params.id}/edit`"
                     class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
                     Edit
                 </router-link>
@@ -73,7 +73,7 @@
                         <div class="flex items-center justify-between">
                             <div>
                                 <p class="font-medium text-gray-900">{{ task.task_type_label ||
-                                    capitalizeFirst(task.task_type) }}</p>
+                    capitalizeFirst(task.task_type) }}</p>
                                 <p class="text-sm text-gray-600">Scheduled: {{ formatDate(task.scheduled_date) }}</p>
                             </div>
                             <span
@@ -98,7 +98,7 @@
                                 <p class="font-medium text-gray-900">{{ capitalizeFirst(log.practice_type) }}</p>
                                 <p class="text-sm text-gray-600">{{ log.details }}</p>
                                 <p class="text-xs text-gray-500 mt-1">{{ formatDate(log.practiced_on) }} • {{
-                                    log.duration_minutes }} min</p>
+                    log.duration_minutes }} min</p>
                             </div>
                         </div>
                     </div>

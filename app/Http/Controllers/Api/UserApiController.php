@@ -34,6 +34,7 @@ class UserApiController extends Controller
                 'id'                => IdHasher::encode($user->id),
                 'name'              => $user->name,
                 'email'             => $user->email,
+                'is_demo'           => (bool) $user->is_demo,
                 'created_at'        => $user->created_at?->format('Y-m-d H:i:s'),
                 'email_verified_at' => $user->email_verified_at?->format('Y-m-d H:i:s'),
                 'is_active'         => (bool) $user->is_active,

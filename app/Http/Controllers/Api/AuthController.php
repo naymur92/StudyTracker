@@ -30,6 +30,65 @@ class AuthController extends Controller
 {
     use CustomResponseTrait;
 
+    public function demoLogin(Request $request)
+    {
+        $demoUser = User::where('is_demo', true)->where('is_active', 1)->first();
+
+        if (! $demoUser) {
+            return $this->jsonResponse(
+                message: 'Demo account is currently unavailable. Please try again later.',
+                responseCode: HttpResponse::HTTP_SERVICE_UNAVAILABLE,
+            );
+        }
+
+        $clientId = $request->header('X-Client-Id');
+        $clientSecret = $request->header('X-Client-Secret');
+
+        if (! $clientId || ! $clientSecret) {
+            return $this->jsonResponse(
+                message: 'OAuth client credentials are required.',
+                responseCode: HttpResponse::HTTP_UNAUTHORIZED,
+            );
+        }
+
+        try {
+            $response = $this->requestOauthToken([
+                'grant_type'    => 'password',
+                'client_id'     => $clientId,
+                'client_secret' => $clientSecret,
+                'username'      => $demoUser->email,
+                'password'      => config('app.demo_user_password', 'DemoPass@2026'),
+                'scope'         => '',
+            ]);
+        } catch (ConnectionException $exception) {
+            report($exception);
+
+            return $this->jsonResponse(
+                message: 'Authentication service is unavailable. Please try again shortly.',
+                responseCode: HttpResponse::HTTP_SERVICE_UNAVAILABLE,
+            );
+        }
+
+        if ($response->successful()) {
+            LoginTracker::track($demoUser, true, 'demo');
+
+            return $this->jsonResponse(
+                flag: true,
+                message: 'Demo login successful.',
+                data: [
+                    'is_demo' => true,
+                ],
+                extra: $response->json(),
+                responseCode: HttpResponse::HTTP_OK,
+            );
+        }
+
+        return $this->jsonResponse(
+            message: 'Demo login failed. Please try again later.',
+            responseCode: HttpResponse::HTTP_SERVICE_UNAVAILABLE,
+        );
+    }
+
     public function register(RegisterApiRequest $request)
     {
         try {

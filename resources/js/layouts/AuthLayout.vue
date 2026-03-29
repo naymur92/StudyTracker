@@ -4,7 +4,10 @@
         <div class="w-full max-w-md">
             <!-- Logo -->
             <div class="text-center mb-8">
-                <h1 class="text-3xl font-bold text-primary-600 mb-2">StudyTracker</h1>
+                <a href="/" class="inline-block">
+                    <h1 class="text-3xl font-bold text-primary-600 mb-2 hover:text-primary-700 transition-colors">
+                        StudyTracker</h1>
+                </a>
                 <p class="text-gray-600">Learn smart, revise systematically</p>
             </div>
 

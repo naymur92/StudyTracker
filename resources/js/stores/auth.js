@@ -7,6 +7,7 @@ let refreshRequestPromise = null
 const AUTH_ENDPOINTS = [
     '/auth/token',
     '/auth/token/refresh',
+    '/auth/demo-login',
     '/auth/register',
     '/auth/resend-verification',
     '/auth/forgot-password/request',
@@ -38,17 +39,19 @@ export const useAuthStore = defineStore('auth', {
         refreshToken: null,
         tokenExpiresAt: null,
         user: null,
+        isDemo: false,
         clientId: null,
         clientSecret: null,
         interceptorInitialized: false,
     }),
 
     persist: {
-        paths: ['token', 'refreshToken', 'tokenExpiresAt', 'user', 'clientId', 'clientSecret'],
+        paths: ['token', 'refreshToken', 'tokenExpiresAt', 'user', 'isDemo', 'clientId', 'clientSecret'],
     },
 
     getters: {
         isAuthenticated: (state) => !!state.token,
+        isDemoUser: (state) => state.isDemo,
         getToken: (state) => state.token,
         getUser: (state) => state.user,
     },
@@ -246,6 +249,29 @@ export const useAuthStore = defineStore('auth', {
                 const tokenPayload = this.getTokenPayload(response.data)
                 this.setTokenState(tokenPayload)
                 this.user = this.getUserPayload(response.data)
+                this.isDemo = false
+
+                return response.data
+            } catch (error) {
+                throw error.response?.data || error
+            }
+        },
+
+        async demoLogin() {
+            try {
+                this.ensureClientCredentials()
+
+                const response = await api.post('/auth/demo-login', {}, {
+                    headers: {
+                        'X-Client-Id': this.clientId,
+                        'X-Client-Secret': this.clientSecret,
+                    },
+                })
+
+                const tokenPayload = this.getTokenPayload(response.data)
+                this.setTokenState(tokenPayload)
+                this.user = this.getUserPayload(response.data)
+                this.isDemo = true
 
                 return response.data
             } catch (error) {
@@ -329,6 +355,7 @@ export const useAuthStore = defineStore('auth', {
             this.refreshToken = null
             this.tokenExpiresAt = null
             this.user = null
+            this.isDemo = false
             setDefaultAuthorizationHeader(null)
         },
 

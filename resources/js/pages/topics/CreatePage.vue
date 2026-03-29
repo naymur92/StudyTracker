@@ -2,7 +2,7 @@
     <div class="space-y-6">
         <!-- Header -->
         <div class="mb-8">
-            <router-link to="/topics" class="text-primary-600 hover:text-primary-700 font-medium">
+            <router-link to="/app/topics" class="text-primary-600 hover:text-primary-700 font-medium">
                 ← Back to Topics
             </router-link>
             <h1 class="text-3xl font-bold text-gray-900 mt-4">Create New Topic</h1>
@@ -49,7 +49,8 @@
                 <!-- First Study Date -->
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-2">First Study Date *</label>
-                    <input v-model="form.first_study_date" type="date" required class="input-base" />
+                    <DatePicker v-model="form.first_study_date" placeholder="Select study date" :required="true"
+                        :min-date="today" />
                 </div>
 
                 <!-- Source Link -->
@@ -77,7 +78,7 @@
                         <span v-if="loading">Creating...</span>
                         <span v-else>Create Topic</span>
                     </button>
-                    <router-link to="/topics" class="btn-secondary">
+                    <router-link to="/app/topics" class="btn-secondary">
                         Cancel
                     </router-link>
                 </div>
@@ -93,6 +94,7 @@ import { useAuthStore } from '@/stores/auth'
 import { useTopicStore } from '@/stores/topics'
 import { useCategoryStore } from '@/stores/categories'
 import { format } from 'date-fns'
+import DatePicker from '@/components/DatePicker.vue'
 
 const router = useRouter()
 const authStore = useAuthStore()
@@ -101,6 +103,7 @@ const categoryStore = useCategoryStore()
 
 const loading = ref(false)
 const error = ref(null)
+const today = format(new Date(), 'yyyy-MM-dd')
 
 const form = reactive({
     category_id: '',

@@ -4,6 +4,7 @@ import { useAuthStore } from '@/stores/auth'
 // Layout components
 import MainLayout from '@/layouts/MainLayout.vue'
 import AuthLayout from '@/layouts/AuthLayout.vue'
+import PublicLayout from '@/layouts/PublicLayout.vue'
 
 // Pages
 import LoginPage from '@/pages/auth/LoginPage.vue'
@@ -11,6 +12,8 @@ import RegisterPage from '@/pages/auth/RegisterPage.vue'
 import VerifyEmailPage from '@/pages/auth/VerifyEmailPage.vue'
 import VerifyErrorPage from '@/pages/auth/VerifyErrorPage.vue'
 import ForgotPasswordPage from '@/pages/auth/ForgotPasswordPage.vue'
+import HomePage from '@/pages/HomePage.vue'
+import AboutPage from '@/pages/AboutPage.vue'
 import DashboardPage from '@/pages/DashboardPage.vue'
 import TopicsListPage from '@/pages/topics/ListPage.vue'
 import TopicDetailPage from '@/pages/topics/DetailPage.vue'
@@ -26,8 +29,34 @@ import RevisionTemplatesPage from '@/pages/settings/RevisionTemplatesPage.vue'
 import NotFoundPage from '@/pages/NotFoundPage.vue'
 
 const routes = [
+    // Public routes (accessible to everyone, but home redirects if authenticated)
     {
         path: '/',
+        component: PublicLayout,
+        meta: { requiresGuest: true },
+        children: [
+            {
+                path: '',
+                name: 'Home',
+                component: HomePage,
+            },
+        ],
+    },
+    {
+        path: '/about',
+        component: PublicLayout,
+        children: [
+            {
+                path: '',
+                name: 'About',
+                component: AboutPage,
+            },
+        ],
+    },
+
+    // Authenticated app routes
+    {
+        path: '/app',
         component: MainLayout,
         meta: { requiresAuth: true },
         children: [
@@ -144,8 +173,15 @@ const router = createRouter({
 router.beforeEach((to, from, next) => {
     const authStore = useAuthStore()
 
+    // Demo users clicking "Register" should be logged out first
+    if (to.name === 'Register' && authStore.isDemoUser) {
+        authStore.logout()
+        next()
+        return
+    }
+
     if (to.meta.requiresAuth && !authStore.isAuthenticated) {
-        next({ name: 'Login', query: { redirect: to.fullPath } })
+        next({ name: 'Home' })
     } else if (to.meta.requiresGuest && authStore.isAuthenticated) {
         next({ name: 'Dashboard' })
     } else {

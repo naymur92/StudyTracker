@@ -17,6 +17,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'api.token.headers' => \App\Http\Middleware\TokenApiHeadersCheck::class,
             'admin' => \App\Http\Middleware\AdminMiddleware::class,
             'log.activity' => \App\Http\Middleware\LogActivity::class,
+            'deny.demo' => \App\Http\Middleware\DemoUserRestriction::class,
         ]);
         $middleware->api(append: ['api.headers']);
         $middleware->web(append: ['log.activity']);

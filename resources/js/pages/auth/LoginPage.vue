@@ -51,10 +51,12 @@
         </form>
 
         <!-- Demo credentials -->
-        <div class="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-            <p class="text-xs text-blue-700 font-semibold">Demo Credentials</p>
-            <p class="text-xs text-blue-600 mt-1">Email: user@example.com</p>
-            <p class="text-xs text-blue-600">Password: Password@123</p>
+        <div class="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg text-center">
+            <p class="text-xs text-blue-700">Want to explore first?
+                <router-link to="/" class="font-semibold text-primary-600 hover:text-primary-700">
+                    Take the app tour
+                </router-link>
+            </p>
         </div>
 
         <!-- Link to register -->
@@ -94,8 +96,8 @@ const verificationMessage = computed(() => {
 const resetMessage = computed(() => route.query.message || 'Password reset successful. Please sign in with your new password.')
 
 const form = reactive({
-    email: 'user@example.com',
-    password: 'Password@123',
+    email: '',
+    password: '',
 })
 
 const handleLogin = async () => {

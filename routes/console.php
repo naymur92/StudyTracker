@@ -9,3 +9,4 @@ Artisan::command('inspire', function () {
 })->purpose('Display an inspiring quote');
 
 Schedule::command('study:mark-missed')->dailyAt('00:01');
+Schedule::command('demo:reset')->dailyAt('00:05');

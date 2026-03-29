@@ -68,7 +68,7 @@
                 <h2 class="text-xl font-bold text-gray-900 mb-3">Reschedule Task</h2>
                 <p class="text-sm text-gray-600 mb-4">{{ selectedTask?.title || selectedTask?.topic_title }}</p>
                 <form @submit.prevent="submitReschedule" class="space-y-4">
-                    <input v-model="rescheduleDate" type="date" class="input-base" required />
+                    <DatePicker v-model="rescheduleDate" placeholder="Pick new date" :required="true" />
                     <div v-if="actionError" class="text-sm text-red-700">{{ actionError }}</div>
                     <div class="flex gap-3">
                         <button type="submit" class="btn-primary flex-1">Save</button>
@@ -84,6 +84,7 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
+import DatePicker from '@/components/DatePicker.vue'
 import { useAuthStore } from '@/stores/auth'
 import { useTaskStore } from '@/stores/tasks'
 import { formatDate as fmtDate, addDays } from 'date-fns'

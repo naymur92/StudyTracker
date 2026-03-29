@@ -33,8 +33,7 @@ onMounted(async () => {
 
         if (!restored && route.meta.requiresAuth) {
             await router.replace({
-                name: 'Login',
-                query: { redirect: route.fullPath },
+                name: 'Home',
             })
         }
     } finally {

@@ -83,6 +83,14 @@
 
                 <!-- User section -->
                 <div class="p-4 border-t border-gray-200 bg-white mt-auto">
+                    <router-link to="/about" @click="sidebarOpen = false"
+                        class="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors mb-1">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <span>About</span>
+                    </router-link>
                     <button @click="handleLogout"
                         class="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -100,6 +108,7 @@
             <!-- Main content -->
             <main class="flex-1 overflow-y-auto">
                 <div class="px-4 md:px-8 py-4 md:py-8">
+                    <DemoBanner class="mb-4" />
                     <router-view />
                 </div>
             </main>
@@ -111,6 +120,7 @@
 import { ref } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
+import DemoBanner from '@/components/DemoBanner.vue'
 
 const router = useRouter()
 const route = useRoute()
@@ -118,15 +128,15 @@ const authStore = useAuthStore()
 const sidebarOpen = ref(false)
 
 const navigationItems = [
-    { name: 'Dashboard', label: 'Dashboard', to: '/', icon: 'IconDashboard' },
-    { name: 'DailyTasks', label: 'Daily Tasks', to: '/tasks', icon: 'IconTasks' },
-    { name: 'Topics', label: 'Topics', to: '/topics', icon: 'IconTopics' },
-    { name: 'Categories', label: 'Categories', to: '/categories', icon: 'IconCategories' },
-    { name: 'PracticeLogs', label: 'Practice Logs', to: '/practice-logs', icon: 'IconLogs' },
-    { name: 'Calendar', label: 'Calendar', to: '/calendar', icon: 'IconCalendar' },
-    { name: 'Reports', label: 'Reports', to: '/reports', icon: 'IconReports' },
-    { name: 'RevisionTemplates', label: 'Revision Templates', to: '/revision-templates', icon: 'IconSettings' },
-    { name: 'Profile', label: 'Profile', to: '/profile', icon: 'IconProfile' },
+    { name: 'Dashboard', label: 'Dashboard', to: '/app', icon: 'IconDashboard' },
+    { name: 'DailyTasks', label: 'Daily Tasks', to: '/app/tasks', icon: 'IconTasks' },
+    { name: 'Topics', label: 'Topics', to: '/app/topics', icon: 'IconTopics' },
+    { name: 'Categories', label: 'Categories', to: '/app/categories', icon: 'IconCategories' },
+    { name: 'PracticeLogs', label: 'Practice Logs', to: '/app/practice-logs', icon: 'IconLogs' },
+    { name: 'Calendar', label: 'Calendar', to: '/app/calendar', icon: 'IconCalendar' },
+    { name: 'Reports', label: 'Reports', to: '/app/reports', icon: 'IconReports' },
+    { name: 'RevisionTemplates', label: 'Revision Templates', to: '/app/revision-templates', icon: 'IconSettings' },
+    { name: 'Profile', label: 'Profile', to: '/app/profile', icon: 'IconProfile' },
 ]
 
 const isActive = (item) => {
@@ -135,7 +145,7 @@ const isActive = (item) => {
 
 const handleLogout = () => {
     authStore.logout()
-    router.push({ name: 'Login' })
+    router.push({ name: 'Home' })
 }
 </script>
 

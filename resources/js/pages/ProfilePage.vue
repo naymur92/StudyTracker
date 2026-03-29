@@ -15,7 +15,8 @@
                 <form @submit.prevent="handleUpdateProfile" class="space-y-4">
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
-                        <input v-model="profileForm.name" type="text" class="input-base" required />
+                        <input v-model="profileForm.name" type="text" class="input-base" required
+                            :disabled="authStore.isDemoUser" />
                         <span v-if="profileErrors.name" class="text-sm text-red-500">{{ profileErrors.name[0] }}</span>
                     </div>
                     <div>
@@ -30,18 +31,22 @@
                     </div>
 
                     <div class="pt-2">
-                        <button type="submit" :disabled="updatingProfile"
+                        <button type="submit" :disabled="updatingProfile || authStore.isDemoUser"
                             class="px-5 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed">
                             <span v-if="updatingProfile">Saving...</span>
                             <span v-else>Update Profile</span>
                         </button>
+                        <span v-if="authStore.isDemoUser" class="ml-3 text-xs text-amber-600">Demo accounts cannot
+                            update profile.</span>
                     </div>
                 </form>
 
-                <div v-if="profileMessage" class="mt-4 p-3 bg-green-50 border border-green-200 rounded-lg text-sm text-green-700">
+                <div v-if="profileMessage"
+                    class="mt-4 p-3 bg-green-50 border border-green-200 rounded-lg text-sm text-green-700">
                     {{ profileMessage }}
                 </div>
-                <div v-if="profileError" class="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">
+                <div v-if="profileError"
+                    class="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">
                     {{ profileError }}
                 </div>
             </div>
@@ -66,26 +71,27 @@
             </div>
 
             <!-- Change Password -->
-            <div class="border-b border-gray-200 pb-6">
+            <div v-if="!authStore.isDemoUser" class="border-b border-gray-200 pb-6">
                 <h2 class="text-xl font-bold text-gray-900 mb-4">Change Password</h2>
                 <form @submit.prevent="handleChangePassword" class="space-y-4">
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Current Password</label>
                         <input v-model="passwordForm.current_password" type="password" class="input-base" required />
                         <span v-if="passwordErrors.current_password" class="text-sm text-red-500">{{
-                            passwordErrors.current_password[0] }}</span>
+            passwordErrors.current_password[0] }}</span>
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">New Password</label>
                         <input v-model="passwordForm.new_password" type="password" class="input-base" required />
                         <span v-if="passwordErrors.new_password" class="text-sm text-red-500">{{
-                            passwordErrors.new_password[0] }}</span>
+            passwordErrors.new_password[0] }}</span>
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Confirm New Password</label>
-                        <input v-model="passwordForm.new_password_confirmation" type="password" class="input-base" required />
+                        <input v-model="passwordForm.new_password_confirmation" type="password" class="input-base"
+                            required />
                         <span v-if="passwordErrors.new_password_confirmation" class="text-sm text-red-500">{{
-                            passwordErrors.new_password_confirmation[0] }}</span>
+            passwordErrors.new_password_confirmation[0] }}</span>
                     </div>
 
                     <button type="submit" :disabled="changingPassword"
@@ -95,10 +101,12 @@
                     </button>
                 </form>
 
-                <div v-if="passwordMessage" class="mt-4 p-3 bg-green-50 border border-green-200 rounded-lg text-sm text-green-700">
+                <div v-if="passwordMessage"
+                    class="mt-4 p-3 bg-green-50 border border-green-200 rounded-lg text-sm text-green-700">
                     {{ passwordMessage }}
                 </div>
-                <div v-if="passwordError" class="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">
+                <div v-if="passwordError"
+                    class="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">
                     {{ passwordError }}
                 </div>
             </div>
@@ -156,7 +164,7 @@ const formatDate = (date) => {
 
 const logout = () => {
     authStore.logout()
-    router.push({ name: 'Login' })
+    router.push({ name: 'Home' })
 }
 
 const handleUpdateProfile = async () => {

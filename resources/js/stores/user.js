@@ -1,4 +1,5 @@
 import { defineStore } from 'pinia'
+import { useAuthStore } from './auth'
 
 export const useUserStore = defineStore('user', {
     state: () => ({
@@ -27,6 +28,10 @@ export const useUserStore = defineStore('user', {
             try {
                 const response = await api.get('/user')
                 this.profile = response.data.data
+
+                const authStore = useAuthStore()
+                authStore.isDemo = !!this.profile?.is_demo
+
                 this.setError(null)
             } catch (error) {
                 this.setError(error.response?.data?.message || 'Failed to fetch profile')

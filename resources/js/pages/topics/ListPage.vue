@@ -6,7 +6,7 @@
                 <h1 class="text-3xl font-bold text-gray-900">Topics</h1>
                 <p class="text-gray-600">Manage your study topics</p>
             </div>
-            <router-link to="/topics/create" class="btn-primary">
+            <router-link to="/app/topics/create" class="btn-primary">
                 + New Topic
             </router-link>
         </div>
@@ -53,10 +53,11 @@
                     <span>{{ topic.task_count || 0 }} tasks</span>
                 </div>
                 <div class="mt-4 pt-4 border-t border-gray-100 flex items-center gap-3">
-                    <router-link :to="`/topics/${topic.id}`" class="text-sm text-primary-600 hover:text-primary-700">
+                    <router-link :to="`/app/topics/${topic.id}`"
+                        class="text-sm text-primary-600 hover:text-primary-700">
                         View
                     </router-link>
-                    <router-link :to="`/topics/${topic.id}/edit`" class="text-sm text-blue-600 hover:text-blue-700">
+                    <router-link :to="`/app/topics/${topic.id}/edit`" class="text-sm text-blue-600 hover:text-blue-700">
                         Edit
                     </router-link>
                 </div>
@@ -71,7 +72,7 @@
             </svg>
             <h3 class="text-lg font-semibold text-gray-900 mb-2">No topics yet</h3>
             <p class="text-gray-600 mb-6">Create your first topic to get started</p>
-            <router-link to="/topics/create" class="btn-primary">Create Topic</router-link>
+            <router-link to="/app/topics/create" class="btn-primary">Create Topic</router-link>
         </div>
 
         <!-- Pagination -->
