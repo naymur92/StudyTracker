@@ -1,8 +1,7 @@
-name: CI/CD - Test, Build, Deploy to EC2
+name: CI/CD - Test, Build, Deploy to EC2 (Native)
 
 permissions:
   contents: read
-  packages: write
 
 on:
   pull_request:
@@ -37,7 +36,7 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v4
 
       - name: Setup PHP 8.3
         uses: shivammathur/setup-php@v2
@@ -48,13 +47,13 @@ jobs:
           tools: composer:v2
 
       - name: Setup Node.js 22
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
 
       - name: Cache Composer dependencies
-        uses: actions/cache@v5
+        uses: actions/cache@v4
         with:
           path: vendor
           key: composer-${{ runner.os }}-${{ hashFiles('composer.lock') }}
@@ -86,13 +85,8 @@ jobs:
           php artisan migrate --force
           php artisan test
 
-      - name: Validate Docker compose file
-        run: |
-          docker compose config --quiet
-          docker compose --profile local-infra --profile workers config --quiet
-
   deploy:
-    name: CD (Build image + Deploy to EC2)
+    name: CD (Deploy to EC2 via SSH)
     runs-on: ubuntu-latest
     needs: ci
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
@@ -100,42 +94,9 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v4
 
-      - name: Compute image tags
-        id: image
-        run: |
-          OWNER_LC=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
-          echo "name=ghcr.io/${OWNER_LC}/studytracker" >> "$GITHUB_OUTPUT"
-          echo "tag=sha-${GITHUB_SHA}" >> "$GITHUB_OUTPUT"
-
-      - name: Setup Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Login to GHCR
-        uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Build and push app image
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          file: ./Dockerfile
-          target: app
-          push: true
-          tags: |
-            ${{ steps.image.outputs.name }}:${{ steps.image.outputs.tag }}
-            ${{ steps.image.outputs.name }}:latest
-          build-args: |
-            VITE_API_URL=${{ secrets.VITE_API_URL }}
-          secrets: |
-            VITE_OAUTH_CLIENT_ID=${{ secrets.VITE_OAUTH_CLIENT_ID }}
-            VITE_OAUTH_CLIENT_SECRET=${{ secrets.VITE_OAUTH_CLIENT_SECRET }}
-
-      - name: Deploy over SSH
+      - name: Deploy over SSH (Native EC2)
         uses: appleboy/ssh-action@v1.2.0
         with:
           host: ${{ secrets.EC2_HOST }}
@@ -148,65 +109,53 @@ jobs:
 
             APP_DIR="${{ secrets.EC2_APP_PATH }}"
 
+            # Check if repository exists on server
             if [ ! -d "$APP_DIR/.git" ]; then
               echo "Repository not found at $APP_DIR"
+              echo "Run initial setup manually first:"
+              echo "  sudo bash deploy/ec2-setup.sh"
+              echo "  sudo bash deploy/ec2-configure.sh"
               exit 1
             fi
 
+            echo "=========================================="
+            echo " Deploying Study Tracker"
+            echo " Directory: $APP_DIR"
+            echo " Branch: main"
+            echo " Commit: ${{ github.sha }}"
+            echo "=========================================="
+
             cd "$APP_DIR"
+
+            # Pull latest code
+            echo "[1/2] Pulling latest changes..."
             git fetch origin main
             git checkout main
             git pull --ff-only origin main
 
-            # Use sudo for docker only when the SSH user lacks direct socket access.
-            if docker info >/dev/null 2>&1; then
-              DOCKER="docker"
-            elif sudo -n docker info >/dev/null 2>&1; then
-              DOCKER="sudo docker"
-            else
-              echo "Docker access failed for this SSH user."
-              echo "Fix on EC2: sudo usermod -aG docker $USER && newgrp docker"
-              exit 1
-            fi
+            # Run deployment script
+            echo "[2/2] Running deployment script..."
+            bash deploy/deploy.sh
 
-            # Deploy with the base compose file only. This avoids loading
-            # docker-compose.override.yml (dev-only services such as vite).
-            COMPOSE="$DOCKER compose -f docker-compose.yml"
+            echo ""
+            echo "=========================================="
+            echo " Deployment complete!"
+            echo "=========================================="
 
-            # Optional: login for private GHCR images.
-            if [ -n "${{ secrets.GHCR_USERNAME }}" ] && [ -n "${{ secrets.GHCR_PAT }}" ]; then
-              echo "${{ secrets.GHCR_PAT }}" | $DOCKER login ghcr.io -u "${{ secrets.GHCR_USERNAME }}" --password-stdin
-            fi
-
-            # App images are built in GitHub Actions and pulled on EC2.
-            export APP_IMAGE="${{ steps.image.outputs.name }}"
-            export APP_IMAGE_TAG="${{ steps.image.outputs.tag }}"
-
-            # Pull images and start app+nginx with local db.
-            $COMPOSE --profile local-infra pull study_tracker_app nginx db
-
-            # Start containers. Entrypoint waits for DB readiness internally.
-            $COMPOSE --profile local-infra up -d --no-build --remove-orphans
-
-            # Give DB time to pass healthcheck before running migrations.
-            echo "Waiting for database to become healthy..."
-            sleep 30
-
-            $COMPOSE ps
-
-            # Run migrations.
-            $COMPOSE exec -T study_tracker_app php artisan migrate --force
-
-            $DOCKER image prune -f
+            # Show system resources
+            echo ""
+            echo "System Resources:"
+            free -h
+            echo ""
+            echo "Disk Usage:"
+            df -h /var/www
 
             echo "Deploy finished: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
 
 # Required GitHub repository secrets:
 # EC2_HOST            -> public IP or hostname of EC2
-# EC2_USERNAME        -> SSH user (ubuntu/ec2-user)
+# EC2_USERNAME        -> SSH user (ubuntu)
 # EC2_SSH_PRIVATE_KEY -> private key content (PEM)
-# EC2_APP_PATH        -> absolute app path on EC2 (example: /var/www/StudyTracker)
+# EC2_APP_PATH        -> absolute app path on EC2 (e.g. /var/www/study-tracker)
 # Optional:
 # EC2_SSH_PORT        -> defaults to 22
-# GHCR_USERNAME       -> required only when GHCR package is private
-# GHCR_PAT            -> required only when GHCR package is private (read:packages)
