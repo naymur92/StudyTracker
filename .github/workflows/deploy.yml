@@ -138,7 +138,7 @@ jobs:
 
             # Run deployment script
             echo "[2/2] Running deployment script..."
-            bash deploy/deploy.sh
+            sudo bash deploy/deploy.sh
 
             echo ""
             echo "=========================================="

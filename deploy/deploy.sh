@@ -84,9 +84,20 @@ else
 fi
 # Set key permissions immediately after generation (script runs as root;
 # keys are readable only by www-data, never world-readable).
-chown www-data:www-data storage/oauth-private.key storage/oauth-public.key 2>/dev/null || true
-chmod 600 storage/oauth-private.key 2>/dev/null || true   # private key: owner read/write only
-chmod 640 storage/oauth-public.key  2>/dev/null || true   # public key:  owner rw, group r
+if [ -f storage/oauth-private.key ] && [ -f storage/oauth-public.key ]; then
+    if [ "$(id -u)" -eq 0 ]; then
+        chown www-data:www-data storage/oauth-private.key storage/oauth-public.key
+        chmod 600 storage/oauth-private.key
+        chmod 640 storage/oauth-public.key
+    elif command -v sudo >/dev/null 2>&1; then
+        sudo chown www-data:www-data storage/oauth-private.key storage/oauth-public.key
+        sudo chmod 600 storage/oauth-private.key
+        sudo chmod 640 storage/oauth-public.key
+    else
+        echo "ERROR: Cannot set OAuth key owner/perms (need root or sudo)."
+        exit 1
+    fi
+fi
 
 # ── 7. Permissions ───────────────────────────
 echo "[7/10] Setting file permissions..."
@@ -109,8 +120,30 @@ find public/uploads -type f -exec chmod 664 {} \; 2>/dev/null || true
 chmod +x artisan
 
 # Key files: set last — nothing above can override them
-chmod 600 storage/oauth-private.key  # private key: owner read/write only
-chmod 640 storage/oauth-public.key   # public key:  owner rw, group r
+if [ "$(id -u)" -eq 0 ]; then
+    chown www-data:www-data storage/oauth-private.key storage/oauth-public.key
+    chmod 600 storage/oauth-private.key
+    chmod 640 storage/oauth-public.key
+elif command -v sudo >/dev/null 2>&1; then
+    sudo chown www-data:www-data storage/oauth-private.key storage/oauth-public.key
+    sudo chmod 600 storage/oauth-private.key
+    sudo chmod 640 storage/oauth-public.key
+else
+    echo "ERROR: Cannot enforce OAuth key owner/perms at end of deploy (need root or sudo)."
+    exit 1
+fi
+
+# Verification: app user must be able to read keys
+if command -v sudo >/dev/null 2>&1; then
+    sudo -u www-data test -r storage/oauth-private.key || {
+        echo "ERROR: www-data cannot read storage/oauth-private.key"
+        exit 1
+    }
+    sudo -u www-data test -r storage/oauth-public.key || {
+        echo "ERROR: www-data cannot read storage/oauth-public.key"
+        exit 1
+    }
+fi
 
 # ── 8. Database ──────────────────────────────
 echo "[8/10] Running migrations..."
