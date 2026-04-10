@@ -90,24 +90,21 @@ chmod 640 storage/oauth-public.key  2>/dev/null || true   # public key:  owner r
 
 # ── 7. Permissions ───────────────────────────
 echo "[7/10] Setting file permissions..."
-chown -R www-data:www-data "$PROJECT_DIR"
+# Change ownership only for runtime-writable paths.
+# On shared servers, SSH deploy users often cannot chown the whole repo tree.
+chown -R www-data:www-data storage bootstrap/cache public/uploads 2>/dev/null || true
 
-# Directories: owner+group rwx, other rx
-find "$PROJECT_DIR" -type d -exec chmod 755 {} \;
 # Writable directories keep group-write (storage, cache, uploads)
 find storage bootstrap/cache public/uploads -type d -exec chmod 775 {} \;
 
-# Files: never use chmod -R on storage — that would make key files executable/world-readable.
-# Exclude oauth keys from the broad pass so they cannot be accidentally overwritten.
-find "$PROJECT_DIR" -type f \
-    ! -name 'oauth-private.key' \
-    ! -name 'oauth-public.key' \
-    -exec chmod 644 {} \;
 # Writable files under storage (logs, sessions, cache files): group can write
 find storage -type f \
     ! -name 'oauth-private.key' \
     ! -name 'oauth-public.key' \
     -exec chmod 664 {} \;
+
+# Other upload/public files can be readable by all.
+find public/uploads -type f -exec chmod 664 {} \; 2>/dev/null || true
 
 chmod +x artisan
 
