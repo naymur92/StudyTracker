@@ -5,7 +5,7 @@
 # Run ONCE per project after ec2-setup.sh:
 #   sudo bash deploy/ec2-configure.sh
 # Or with explicit arguments:
-#   sudo bash deploy/ec2-configure.sh study-tracker yourdomain.com study_tracker st_user YOUR_DB_PASS
+#   sudo bash deploy/ec2-configure.sh study-tracker _ study_tracker st_user YOUR_DB_PASS 8081
 # ============================================================
 set -euo pipefail
 
@@ -14,10 +14,11 @@ set -euo pipefail
 # ╚════════════════════════════════════════════╝
 
 PROJECT_NAME="${1:-study-tracker}"
-DOMAIN="${2:-yourdomain.com}"
+DOMAIN="${2:-_}"
 DB_NAME="${3:-study_tracker}"
 DB_USER="${4:-st_user}"
 DB_PASS="${5:-CHANGE_ME_STRONG_PASSWORD}"
+APP_PORT="${6:-80}"
 
 # If DB_PASS is still placeholder, prompt for it
 if [ "$DB_PASS" = "CHANGE_ME_STRONG_PASSWORD" ]; then
@@ -28,7 +29,8 @@ fi
 
 echo "=========================================="
 echo " Configuring services for: ${PROJECT_NAME}"
-echo " Domain: ${DOMAIN}"
+echo " Host match: ${DOMAIN}"
+echo " Listen port: ${APP_PORT}"
 echo "=========================================="
 
 # ── 1. MySQL Tuning (low memory for t2.micro) ─
@@ -121,7 +123,7 @@ systemctl restart php8.3-fpm
 echo "[4/6] Creating Nginx vhost..."
 cat > "/etc/nginx/sites-available/${PROJECT_NAME}" << NGINX_EOF
 server {
-    listen 80;
+    listen ${APP_PORT};
     server_name ${DOMAIN};
 
     root /var/www/${PROJECT_NAME}/public;
@@ -222,5 +224,9 @@ echo ""
 echo " Next steps:"
 echo "   1. sudo bash deploy/deploy.sh"
 echo "   2. sudo -u www-data bash deploy/first-deploy.sh  (first time only)"
-echo "   3. sudo certbot --nginx -d ${DOMAIN}  (SSL)"
+if [ "${DOMAIN}" != "_" ]; then
+    echo "   3. sudo certbot --nginx -d ${DOMAIN}  (SSL)"
+else
+    echo "   3. Domain not set yet, skip SSL for now"
+fi
 echo "=========================================="
