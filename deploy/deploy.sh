@@ -75,6 +75,11 @@ mkdir -p storage/logs
 mkdir -p bootstrap/cache
 mkdir -p public/uploads
 
+# App root must be traversable by the PHP-FPM user so Passport can read keys
+# from storage/oauth-*.key through the full path.
+chmod 755 "$PROJECT_DIR"
+chmod 755 storage bootstrap public
+
 # ── 6. Passport keys ─────────────────────────
 if [ ! -f storage/oauth-private.key ] || [ ! -f storage/oauth-public.key ]; then
     echo "[6/10] Generating Passport keys..."

@@ -147,6 +147,11 @@ server {
         try_files \$uri \$uri/ /index.php?\$query_string;
     }
 
+    # Let Laravel handle admin system log URLs containing .log
+    location ^~ /admin/system-logs/ {
+        try_files \$uri \$uri/ /index.php?\$query_string;
+    }
+
     # PHP-FPM
     location ~ \.php\$ {
         fastcgi_pass unix:/run/php/php8.4-fpm.sock;
