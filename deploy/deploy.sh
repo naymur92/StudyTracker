@@ -10,13 +10,22 @@ set -euo pipefail
 # CI/CD mode - provides better logging for GitHub Actions
 CI_MODE="${CI:-false}"
 
-PROJECT_NAME="study-tracker"
-PROJECT_DIR="/var/www/${PROJECT_NAME}"
-REPO_URL="${1:-https://github.com/naymur92/StudyTracker.git}"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_DIR="${PROJECT_DIR:-$(cd "${SCRIPT_DIR}/.." && pwd)}"
+PROJECT_NAME="${PROJECT_NAME:-$(basename "$PROJECT_DIR")}"
+
+# Fallback repo URL for first-time clone; prefer existing origin if available.
+if git -C "$PROJECT_DIR" remote get-url origin >/dev/null 2>&1; then
+    DEFAULT_REPO_URL="$(git -C "$PROJECT_DIR" remote get-url origin)"
+else
+    DEFAULT_REPO_URL="https://github.com/naymur92/StudyTracker.git"
+fi
+REPO_URL="${1:-$DEFAULT_REPO_URL}"
 BRANCH="${2:-main}"
 
 echo "=========================================="
 echo " Deploying: ${PROJECT_NAME}"
+echo " Directory: ${PROJECT_DIR}"
 echo "=========================================="
 
 echo "Using PHP: $(php -v | head -n 1)"
@@ -73,16 +82,38 @@ if [ ! -f storage/oauth-private.key ] || [ ! -f storage/oauth-public.key ]; then
 else
     echo "[6/10] Passport keys exist, skipping."
 fi
+# Set key permissions immediately after generation (script runs as root;
+# keys are readable only by www-data, never world-readable).
+chown www-data:www-data storage/oauth-private.key storage/oauth-public.key 2>/dev/null || true
+chmod 600 storage/oauth-private.key 2>/dev/null || true   # private key: owner read/write only
+chmod 640 storage/oauth-public.key  2>/dev/null || true   # public key:  owner rw, group r
 
 # ── 7. Permissions ───────────────────────────
 echo "[7/10] Setting file permissions..."
 chown -R www-data:www-data "$PROJECT_DIR"
+
+# Directories: owner+group rwx, other rx
 find "$PROJECT_DIR" -type d -exec chmod 755 {} \;
-find "$PROJECT_DIR" -type f -exec chmod 644 {} \;
-chmod -R 775 storage bootstrap/cache public/uploads
+# Writable directories keep group-write (storage, cache, uploads)
+find storage bootstrap/cache public/uploads -type d -exec chmod 775 {} \;
+
+# Files: never use chmod -R on storage — that would make key files executable/world-readable.
+# Exclude oauth keys from the broad pass so they cannot be accidentally overwritten.
+find "$PROJECT_DIR" -type f \
+    ! -name 'oauth-private.key' \
+    ! -name 'oauth-public.key' \
+    -exec chmod 644 {} \;
+# Writable files under storage (logs, sessions, cache files): group can write
+find storage -type f \
+    ! -name 'oauth-private.key' \
+    ! -name 'oauth-public.key' \
+    -exec chmod 664 {} \;
+
 chmod +x artisan
-[ -f storage/oauth-private.key ] && chmod 600 storage/oauth-private.key
-[ -f storage/oauth-public.key ] && chmod 600 storage/oauth-public.key
+
+# Key files: set last — nothing above can override them
+chmod 600 storage/oauth-private.key  # private key: owner read/write only
+chmod 640 storage/oauth-public.key   # public key:  owner rw, group r
 
 # ── 8. Database ──────────────────────────────
 echo "[8/10] Running migrations..."
