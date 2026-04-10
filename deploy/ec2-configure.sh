@@ -194,6 +194,12 @@ nginx -t && systemctl reload nginx
 
 # ── 5. Supervisor (Queue Worker) ─────────────
 echo "[5/6] Creating Supervisor config..."
+
+# Supervisor validates stdout_logfile path on reread.
+# Ensure app log directory exists even before first deploy.
+mkdir -p "/var/www/${PROJECT_NAME}/storage/logs"
+chown -R www-data:www-data "/var/www/${PROJECT_NAME}/storage" 2>/dev/null || true
+
 cat > "/etc/supervisor/conf.d/${PROJECT_NAME}-worker.conf" << EOF
 [program:${PROJECT_NAME}-worker]
 process_name=%(program_name)s_%(process_num)02d
