@@ -81,11 +81,11 @@ else
 fi
 
 # ── 3. PHP-FPM Tuning ────────────────────────
-echo "[3/6] Tuning PHP 8.3-FPM..."
+echo "[3/6] Tuning PHP 8.4-FPM..."
 
 # Only write PHP ini once (shared across all projects on this PHP version)
-if [ ! -f /etc/php/8.3/fpm/conf.d/99-production.ini ]; then
-    cat > /etc/php/8.3/fpm/conf.d/99-production.ini << 'EOF'
+if [ ! -f /etc/php/8.4/fpm/conf.d/99-production.ini ]; then
+    cat > /etc/php/8.4/fpm/conf.d/99-production.ini << 'EOF'
 ; Production PHP settings
 memory_limit         = 128M
 max_execution_time   = 300
@@ -114,10 +114,10 @@ EOF
 fi
 
 # PHP-FPM pool: ondemand saves RAM when idle
-sed -i 's/^pm = dynamic/pm = ondemand/' /etc/php/8.3/fpm/pool.d/www.conf
-sed -i 's/^pm.max_children = .*/pm.max_children = 5/' /etc/php/8.3/fpm/pool.d/www.conf
+sed -i 's/^pm = dynamic/pm = ondemand/' /etc/php/8.4/fpm/pool.d/www.conf
+sed -i 's/^pm.max_children = .*/pm.max_children = 5/' /etc/php/8.4/fpm/pool.d/www.conf
 
-systemctl restart php8.3-fpm
+systemctl restart php8.4-fpm
 
 # ── 4. Nginx Vhost ───────────────────────────
 echo "[4/6] Creating Nginx vhost..."
@@ -149,7 +149,7 @@ server {
 
     # PHP-FPM
     location ~ \.php\$ {
-        fastcgi_pass unix:/run/php/php8.3-fpm.sock;
+        fastcgi_pass unix:/run/php/php8.4-fpm.sock;
         fastcgi_index index.php;
         fastcgi_param SCRIPT_FILENAME \$realpath_root\$fastcgi_script_name;
         include fastcgi_params;

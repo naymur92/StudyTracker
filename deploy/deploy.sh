@@ -19,6 +19,8 @@ echo "=========================================="
 echo " Deploying: ${PROJECT_NAME}"
 echo "=========================================="
 
+echo "Using PHP: $(php -v | head -n 1)"
+
 # ── 1. Get code ──────────────────────────────
 if [ ! -d "$PROJECT_DIR/.git" ]; then
     echo "[1/10] Cloning repository..."
@@ -34,6 +36,7 @@ cd "$PROJECT_DIR"
 
 # ── 2. Install PHP dependencies ──────────────
 echo "[2/10] Installing Composer dependencies..."
+export COMPOSER_ALLOW_SUPERUSER=1
 composer install --no-dev --optimize-autoloader --no-interaction
 
 # ── 3. Build frontend ────────────────────────

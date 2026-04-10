@@ -30,25 +30,25 @@ fi
 echo "[2/8] Updating system packages..."
 apt-get update && apt-get upgrade -y
 
-# ── 3. PHP 8.3 + Extensions ──────────────────
-echo "[3/8] Installing PHP 8.3..."
+# ── 3. PHP 8.4 + Extensions ──────────────────
+echo "[3/8] Installing PHP 8.4..."
 apt-get install -y software-properties-common
 add-apt-repository -y ppa:ondrej/php
 apt-get update
 apt-get install -y \
-    php8.3-fpm \
-    php8.3-cli \
-    php8.3-mysql \
-    php8.3-mbstring \
-    php8.3-xml \
-    php8.3-bcmath \
-    php8.3-gd \
-    php8.3-zip \
-    php8.3-intl \
-    php8.3-opcache \
-    php8.3-redis \
-    php8.3-curl \
-    php8.3-readline
+    php8.4-fpm \
+    php8.4-cli \
+    php8.4-mysql \
+    php8.4-mbstring \
+    php8.4-xml \
+    php8.4-bcmath \
+    php8.4-gd \
+    php8.4-zip \
+    php8.4-intl \
+    php8.4-opcache \
+    php8.4-redis \
+    php8.4-curl \
+    php8.4-readline
 
 # ── 4. Nginx ─────────────────────────────────
 echo "[4/8] Installing Nginx..."
@@ -84,7 +84,7 @@ else
 fi
 
 # ── Enable & start services ──────────────────
-systemctl enable --now nginx mysql redis-server php8.3-fpm supervisor
+systemctl enable --now nginx mysql redis-server php8.4-fpm supervisor
 
 # ── Create web root ──────────────────────────
 mkdir -p /var/www
