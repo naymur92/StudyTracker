@@ -1,190 +1,314 @@
-# StudyTracker CI/CD to EC2 (GitHub Actions)
+# StudyTracker CI/CD to EC2 (GitHub Actions + Native Deployment)
 
-This guide explains how to use the workflow in `.github/workflows/deploy.yml`.
+This guide explains how to set up and use the workflow in `.github/workflows/deploy.yml` for continuous deployment to EC2.
 
-## What the pipeline does
+## What the Pipeline Does
 
-1. Runs CI on pull requests and pushes to `main`:
+**CI (Continuous Integration)** — Runs on all PRs and pushes to `main`:
+- Sets up PHP 8.4 + Node.js 22 + MySQL 8.0
+- Installs PHP/Node dependencies
+- Builds frontend assets (`npm run build`)
+- Runs Laravel migrations + tests
+- Validates the build succeeds
 
-- install PHP/Node dependencies
-- run Laravel migrations + tests
-- build frontend assets
-- validate Docker Compose syntax
+**CD (Continuous Deployment)** — Runs automatically after CI passes on `main` branch:
+- SSHes into EC2 via GitHub Actions
+- Pulls latest `main` branch
+- Executes `deploy/deploy.sh` (10-step native deployment)
+- No Docker image build, no GHCR push (native PHP/npm on EC2)
 
-2. Runs CD only on push to `main` (after CI passes):
+The deployment is **lightweight on EC2**: all heavy building (npm, composer) happens in GitHub Actions CI or during the deploy.sh pull-and-build step. This works well for t2.micro instances with limited RAM when you have external DB/Redis.
 
-- build Docker image in GitHub Actions
-- push image to GHCR
-- SSH into EC2
-- pull latest `main`
-- run `docker compose pull study_tracker_app nginx`
-- run `docker compose up -d --no-build study_tracker_app nginx`
-- run Laravel migration only
+## 1) Prepare EC2 Once
 
-For micro EC2 instances, deployment starts only `study_tracker_app` and `nginx`.
+### Step 1a: Run system setup script (first time only)
 
-## 1) Prepare EC2 once
-
-Run on your EC2 instance:
+SSH into your EC2 instance and run:
 
 ```bash
-sudo apt update && sudo apt install -y git curl
-curl -fsSL https://get.docker.com | sh
-sudo usermod -aG docker $USER
-newgrp docker
-sudo apt install -y docker-compose-plugin
-```
-
-Clone your app on EC2 (example path):
-
-```bash
+# Clone the repo first (if not already cloned)
 sudo mkdir -p /var/www && sudo chown -R $USER:$USER /var/www
 cd /var/www
 git clone <your-repo-url> StudyTracker
 cd StudyTracker
+
+# Run one-time EC2 system setup (installs PHP 8.4, Nginx, MySQL, Redis, Composer, Node.js, Supervisor)
+sudo bash deploy/ec2-setup.sh
 ```
 
-Create production `.env` in EC2 project path and set at least:
+This installs:
+- PHP 8.4 with required extensions (pdo, pdo_mysql, mbstring, bcmath, gd, zip, intl, redis, etc.)
+- Nginx (web server)
+- MySQL 8.0 (database)
+- Redis (cache)
+- Supervisor (process management for queue workers)
+- Git, curl, Composer, Node.js 20
+- 2GB swap (critical for t2.micro with only 1GB RAM)
+
+### Step 1b: Configure services (one time, or when infrastructure changes)
+
+Run the configuration script:
+
+```bash
+sudo bash deploy/ec2-configure.sh
+```
+
+This optimizes:
+- MySQL for low-RAM servers (innodb pools, max connections)
+- Redis memory limits (64MB max, LRU policy)
+- PHP-FPM memory and timeout settings
+- Nginx configuration
+- Supervisor process management
+- Cron jobs for Laravel scheduler
+
+### Step 1c: Create production `.env`
+
+Create `.env` in your EC2 project directory with production settings:
+
+```bash
+cp .env.example .env
+nano .env  # or vim .env
+```
+
+Minimum required settings:
 
 ```env
 APP_ENV=production
 APP_DEBUG=false
+APP_KEY=  # Will auto-generate on first deploy if empty
 APP_URL=http://<EC2_PUBLIC_IP>:8080
-VITE_API_URL=http://<EC2_PUBLIC_IP>:8080/api
-APP_HTTP_PORT=8080
-APP_HTTPS_PORT=8443
-```
 
-For small servers, prefer managed/external services and set:
-
-```env
-DB_HOST=<external-db-host>
+DB_HOST=<your-db-host>           # Use external DB or 127.0.0.1 for local MySQL
 DB_PORT=3306
-REDIS_HOST=<external-redis-host-or-disable-usage>
+DB_DATABASE=study_tracker
+DB_USERNAME=st_user
+DB_PASSWORD=<strong-password>
+
+REDIS_HOST=<your-redis-host>     # Use external Redis or 127.0.0.1 for local Redis
 REDIS_PORT=6379
+
+# Frontend API base URL (used at build time)
+VITE_API_URL=http://<EC2_PUBLIC_IP>:8080/api
 ```
 
-## 2) Add GitHub repository secrets
+**For micro instances with limited resources:**  
+Prefer external managed services (RDS for MySQL, ElastiCache for Redis) to avoid running all services on one small server.
 
-Go to GitHub repository -> Settings -> Secrets and variables -> Actions -> Secrets.
+**Note:** `.env` is not included in `docker-compose.yml` images. You manage it directly on EC2 and it persists across deployments.
 
-Create these secrets:
+## 2) Add GitHub Repository Secrets
 
-- `EC2_HOST`: EC2 public IP or hostname
-- `EC2_USERNAME`: SSH user (`ubuntu` / `ec2-user`)
-- `EC2_SSH_PRIVATE_KEY`: contents of your `.pem` key
-- `EC2_APP_PATH`: absolute app path on EC2 (example: `/var/www/StudyTracker`)
-- `EC2_SSH_PORT` (optional): SSH port, default `22`
-- `VITE_API_URL`: full API base URL baked into the JS bundle at build time (e.g. `http://<EC2_PUBLIC_IP>:8080/api`)
-- `VITE_OAUTH_CLIENT_ID`: Laravel Passport password-grant client ID
-- `VITE_OAUTH_CLIENT_SECRET`: Laravel Passport password-grant client secret
-- `GHCR_USERNAME` (optional): only needed when package is private
-- `GHCR_PAT` (optional): token with `read:packages` for private GHCR pull
+Go to GitHub repository → **Settings** → **Secrets and variables** → **Actions** → **Secrets and variables**.
 
-> **Why VITE\_\* secrets?** Vite replaces `import.meta.env.VITE_*` at **build time**.
-> Since `.env` is excluded from the Docker image (`.dockerignore`), these values
-> must be injected during the CI image build step.
-> `VITE_API_URL` is passed as a build-arg (non-sensitive URL).
-> `VITE_OAUTH_CLIENT_ID` and `VITE_OAUTH_CLIENT_SECRET` are passed as
-> BuildKit `--mount=type=secret` so they never leak into image layers.
+Create these secrets (required for SSH deployment):
 
-No extra registry secret is required for image push because workflow uses built-in `GITHUB_TOKEN`.
+| Secret | Description | Example |
+|--------|-------------|---------|
+| `EC2_HOST` | EC2 public IP or hostname | `203.0.113.42` or `ec2.example.com` |
+| `EC2_USERNAME` | SSH user on EC2 | `ubuntu` or `ec2-user` |
+| `EC2_SSH_PRIVATE_KEY` | Contents of your `.pem` key | (full key content, starts with `-----BEGIN`) |
+| `EC2_APP_PATH` | Absolute app path on EC2 | `/var/www/StudyTracker` |
+| `EC2_SSH_PORT` | (optional) SSH port | `22` (default) |
 
-## 3) Add branch protection (recommended)
+**How to get your private key:**
+```bash
+# On your local machine (where you have the .pem file)
+cat ~/.ssh/your-key.pem
+# Copy the entire output and paste into EC2_SSH_PRIVATE_KEY secret
+```
 
-For `main` branch, require status check from workflow job `CI (Laravel tests + frontend build)`.
+That's it! The workflow uses GitHub's built-in `GITHUB_TOKEN` for checkout, so no extra registry credentials are needed.
 
-## 4) First deployment test
+> **Why not GHCR/Docker secrets?**  
+> This deployment does **not** build Docker images in GitHub Actions. Instead, it pulls code on EC2 and runs `deploy.sh` to build PHP/npm directly. All the heavy build work (Composer, npm) either happens in the CI step (for testing) or on EC2 during deploy.sh (for production).
 
-1. Push any commit to `main`.
-2. Open GitHub Actions tab.
-3. Confirm `CI/CD - Test, Build, Deploy to EC2` workflow:
+## 3) Add Branch Protection (Recommended)
 
-- `ci` job passes
-- `deploy` job builds and pushes image
-- `deploy` job SSHes to EC2 and runs pull + restart for app + nginx only
+Protect your `main` branch to require passing CI before merge:
 
-4. Open:
+1. Go to **Settings** → **Branches** → **Branch protection rules**
+2. Add rule for `main` branch
+3. Check: **Require status checks to pass before merging**
+4. Select: **CI (Laravel tests + frontend build)** workflow job
 
-```text
+This ensures broken code cannot be merged to main and cause failed deployments.
+
+## 4) First Deployment Test
+
+### Step 1: Commit and push to main
+
+Push any commit to the `main` branch:
+
+```bash
+git push origin main
+```
+
+### Step 2: Watch CI workflow
+
+1. Open **GitHub repository** → **Actions** tab
+2. Find the **"CI/CD - Test, Build, Deploy to EC2 (Native)"** workflow
+3. Watch the **ci** job — it should pass (PHP tests, npm build, Laravel tests)
+
+This job verifies the code is correct before it touches production.
+
+### Step 3: Watch CD workflow
+
+Once **ci** passes:
+1. The **deploy** job automatically starts
+2. It SSHes to your EC2 instance using `EC2_SSH_PRIVATE_KEY`
+3. Pulls the latest `main` branch
+4. Runs `sudo bash deploy/deploy.sh`
+
+Watch the deploy job logs to see all 10 deployment steps execute.
+
+### Step 4: Verify the app is live
+
+Open your browser:
+
+```
 http://<EC2_PUBLIC_IP>:8080
 ```
 
-## 5) Daily workflow you should follow
+You should see the StudyTracker frontend. Check the browser console for API errors if something doesn't work.
 
-1. Create feature branch
-2. Open pull request into `main`
-3. CI must pass
-4. Merge PR
-5. CD auto deploys to EC2
+### Step 5: First-time .env setup (if needed)
 
-## Common failure checks
+If deploy.sh paused because `.env` didn't exist:
+1. SSH into EC2
+2. Edit `.env` with your database and service credentials
+3. Re-run: `sudo bash deploy/deploy.sh`
 
-- SSH failure: verify `EC2_HOST`, user, and private key
-- Path failure: verify `EC2_APP_PATH` points to repo root on EC2
-- Container failure: run on EC2 `docker compose logs -f`
-- App 500 error: check `storage/logs/laravel.log` in the app container
+The script will continue from where it paused.
 
-## If Docker is running but :8080 does not open
+## 5) Daily Workflow (Feature Development)
 
-Most common reason: `study_tracker_app` is not healthy because database is unreachable.
+This is what you do every day to deploy changes:
 
-Run on EC2:
+1. **Create feature branch**: `git checkout -b feature/my-feature`
+2. **Make changes** and commit: `git commit -m "Add feature"`
+3. **Push to GitHub**: `git push origin feature/my-feature`
+4. **Open Pull Request** into `main` with a clear title/description
+5. **Wait for CI to pass** (watch GitHub Actions tab)
+6. **Code review** (if you have team members)
+7. **Merge PR** into `main`
+8. **CD auto-deploys** to EC2 within seconds (no manual action needed)
+
+Check the **Actions** tab to watch real-time deployment progress. When deploy job finishes, changes are live on EC2.
+
+## 6) Troubleshooting
+
+### GitHub Actions Workflow Failures
+
+| Symptom | Check |
+|---------|-------|
+| **SSH connection failed** | Verify `EC2_HOST`, `EC2_USERNAME`, and `EC2_SSH_PRIVATE_KEY` are correct in repo secrets |
+| **"Repository not found at $APP_DIR"** | Verify `EC2_APP_PATH` is the correct absolute path where you cloned the repo |
+| **"Permission denied (publickey)"** | Ensure the `.pem` private key in `EC2_SSH_PRIVATE_KEY` secret matches the EC2 instance's key pair |
+| **Git fetch/pull fails** | Ensure EC2 has git and can reach GitHub (check EC2 security group allows outbound HTTPS on port 443) |
+
+### EC2 Deployment Script Failures
+
+SSH into your EC2 and check deployment logs:
 
 ```bash
+# View latest deploy.sh output
+tail -50 /var/log/deploy.log  # (if logging configured)
+
+# Or re-run manually to see full output
 cd /var/www/StudyTracker
-docker compose ps
-docker compose logs --tail=120 study_tracker_app nginx
-```
+sudo bash deploy/deploy.sh
 
-If `.env` has `DB_HOST=db`, start local DB temporarily:
+# View Laravel logs for app errors
+tail -100 storage/logs/laravel.log
 
-```bash
-docker compose --profile local-infra up -d db study_tracker_app nginx
-```
-
-If you use external DB, set `DB_HOST` to the external host and redeploy.
-
-Quick local health check on EC2:
-
-```bash
+# Check if web server is running and listening
+sudo systemctl status nginx
 curl -i http://127.0.0.1:8080/healthz
 ```
 
-## Micro instance mode
+| Symptom | Solution |
+|---------|----------|
+| **Step 4: .env creation paused** | SSH to EC2, edit `.env`, run `sudo bash deploy/deploy.sh` again |
+| **Step 6: Passport key generation fails** | Ensure `storage/` directory is writable; check PHP-FPM user (`www-data`) permissions |
+| **Step 8: Migration fails** | Check database connection in `.env`; verify DB host/port/credentials; check Laravel logs |
+| **Step 10: Queue restart fails** | Ensure Supervisor is running: `sudo systemctl status supervisor` |
 
-- Keep DB and Redis out of this server when possible (RDS/managed Redis).
-- `docker-compose.yml` marks local `db` and `redis` under profile `local-infra`.
-- `docker-compose.yml` marks `queue` and `scheduler` under profile `workers`.
-- Run local DB/Redis only when needed:
+### App Won't Open at http://<EC2_PUBLIC_IP>:8080
+
+**Most common:** Database is unreachable or migrations didn't complete.
+
+Check logs:
+```bash
+cd /var/www/StudyTracker
+tail -50 storage/logs/laravel.log
+
+# Test database connection
+php artisan tinker
+>>> DB::connection()->getPdo()
+>>> exit
+```
+
+**If using external RDS:**
+- Verify security group allows EC2 to connect on port 3306
+- Confirm DB username/password in `.env` is correct
+- Test from EC2: `mysql -h <db-host> -u <username> -p<password> study_tracker`
+
+**If using local MySQL:**
+- Verify MySQL is running: `sudo systemctl status mysql`
+- Check with: `sudo mysql -u root -p`
+
+### Nginx/PHP-FPM Issues
 
 ```bash
-docker compose --profile local-infra up -d
+# Check PHP-FPM status
+sudo systemctl status php8.4-fpm
+
+# Check Nginx error log
+sudo tail -50 /var/log/nginx/error.log
+
+# Reload Nginx after config changes
+sudo systemctl reload nginx
+
+# View current Nginx config
+sudo nginx -t  # Test syntax
 ```
 
-- Run workers only when needed:
+### Queue Workers Not Running
+
+If background jobs (emails, reports) aren't processing:
 
 ```bash
-docker compose --profile workers up -d
+# Check Supervisor status
+sudo systemctl status supervisor
+
+# View Supervisor logs
+sudo tail -50 /var/log/supervisor/laravel-worker.log
+
+# Restart queue workers
+php artisan queue:restart
+sudo supervisorctl restart study_tracker-worker:*
+
+# Monitor queue
+php artisan queue:monitor
 ```
 
-## Heavy work policy
+### Low Memory on t2.micro?
 
-Do not run these on micro EC2 servers:
+If deployments fail with memory errors or app crashes:
 
-- `npm install`
-- `npm run build`
-- `composer install`
-- extra Laravel cache rebuild commands during deploy
+```bash
+# Check RAM usage
+free -h
 
-These are handled in GitHub Actions image build.
+# Check swap (should be ~2GB from ec2-setup.sh)
+swapon -s
 
-## Deployment flow (lightweight on EC2)
+# Check disk space
+df -h /var/www
 
-```text
-GitHub push
--> GitHub Actions builds Docker image
--> GitHub Actions pushes image to GHCR
--> EC2 pulls ready image
--> EC2 restarts app + nginx without build
+# Clear Laravel caches if space is tight
+php artisan cache:clear
+php artisan view:clear
 ```
+
+Consider offloading to managed services (RDS for MySQL, ElastiCache for Redis) if memory remains tight.

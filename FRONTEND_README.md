@@ -183,7 +183,7 @@ const response = await api.get("/study/topics");
 
 - **Editor**: VS Code
 - **Extensions**: Vue - Official, Tailwind CSS IntelliSense
-- **Node**: v16+ (check: `node --version`)
+- **Node**: v20+ recommended (minimum v16, check: `node --version`)
 - **npm**: v8+ (comes with Node)
 
 ### Hot Module Reload (HMR)

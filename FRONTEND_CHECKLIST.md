@@ -2,7 +2,7 @@
 
 ## ✅ Pre-Installation
 
-- [ ] Node.js (v16+) installed
+- [ ] Node.js (v20+ recommended, minimum v16) installed
 - [ ] npm or yarn package manager available
 - [ ] Laravel backend running on http://studytracker.test
 - [ ] Database configured and migrations run

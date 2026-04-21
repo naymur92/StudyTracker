@@ -369,6 +369,16 @@ Response (200):
 - `PUT/PATCH /api/study/practice-logs/{practiceLog}`
 - `DELETE /api/study/practice-logs/{practiceLog}`
 
+### Revision Templates
+
+Revision templates define the spaced repetition schedule. Users can customize the default system template with their own revision intervals.
+
+- `GET /api/study/revision-templates/{userId}`
+- `PUT/PATCH /api/study/revision-templates/{userId}`
+- `POST /api/study/revision-templates/{userId}/reset`
+
+**Reference:** System default revision templates trigger tasks at days: +1, +7, +30, +90 (Ebbinghaus curve).
+
 ---
 
 ## Encoded ID Notes

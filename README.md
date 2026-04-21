@@ -95,8 +95,9 @@ A full-featured **spaced repetition study management** application with Laravel 
 | Layer            | Technology                                  |
 | ---------------- | ------------------------------------------- |
 | Framework        | Laravel 12.x                                |
-| PHP              | 8.2+                                        |
-| Database         | MySQL 5.7+ / MariaDB 10.3+                  |
+| PHP              | 8.4 (8.2+ supported)                        |
+| Node.js          | 20+ (22 in CI)                              |
+| Database         | MySQL 8.0 / MariaDB 10.3+                   |
 | Authentication   | Laravel Passport (OAuth 2.0 Password Grant) |
 | Authorization    | Spatie Laravel Permission                   |
 | Frontend         | Vue 3 + Vue Router + Pinia + Tailwind CSS   |
@@ -136,15 +137,55 @@ app/
 
 ## Requirements
 
-- PHP 8.2+
+### Local Development
+- PHP 8.4 (or 8.2+)
 - Composer
-- MySQL 5.7+ or MariaDB 10.3+
-- Node.js & NPM
-- Apache/Nginx
+- MySQL 8.0 / MariaDB 10.3+
+- Node.js 20+
+- Git
+
+### Production (EC2)
+- See **[CI_CD_EC2_GUIDE.md](CI_CD_EC2_GUIDE.md)** for GitHub Actions CI/CD setup
+- EC2 t2.micro or larger, Ubuntu 22.04 LTS (or Amazon Linux 2)
+- `deploy/ec2-setup.sh` configures all dependencies automatically
 
 ---
 
 ## Installation
+
+### Option 1: Local Development (with Docker)
+
+For a quick local setup with Docker:
+
+```bash
+# Clone the repository
+git clone https://github.com/naymur92/StudyTracker.git
+cd StudyTracker
+
+# Create environment file (copy example)
+cp .env.example .env
+
+# Start services with Docker Compose (includes MySQL, Redis)
+docker compose up -d
+
+# Install PHP dependencies
+docker compose exec study_tracker_app composer install
+
+# Generate Laravel app key
+docker compose exec study_tracker_app php artisan key:generate
+
+# Run migrations and seed
+docker compose exec study_tracker_app php artisan migrate --seed
+
+# Create Passport keys
+docker compose exec study_tracker_app php artisan passport:keys
+
+# The app is now available at http://localhost:8080
+```
+
+**Frontend (separate dev server):** The `docker-compose.override.yml` starts a Vite dev server on port 5173.
+
+### Option 2: Local Development (Native — no Docker)
 
 ```bash
 # Clone the repository
@@ -163,6 +204,9 @@ cp .env.example .env
 # Generate application key
 php artisan key:generate
 
+# Configure .env with your local database (MySQL 8.0)
+# Edit: DB_HOST, DB_DATABASE, DB_USERNAME, DB_PASSWORD
+
 # Run migrations
 php artisan migrate
 
@@ -175,18 +219,41 @@ php artisan passport:keys
 # Create Passport password grant client
 php artisan passport:client --password
 
-# Build frontend assets
-npm run build
+# Build frontend assets (for production) or start Vite dev server
+npm run build          # Production build
+# OR
+npm run dev           # Development with hot reload (port 5173)
 
-# Start development server
+# Start development server (backend runs at http://localhost:8000)
 php artisan serve
 ```
+
+Configure frontend environment:
+
+```env
+VITE_API_URL=http://localhost:8000/api
+VITE_OAUTH_CLIENT_ID=<from passport:client output>
+VITE_OAUTH_CLIENT_SECRET=<from passport:client output>
+```
+
+### Option 3: Production Deployment to EC2
+
+For automated CI/CD deployment to AWS EC2, see the complete guide:
+
+> **[CI_CD_EC2_GUIDE.md](CI_CD_EC2_GUIDE.md)**
+
+The workflow uses GitHub Actions for CI (test + build) and automatic deployment to EC2 on every push to `main`.
+
+**Quick summary:**
+1. Run `deploy/ec2-setup.sh` on EC2 once (installs PHP 8.4, MySQL, Redis, Nginx, Node.js)
+2. Create GitHub Action secrets for SSH (EC2_HOST, EC2_USERNAME, EC2_SSH_PRIVATE_KEY, etc.)
+3. Push to `main` → GitHub Actions tests → deploys to EC2 automatically
 
 ---
 
 ## Configuration
 
-### Environment Variables
+### Environment Variables (Backend)
 
 ```env
 APP_URL=http://localhost:8000
@@ -201,14 +268,15 @@ DB_PASSWORD=
 CACHE_STORE=database
 ```
 
-### Frontend Configuration
+### Frontend Configuration (Vite Environment)
 
-For the Vue.js frontend, set these environment variables:
+For the Vue.js frontend, set these environment variables in `.env` or configure via command line:
 
 ```env
-VITE_API_URL=http://studytracker.test/api
-VITE_OAUTH_CLIENT_ID=your-oauth-client-id
-VITE_OAUTH_CLIENT_SECRET=your-oauth-client-secret
+# Required for OAuth 2.0 password grant flow
+VITE_API_URL=http://localhost:8000/api          # or your production API URL
+VITE_OAUTH_CLIENT_ID=<from passport:client>
+VITE_OAUTH_CLIENT_SECRET=<from passport:client>
 ```
 
 Get OAuth credentials from the admin panel or create with:
@@ -216,6 +284,8 @@ Get OAuth credentials from the admin panel or create with:
 ```bash
 php artisan passport:client --password
 ```
+
+The `VITE_*` variables are replaced at **build time** by Vite, so they must be set before running `npm run build` for production.
 
 ### Scheduler (Production)
 
@@ -275,7 +345,7 @@ Full API reference with request/response examples:
 
 ### Postman Collection
 
-Import the ready-to-use Postman collection for testing all 22 API endpoints:
+Import the ready-to-use Postman collection for testing all 31 API endpoints:
 
 > **[StudyTracker-API.postman_collection.json](StudyTracker-API.postman_collection.json)**
 
@@ -290,30 +360,49 @@ After importing, configure these Postman collection variables:
 
 ### API Endpoints Quick Reference
 
-| Method   | Endpoint                           | Description                    | Rate Limit  |
-| -------- | ---------------------------------- | ------------------------------ | ----------- |
-| `POST`   | `/api/auth/token`                  | Get access token               | 8/min/IP    |
-| `POST`   | `/api/auth/token/refresh`          | Refresh access token           | 20/min/IP   |
-| `GET`    | `/api/user`                        | Authenticated user profile     | 30/min/user |
-| `GET`    | `/api/study/dashboard`             | Dashboard stats + daily agenda | 60/min/user |
-| `GET`    | `/api/study/calendar`              | Monthly calendar view          | 60/min/user |
-| `GET`    | `/api/study/daily-tasks`           | Daily task agenda              | 60/min/user |
-| `POST`   | `/api/study/tasks/{id}/complete`   | Complete a task                | 30/min/user |
-| `POST`   | `/api/study/tasks/{id}/skip`       | Skip a task                    | 30/min/user |
-| `POST`   | `/api/study/tasks/{id}/reschedule` | Reschedule a task              | 30/min/user |
-| `GET`    | `/api/study/topics`                | List topics (paginated)        | 60/min/user |
-| `POST`   | `/api/study/topics`                | Create topic + revision plan   | 30/min/user |
-| `GET`    | `/api/study/topics/{id}`           | Topic detail with tasks & logs | 60/min/user |
-| `PUT`    | `/api/study/topics/{id}`           | Update topic                   | 30/min/user |
-| `DELETE` | `/api/study/topics/{id}`           | Archive topic (soft delete)    | 30/min/user |
-| `GET`    | `/api/study/practice-logs`         | List practice logs (paginated) | 60/min/user |
-| `POST`   | `/api/study/practice-logs`         | Create practice log            | 30/min/user |
-| `PUT`    | `/api/study/practice-logs/{id}`    | Update practice log            | 30/min/user |
-| `DELETE` | `/api/study/practice-logs/{id}`    | Delete practice log            | 30/min/user |
-| `GET`    | `/api/study/categories`            | List categories                | 60/min/user |
-| `POST`   | `/api/study/categories`            | Create category                | 30/min/user |
-| `PUT`    | `/api/study/categories/{id}`       | Update category                | 30/min/user |
-| `DELETE` | `/api/study/categories/{id}`       | Delete category (soft delete)  | 30/min/user |
+All endpoints below require the `Authorization: Bearer <token>` header.
+
+| Method   | Endpoint                                   | Description                    | Rate Limit  |
+| -------- | ------------------------------------------ | ------------------------------ | ----------- |
+| **Authentication (OAuth 2.0)** | | | |
+| `POST`   | `/api/auth/register`                       | Register new user              | 8/min/IP    |
+| `POST`   | `/api/auth/email/resend`                   | Resend verification email      | 8/min/IP    |
+| `POST`   | `/api/auth/token`                          | Get access token               | 8/min/IP    |
+| `POST`   | `/api/auth/token/refresh`                  | Refresh access token           | 20/min/IP   |
+| `POST`   | `/api/auth/forgot-password`                | Request password reset code    | 8/min/IP    |
+| `POST`   | `/api/auth/reset-password`                 | Reset password with code       | 8/min/IP    |
+| **User** | | | |
+| `GET`    | `/api/user`                                | Get authenticated user profile | 30/min/user |
+| `PUT`    | `/api/user`                                | Update user profile            | 30/min/user |
+| `POST`   | `/api/user/change-password`                | Change password                | 30/min/user |
+| **Dashboard** | | | |
+| `GET`    | `/api/study/dashboard`                     | Dashboard stats + daily agenda | 60/min/user |
+| `GET`    | `/api/study/calendar`                      | Monthly calendar view          | 60/min/user |
+| **Study Tasks** | | | |
+| `GET`    | `/api/study/daily-tasks`                   | Daily task agenda              | 60/min/user |
+| `POST`   | `/api/study/tasks/{id}/complete`           | Mark task as complete          | 30/min/user |
+| `POST`   | `/api/study/tasks/{id}/skip`               | Skip a task                    | 30/min/user |
+| `POST`   | `/api/study/tasks/{id}/reschedule`         | Reschedule a task              | 30/min/user |
+| **Topics** | | | |
+| `GET`    | `/api/study/topics`                        | List topics (paginated)        | 60/min/user |
+| `POST`   | `/api/study/topics`                        | Create topic + revision plan   | 30/min/user |
+| `GET`    | `/api/study/topics/{id}`                   | Topic detail with tasks & logs | 60/min/user |
+| `PUT`    | `/api/study/topics/{id}`                   | Update topic                   | 30/min/user |
+| `DELETE` | `/api/study/topics/{id}`                   | Archive topic (soft delete)    | 30/min/user |
+| **Practice Logs** | | | |
+| `GET`    | `/api/study/practice-logs`                 | List practice logs (paginated) | 60/min/user |
+| `POST`   | `/api/study/practice-logs`                 | Create practice log            | 30/min/user |
+| `PUT`    | `/api/study/practice-logs/{id}`            | Update practice log            | 30/min/user |
+| `DELETE` | `/api/study/practice-logs/{id}`            | Delete practice log            | 30/min/user |
+| **Categories** | | | |
+| `GET`    | `/api/study/categories`                    | List categories                | 60/min/user |
+| `POST`   | `/api/study/categories`                    | Create category                | 30/min/user |
+| `PUT`    | `/api/study/categories/{id}`               | Update category                | 30/min/user |
+| `DELETE` | `/api/study/categories/{id}`               | Delete category (soft delete)  | 30/min/user |
+| **Revision Templates** | | | |
+| `GET`    | `/api/study/revision-templates/{userId}`   | Get revision schedule template | 60/min/user |
+| `PUT`    | `/api/study/revision-templates/{userId}`   | Update revision schedule       | 30/min/user |
+| `POST`   | `/api/study/revision-templates/{userId}/reset` | Reset to system defaults    | 30/min/user |
 
 ---
 
