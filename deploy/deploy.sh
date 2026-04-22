@@ -157,6 +157,7 @@ php artisan migrate --force --no-interaction
 # ── 9. Laravel caching ───────────────────────
 echo "[9/10] Caching config/routes/views..."
 php artisan storage:link --force 2>/dev/null || true
+php artisan optimize:clear
 php artisan config:cache
 php artisan route:cache || true
 php artisan view:cache || true
