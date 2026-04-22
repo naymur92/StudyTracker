@@ -55,6 +55,8 @@ Expected: Returns 422 (error about missing credentials) - this is OK, means API 
 npm run dev
 ```
 
+**Note**: The Vite dev server runs on `http://localhost:5173` for hot-reload during development, but you access the application at your configured URL (see Step 5).
+
 **Expected output:**
 
 ```
@@ -65,7 +67,10 @@ npm run dev
 
 ### Step 5: Open Application
 
-1. Open browser: `http://localhost:5173`
+1. Open browser with your application URL:
+   - **Local dev (Laragon/XAMPP)**: `http://studytracker.test`
+   - **Docker or EC2**: `http://localhost:8080`
+
 2. Should redirect to login page
 3. Login with demo credentials:
     - **Email**: user@example.com
@@ -121,9 +126,15 @@ After login, verify these features work:
 
 ## 🐛 Troubleshooting
 
-### Issue: "Cannot GET /localhost:5173"
+### Issue: Application won't open
 
-**Solution**: Make sure npm run dev started and terminal shows "Local: http://localhost:5173"
+**Solutions**:
+
+1. Ensure `npm run dev` started in terminal (shows "Local: http://localhost:5173")
+2. Visit correct application URL, NOT the Vite dev server port:
+   - **Local dev**: `http://studytracker.test`
+   - **Docker/EC2**: `http://localhost:8080`
+3. Verify backend is running and database is configured
 
 ### Issue: Login fails with "Network Error"
 
@@ -194,8 +205,11 @@ taskkill /PID <PID> /F
 # Get your machine IP (Windows)
 ipconfig
 
-# From mobile on same network, visit:
-# http://YOUR_IP:5173
+# From mobile on same network, visit your app at:
+# http://YOUR_IP:8080 (or your configured app URL)
+#
+# Note: Don't use port 5173 - that's the Vite dev server.
+# Access through your app's main URL (8080, 80, or studytracker.test)
 ```
 
 ### Test Checklist

@@ -1,7 +1,7 @@
 # 🚀 Quick Start Guide - StudyTracker Frontend
 
 ## Installation & Setup (5 minutes)
-
+**Note**: Your application will be accessible at `http://studytracker.test` (Laragon/XAMPP) or `http://localhost:8080` (Docker). The `npm run dev` Vite server (port 5173) is only for development hot-reload.
 ### Step 1: Install Dependencies
 
 ```bash
@@ -23,10 +23,11 @@ This will install:
 npm run dev
 ```
 
-This starts Vite dev server with hot reload:
+This starts Vite dev server with hot reload (port 5173). Access your app at:
 
-- Frontend: http://localhost:5173
-- API: http://studytracker.test/api
+- **Application**: http://studytracker.test (or http://localhost:8080 with Docker)
+- **Vite Dev Server** (hot-reload only): http://localhost:5173
+- **API**: http://studytracker.test/api
 
 ### Step 3: Build for Production
 
@@ -131,8 +132,12 @@ Test on mobile devices using:
 # Get your machine IP
 ipconfig
 
-# Access from mobile: http://YOUR_IP:5173
+# Access from mobile (use your app's main URL, not port 5173):
+# http://YOUR_IP:8080 (Docker/EC2)
+# or http://studytracker.test (Laragon on same network)
 ```
+
+**Important**: Don't use port 5173 - that's the Vite dev server. Access through your app's main port (8080 by default).
 
 ## 🐛 Troubleshooting
 

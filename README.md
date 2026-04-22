@@ -138,6 +138,7 @@ app/
 ## Requirements
 
 ### Local Development
+
 - PHP 8.4 (or 8.2+)
 - Composer
 - MySQL 8.0 / MariaDB 10.3+
@@ -145,6 +146,7 @@ app/
 - Git
 
 ### Production (EC2)
+
 - See **[CI_CD_EC2_GUIDE.md](CI_CD_EC2_GUIDE.md)** for GitHub Actions CI/CD setup
 - EC2 t2.micro or larger, Ubuntu 22.04 LTS (or Amazon Linux 2)
 - `deploy/ec2-setup.sh` configures all dependencies automatically
@@ -245,6 +247,7 @@ For automated CI/CD deployment to AWS EC2, see the complete guide:
 The workflow uses GitHub Actions for CI (test + build) and automatic deployment to EC2 on every push to `main`.
 
 **Quick summary:**
+
 1. Run `deploy/ec2-setup.sh` on EC2 once (installs PHP 8.4, MySQL, Redis, Nginx, Node.js)
 2. Create GitHub Action secrets for SSH (EC2_HOST, EC2_USERNAME, EC2_SSH_PRIVATE_KEY, etc.)
 3. Push to `main` → GitHub Actions tests → deploys to EC2 automatically
@@ -314,7 +317,7 @@ npm run dev
 npm run build
 ```
 
-The app runs at `http://localhost:5173` and connects to the REST API at `http://studytracker.test/api`.
+The app runs at `http://studytracker.test` (or `http://localhost:8080` with Docker). The Vite dev server runs on `http://localhost:5173` for hot-reload during development only.
 
 ### Frontend Features
 
@@ -362,47 +365,47 @@ After importing, configure these Postman collection variables:
 
 All endpoints below require the `Authorization: Bearer <token>` header.
 
-| Method   | Endpoint                                   | Description                    | Rate Limit  |
-| -------- | ------------------------------------------ | ------------------------------ | ----------- |
-| **Authentication (OAuth 2.0)** | | | |
-| `POST`   | `/api/auth/register`                       | Register new user              | 8/min/IP    |
-| `POST`   | `/api/auth/email/resend`                   | Resend verification email      | 8/min/IP    |
-| `POST`   | `/api/auth/token`                          | Get access token               | 8/min/IP    |
-| `POST`   | `/api/auth/token/refresh`                  | Refresh access token           | 20/min/IP   |
-| `POST`   | `/api/auth/forgot-password`                | Request password reset code    | 8/min/IP    |
-| `POST`   | `/api/auth/reset-password`                 | Reset password with code       | 8/min/IP    |
-| **User** | | | |
-| `GET`    | `/api/user`                                | Get authenticated user profile | 30/min/user |
-| `PUT`    | `/api/user`                                | Update user profile            | 30/min/user |
-| `POST`   | `/api/user/change-password`                | Change password                | 30/min/user |
-| **Dashboard** | | | |
-| `GET`    | `/api/study/dashboard`                     | Dashboard stats + daily agenda | 60/min/user |
-| `GET`    | `/api/study/calendar`                      | Monthly calendar view          | 60/min/user |
-| **Study Tasks** | | | |
-| `GET`    | `/api/study/daily-tasks`                   | Daily task agenda              | 60/min/user |
-| `POST`   | `/api/study/tasks/{id}/complete`           | Mark task as complete          | 30/min/user |
-| `POST`   | `/api/study/tasks/{id}/skip`               | Skip a task                    | 30/min/user |
-| `POST`   | `/api/study/tasks/{id}/reschedule`         | Reschedule a task              | 30/min/user |
-| **Topics** | | | |
-| `GET`    | `/api/study/topics`                        | List topics (paginated)        | 60/min/user |
-| `POST`   | `/api/study/topics`                        | Create topic + revision plan   | 30/min/user |
-| `GET`    | `/api/study/topics/{id}`                   | Topic detail with tasks & logs | 60/min/user |
-| `PUT`    | `/api/study/topics/{id}`                   | Update topic                   | 30/min/user |
-| `DELETE` | `/api/study/topics/{id}`                   | Archive topic (soft delete)    | 30/min/user |
-| **Practice Logs** | | | |
-| `GET`    | `/api/study/practice-logs`                 | List practice logs (paginated) | 60/min/user |
-| `POST`   | `/api/study/practice-logs`                 | Create practice log            | 30/min/user |
-| `PUT`    | `/api/study/practice-logs/{id}`            | Update practice log            | 30/min/user |
-| `DELETE` | `/api/study/practice-logs/{id}`            | Delete practice log            | 30/min/user |
-| **Categories** | | | |
-| `GET`    | `/api/study/categories`                    | List categories                | 60/min/user |
-| `POST`   | `/api/study/categories`                    | Create category                | 30/min/user |
-| `PUT`    | `/api/study/categories/{id}`               | Update category                | 30/min/user |
-| `DELETE` | `/api/study/categories/{id}`               | Delete category (soft delete)  | 30/min/user |
-| **Revision Templates** | | | |
-| `GET`    | `/api/study/revision-templates/{userId}`   | Get revision schedule template | 60/min/user |
-| `PUT`    | `/api/study/revision-templates/{userId}`   | Update revision schedule       | 30/min/user |
-| `POST`   | `/api/study/revision-templates/{userId}/reset` | Reset to system defaults    | 30/min/user |
+| Method                         | Endpoint                                       | Description                    | Rate Limit  |
+| ------------------------------ | ---------------------------------------------- | ------------------------------ | ----------- |
+| **Authentication (OAuth 2.0)** |                                                |                                |             |
+| `POST`                         | `/api/auth/register`                           | Register new user              | 8/min/IP    |
+| `POST`                         | `/api/auth/email/resend`                       | Resend verification email      | 8/min/IP    |
+| `POST`                         | `/api/auth/token`                              | Get access token               | 8/min/IP    |
+| `POST`                         | `/api/auth/token/refresh`                      | Refresh access token           | 20/min/IP   |
+| `POST`                         | `/api/auth/forgot-password`                    | Request password reset code    | 8/min/IP    |
+| `POST`                         | `/api/auth/reset-password`                     | Reset password with code       | 8/min/IP    |
+| **User**                       |                                                |                                |             |
+| `GET`                          | `/api/user`                                    | Get authenticated user profile | 30/min/user |
+| `PUT`                          | `/api/user`                                    | Update user profile            | 30/min/user |
+| `POST`                         | `/api/user/change-password`                    | Change password                | 30/min/user |
+| **Dashboard**                  |                                                |                                |             |
+| `GET`                          | `/api/study/dashboard`                         | Dashboard stats + daily agenda | 60/min/user |
+| `GET`                          | `/api/study/calendar`                          | Monthly calendar view          | 60/min/user |
+| **Study Tasks**                |                                                |                                |             |
+| `GET`                          | `/api/study/daily-tasks`                       | Daily task agenda              | 60/min/user |
+| `POST`                         | `/api/study/tasks/{id}/complete`               | Mark task as complete          | 30/min/user |
+| `POST`                         | `/api/study/tasks/{id}/skip`                   | Skip a task                    | 30/min/user |
+| `POST`                         | `/api/study/tasks/{id}/reschedule`             | Reschedule a task              | 30/min/user |
+| **Topics**                     |                                                |                                |             |
+| `GET`                          | `/api/study/topics`                            | List topics (paginated)        | 60/min/user |
+| `POST`                         | `/api/study/topics`                            | Create topic + revision plan   | 30/min/user |
+| `GET`                          | `/api/study/topics/{id}`                       | Topic detail with tasks & logs | 60/min/user |
+| `PUT`                          | `/api/study/topics/{id}`                       | Update topic                   | 30/min/user |
+| `DELETE`                       | `/api/study/topics/{id}`                       | Archive topic (soft delete)    | 30/min/user |
+| **Practice Logs**              |                                                |                                |             |
+| `GET`                          | `/api/study/practice-logs`                     | List practice logs (paginated) | 60/min/user |
+| `POST`                         | `/api/study/practice-logs`                     | Create practice log            | 30/min/user |
+| `PUT`                          | `/api/study/practice-logs/{id}`                | Update practice log            | 30/min/user |
+| `DELETE`                       | `/api/study/practice-logs/{id}`                | Delete practice log            | 30/min/user |
+| **Categories**                 |                                                |                                |             |
+| `GET`                          | `/api/study/categories`                        | List categories                | 60/min/user |
+| `POST`                         | `/api/study/categories`                        | Create category                | 30/min/user |
+| `PUT`                          | `/api/study/categories/{id}`                   | Update category                | 30/min/user |
+| `DELETE`                       | `/api/study/categories/{id}`                   | Delete category (soft delete)  | 30/min/user |
+| **Revision Templates**         |                                                |                                |             |
+| `GET`                          | `/api/study/revision-templates/{userId}`       | Get revision schedule template | 60/min/user |
+| `PUT`                          | `/api/study/revision-templates/{userId}`       | Update revision schedule       | 30/min/user |
+| `POST`                         | `/api/study/revision-templates/{userId}/reset` | Reset to system defaults       | 30/min/user |
 
 ---
 
