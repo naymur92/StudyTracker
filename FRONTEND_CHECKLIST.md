@@ -68,8 +68,8 @@ npm run dev
 ### Step 5: Open Application
 
 1. Open browser with your application URL:
-   - **Local dev (Laragon/XAMPP)**: `http://studytracker.test`
-   - **Docker or EC2**: `http://localhost:8080`
+    - **Local dev (Laragon/XAMPP)**: `http://studytracker.test`
+    - **Docker or EC2**: `http://localhost:8080`
 
 2. Should redirect to login page
 3. Login with demo credentials:
@@ -132,8 +132,8 @@ After login, verify these features work:
 
 1. Ensure `npm run dev` started in terminal (shows "Local: http://localhost:5173")
 2. Visit correct application URL, NOT the Vite dev server port:
-   - **Local dev**: `http://studytracker.test`
-   - **Docker/EC2**: `http://localhost:8080`
+    - **Local dev**: `http://studytracker.test`
+    - **Docker/EC2**: `http://localhost:8080`
 3. Verify backend is running and database is configured
 
 ### Issue: Login fails with "Network Error"

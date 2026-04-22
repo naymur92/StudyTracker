@@ -1,7 +1,9 @@
 # 🚀 Quick Start Guide - StudyTracker Frontend
 
 ## Installation & Setup (5 minutes)
+
 **Note**: Your application will be accessible at `http://studytracker.test` (Laragon/XAMPP) or `http://localhost:8080` (Docker). The `npm run dev` Vite server (port 5173) is only for development hot-reload.
+
 ### Step 1: Install Dependencies
 
 ```bash
