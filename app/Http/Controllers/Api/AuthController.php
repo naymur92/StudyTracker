@@ -83,6 +83,13 @@ class AuthController extends Controller
             );
         }
 
+        Log::warning('Demo login failed', [
+            'email' => $demoUser->email,
+            'client_id' => $clientId,
+            'response_status' => $response->status(),
+            'response_body' => $response->body(),
+        ]);
+
         return $this->jsonResponse(
             message: 'Demo login failed. Please try again later.',
             responseCode: HttpResponse::HTTP_SERVICE_UNAVAILABLE,
@@ -187,6 +194,13 @@ class AuthController extends Controller
         if ($user) {
             LoginTracker::track($user, false, 'oauth');
         }
+
+        Log::warning('OAuth token request failed', [
+            'email' => $request->email,
+            'client_id' => $request->header('X-Client-Id'),
+            'response_status' => $response->status(),
+            'response_body' => $response->body(),
+        ]);
 
         // If request failed, decode JSON error
         return $this->jsonResponse(

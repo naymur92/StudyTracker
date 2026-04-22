@@ -226,7 +226,7 @@ supervisorctl update
 # ── 6. Cron (Scheduler) ──────────────────────
 echo "[6/6] Setting up cron scheduler..."
 CRON_LINE="* * * * * cd /var/www/${PROJECT_NAME} && php artisan schedule:run >> /dev/null 2>&1"
-(crontab -u www-data -l 2>/dev/null | grep -v "${PROJECT_NAME}" ; echo "${CRON_LINE}") | crontab -u www-data -
+(sudo crontab -u www-data -l 2>/dev/null | grep -v "${PROJECT_NAME}" ; echo "${CRON_LINE}") | sudo crontab -u www-data -
 
 echo ""
 echo "=========================================="
