@@ -4,7 +4,7 @@
         <header class="sticky top-0 z-40 bg-white border-b border-gray-200 md:hidden">
             <div class="flex items-center justify-between px-4 py-4">
                 <div class="flex items-center gap-2">
-                    <img src="/favicon.svg" alt="StudyTracker" class="w-6 h-6" />
+                    <img src="/icon_512x512.png" alt="StudyTracker" class="w-6 h-6" />
                     <h1 class="text-lg font-bold text-primary-600">StudyTracker</h1>
                 </div>
                 <button @click="sidebarOpen = !sidebarOpen" class="p-2 rounded-lg hover:bg-gray-100">
@@ -25,7 +25,7 @@
                 <!-- Logo -->
                 <div class="flex items-center justify-between p-6 border-b border-gray-200">
                     <div class="flex items-center gap-2">
-                        <img src="/favicon.svg" alt="StudyTracker" class="w-8 h-8" />
+                        <img src="/icon_512x512.png" alt="StudyTracker" class="w-8 h-8" />
                         <h1 class="text-xl font-bold text-primary-600">StudyTracker</h1>
                     </div>
                     <button @click="sidebarOpen = false" class="md:hidden p-2 rounded-lg hover:bg-gray-100">

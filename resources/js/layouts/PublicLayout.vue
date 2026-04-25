@@ -4,7 +4,7 @@
         <header class="sticky top-0 z-40 bg-white/80 backdrop-blur-sm border-b border-gray-200">
             <div class="max-w-6xl mx-auto px-4 py-3 md:py-4 flex items-center justify-between">
                 <router-link to="/" class="flex items-center gap-2">
-                    <img src="/favicon.svg" alt="StudyTracker" class="w-6 h-6 md:w-7 md:h-7" />
+                    <img src="/icon_512x512.png" alt="StudyTracker" class="w-6 h-6 md:w-7 md:h-7" />
                     <h1 class="text-lg md:text-xl font-bold text-primary-600">StudyTracker</h1>
                 </router-link>
 

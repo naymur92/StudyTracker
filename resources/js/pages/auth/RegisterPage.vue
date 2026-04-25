@@ -6,7 +6,7 @@
             <!-- Name -->
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
-                <input v-model="form.name" type="text" required class="input-base" placeholder="John Doe" />
+                <input v-model="form.name" type="text" required class="input-base" placeholder="Muhammad Umar" />
                 <span v-if="errors.name" class="text-sm text-red-500">{{ errors.name[0] }}</span>
             </div>
 

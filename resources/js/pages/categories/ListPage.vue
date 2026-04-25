@@ -71,8 +71,9 @@
                     <div class="flex gap-4">
                         <input v-model="newCategory.color" type="color"
                             class="w-12 h-10 border border-gray-300 rounded cursor-pointer" />
-                        <input v-model="newCategory.icon" type="text" placeholder="Icon class"
-                            class="input-base flex-1" />
+                        <div class="flex-1">
+                            <IconPicker v-model="newCategory.icon" />
+                        </div>
                     </div>
                     <div class="flex gap-4">
                         <button type="submit" class="btn-primary flex-1">Create</button>
@@ -93,8 +94,9 @@
                     <div class="flex gap-4">
                         <input v-model="editCategory.color" type="color"
                             class="w-12 h-10 border border-gray-300 rounded cursor-pointer" />
-                        <input v-model="editCategory.icon" type="text" placeholder="Icon class"
-                            class="input-base flex-1" />
+                        <div class="flex-1">
+                            <IconPicker v-model="editCategory.icon" />
+                        </div>
                     </div>
                     <div class="flex gap-4">
                         <button type="submit" class="btn-primary flex-1">Update</button>
@@ -112,6 +114,7 @@ import { ref, computed, onMounted, reactive } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import { useCategoryStore } from '@/stores/categories'
 import { showConfirm, showError, showSuccess } from '@/helpers/alerts'
+import IconPicker from '@/components/IconPicker.vue'
 
 const authStore = useAuthStore()
 const categoryStore = useCategoryStore()

@@ -66,8 +66,8 @@ Request body:
 
 ```json
 {
-    "name": "John Doe",
-    "email": "john@example.com",
+    "name": "Muhammad Umar",
+    "email": "user@example.com",
     "password": "Password@123",
     "password_confirmation": "Password@123"
 }
@@ -80,8 +80,8 @@ Response (201):
     "flag": true,
     "msg": "Registration successful. Please verify your email to activate your account.",
     "data": {
-        "name": "John Doe",
-        "email": "john@example.com",
+        "name": "Muhammad Umar",
+        "email": "user@example.com",
         "is_active": false,
         "email_verification_sent": true
     },
@@ -91,7 +91,7 @@ Response (201):
 
 ### 2. Verify Email
 
-`GET /api/auth/verify-email?email=john@example.com&token={verification_token}`
+`GET /api/auth/verify-email?email=user@example.com&token={verification_token}`
 
 Response (200):
 
@@ -112,7 +112,7 @@ Request body:
 
 ```json
 {
-    "email": "john@example.com"
+    "email": "user@example.com"
 }
 ```
 
@@ -135,7 +135,7 @@ Request body:
 
 ```json
 {
-    "email": "john@example.com",
+    "email": "user@example.com",
     "password": "Password@123"
 }
 ```
@@ -190,7 +190,7 @@ Request body:
 
 ```json
 {
-    "email": "john@example.com"
+    "email": "user@example.com"
 }
 ```
 
@@ -218,7 +218,7 @@ Request body:
 
 ```json
 {
-    "email": "john@example.com",
+    "email": "user@example.com",
     "code": "123456",
     "password": "NewPassword@123",
     "password_confirmation": "NewPassword@123"
@@ -257,8 +257,8 @@ Response (200):
     "msg": "User profile fetched successfully.",
     "data": {
         "id": "a9k31mQz",
-        "name": "John Doe",
-        "email": "john@example.com",
+        "name": "Muhammad Umar",
+        "email": "user@example.com",
         "created_at": "2026-03-27 12:00:00",
         "email_verified_at": "2026-03-27 12:30:00",
         "is_active": true,
@@ -292,7 +292,7 @@ Response (200):
     "data": {
         "id": "a9k31mQz",
         "name": "John Updated",
-        "email": "john@example.com",
+        "email": "user@example.com",
         "created_at": "2026-03-27 12:00:00",
         "email_verified_at": "2026-03-27 12:30:00",
         "is_active": true,

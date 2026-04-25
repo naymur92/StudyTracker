@@ -1,5 +1,5 @@
 @php
-    $appLogo = \App\Models\Setting::get('app_logo');
+    $appLogo = \App\Models\Setting::get('app_logo') ?? asset('icon_512x512.png');
     $appName = \App\Models\Setting::get('app_name', config('app.name', 'Laravel'));
 @endphp
 
