@@ -56,7 +56,7 @@
     <meta name="twitter:image" content="/logo.png" />
 
     <!-- PWA Web App Manifest -->
-    {{-- <link rel="manifest" href="/manifest.json" /> --}}
+    <link rel="manifest" href="/manifest.json" />
 
     <!-- Color Scheme -->
     <meta name="color-scheme" content="light dark" />

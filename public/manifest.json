@@ -1,0 +1,70 @@
+{
+    "name": "StudyTracker",
+    "short_name": "StudyTracker",
+    "description": "A spaced repetition study management app. Track topics, manage revision schedules, and monitor your learning progress with intelligent study reminders.",
+    "start_url": "/",
+    "scope": "/",
+    "display": "standalone",
+    "orientation": "portrait-primary",
+    "theme_color": "#0ea5e9",
+    "background_color": "#ffffff",
+    "categories": ["education", "productivity"],
+    "icons": [
+        {
+            "src": "/favicon.png",
+            "sizes": "32x32",
+            "type": "image/png"
+        },
+        {
+            "src": "/icon_192x192.png",
+            "sizes": "192x192",
+            "type": "image/png",
+            "purpose": "any"
+        },
+        {
+            "src": "/icon_192x192.png",
+            "sizes": "192x192",
+            "type": "image/png",
+            "purpose": "maskable"
+        },
+        {
+            "src": "/icon_512x512.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "any"
+        },
+        {
+            "src": "/icon_512x512.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "maskable"
+        },
+        {
+            "src": "/icon_180x180.png",
+            "sizes": "180x180",
+            "type": "image/png"
+        }
+    ],
+    "shortcuts": [
+        {
+            "name": "Dashboard",
+            "short_name": "Dashboard",
+            "description": "View your study dashboard",
+            "url": "/dashboard",
+            "icons": [
+                {
+                    "src": "/icon_192x192.png",
+                    "sizes": "192x192"
+                }
+            ]
+        }
+    ],
+    "screenshots": [
+        {
+            "src": "/logo.png",
+            "sizes": "1200x630",
+            "type": "image/png",
+            "form_factor": "wide"
+        }
+    ]
+}
