@@ -155,39 +155,7 @@ app/
 
 ## Installation
 
-### Option 1: Local Development (with Docker)
-
-For a quick local setup with Docker:
-
-```bash
-# Clone the repository
-git clone https://github.com/naymur92/StudyTracker.git
-cd StudyTracker
-
-# Create environment file (copy example)
-cp .env.example .env
-
-# Start services with Docker Compose (includes MySQL, Redis)
-docker compose up -d
-
-# Install PHP dependencies
-docker compose exec study_tracker_app composer install
-
-# Generate Laravel app key
-docker compose exec study_tracker_app php artisan key:generate
-
-# Run migrations and seed
-docker compose exec study_tracker_app php artisan migrate --seed
-
-# Create Passport keys
-docker compose exec study_tracker_app php artisan passport:keys
-
-# The app is now available at http://localhost:8080
-```
-
-**Frontend (separate dev server):** The `docker-compose.override.yml` starts a Vite dev server on port 5173.
-
-### Option 2: Local Development (Native — no Docker)
+### Local Development (Native — no Docker)
 
 ```bash
 # Clone the repository

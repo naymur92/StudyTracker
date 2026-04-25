@@ -2,7 +2,7 @@
 
 ## Installation & Setup (5 minutes)
 
-**Note**: Your application will be accessible at `http://studytracker.test` (Laragon/XAMPP) or `http://localhost:8080` (Docker). The `npm run dev` Vite server (port 5173) is only for development hot-reload.
+**Note**: Your application will be accessible at `http://studytracker.test` (Laragon/XAMPP). The `npm run dev` Vite server (port 5173) is only for development hot-reload.
 
 ### Step 1: Install Dependencies
 
@@ -27,7 +27,7 @@ npm run dev
 
 This starts Vite dev server with hot reload (port 5173). Access your app at:
 
-- **Application**: http://studytracker.test (or http://localhost:8080 with Docker)
+- **Application**: http://studytracker.test
 - **Vite Dev Server** (hot-reload only): http://localhost:5173
 - **API**: http://studytracker.test/api
 

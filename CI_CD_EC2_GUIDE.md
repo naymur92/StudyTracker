@@ -5,6 +5,7 @@ This guide explains how to set up and use the workflow in `.github/workflows/dep
 ## What the Pipeline Does
 
 **CI (Continuous Integration)** — Runs on all PRs and pushes to `main`:
+
 - Sets up PHP 8.4 + Node.js 22 + MySQL 8.0
 - Installs PHP/Node dependencies
 - Builds frontend assets (`npm run build`)
@@ -12,6 +13,7 @@ This guide explains how to set up and use the workflow in `.github/workflows/dep
 - Validates the build succeeds
 
 **CD (Continuous Deployment)** — Runs automatically after CI passes on `main` branch:
+
 - SSHes into EC2 via GitHub Actions
 - Pulls latest `main` branch
 - Executes `deploy/deploy.sh` (10-step native deployment)
@@ -37,6 +39,7 @@ sudo bash deploy/ec2-setup.sh
 ```
 
 This installs:
+
 - PHP 8.4 with required extensions (pdo, pdo_mysql, mbstring, bcmath, gd, zip, intl, redis, etc.)
 - Nginx (web server)
 - MySQL 8.0 (database)
@@ -54,6 +57,7 @@ sudo bash deploy/ec2-configure.sh
 ```
 
 This optimizes:
+
 - MySQL for low-RAM servers (innodb pools, max connections)
 - Redis memory limits (64MB max, LRU policy)
 - PHP-FPM memory and timeout settings
@@ -94,23 +98,22 @@ VITE_API_URL=http://<EC2_PUBLIC_IP>:8080/api
 **For micro instances with limited resources:**  
 Prefer external managed services (RDS for MySQL, ElastiCache for Redis) to avoid running all services on one small server.
 
-**Note:** `.env` is not included in `docker-compose.yml` images. You manage it directly on EC2 and it persists across deployments.
-
 ## 2) Add GitHub Repository Secrets
 
 Go to GitHub repository → **Settings** → **Secrets and variables** → **Actions** → **Secrets and variables**.
 
 Create these secrets (required for SSH deployment):
 
-| Secret | Description | Example |
-|--------|-------------|---------|
-| `EC2_HOST` | EC2 public IP or hostname | `203.0.113.42` or `ec2.example.com` |
-| `EC2_USERNAME` | SSH user on EC2 | `ubuntu` or `ec2-user` |
+| Secret                | Description                 | Example                                      |
+| --------------------- | --------------------------- | -------------------------------------------- |
+| `EC2_HOST`            | EC2 public IP or hostname   | `203.0.113.42` or `ec2.example.com`          |
+| `EC2_USERNAME`        | SSH user on EC2             | `ubuntu` or `ec2-user`                       |
 | `EC2_SSH_PRIVATE_KEY` | Contents of your `.pem` key | (full key content, starts with `-----BEGIN`) |
-| `EC2_APP_PATH` | Absolute app path on EC2 | `/var/www/StudyTracker` |
-| `EC2_SSH_PORT` | (optional) SSH port | `22` (default) |
+| `EC2_APP_PATH`        | Absolute app path on EC2    | `/var/www/StudyTracker`                      |
+| `EC2_SSH_PORT`        | (optional) SSH port         | `22` (default)                               |
 
 **How to get your private key:**
+
 ```bash
 # On your local machine (where you have the .pem file)
 cat ~/.ssh/your-key.pem
@@ -154,6 +157,7 @@ This job verifies the code is correct before it touches production.
 ### Step 3: Watch CD workflow
 
 Once **ci** passes:
+
 1. The **deploy** job automatically starts
 2. It SSHes to your EC2 instance using `EC2_SSH_PRIVATE_KEY`
 3. Pulls the latest `main` branch
@@ -174,6 +178,7 @@ You should see the StudyTracker frontend. Check the browser console for API erro
 ### Step 5: First-time .env setup (if needed)
 
 If deploy.sh paused because `.env` didn't exist:
+
 1. SSH into EC2
 2. Edit `.env` with your database and service credentials
 3. Re-run: `sudo bash deploy/deploy.sh`
@@ -199,12 +204,12 @@ Check the **Actions** tab to watch real-time deployment progress. When deploy jo
 
 ### GitHub Actions Workflow Failures
 
-| Symptom | Check |
-|---------|-------|
-| **SSH connection failed** | Verify `EC2_HOST`, `EC2_USERNAME`, and `EC2_SSH_PRIVATE_KEY` are correct in repo secrets |
-| **"Repository not found at $APP_DIR"** | Verify `EC2_APP_PATH` is the correct absolute path where you cloned the repo |
-| **"Permission denied (publickey)"** | Ensure the `.pem` private key in `EC2_SSH_PRIVATE_KEY` secret matches the EC2 instance's key pair |
-| **Git fetch/pull fails** | Ensure EC2 has git and can reach GitHub (check EC2 security group allows outbound HTTPS on port 443) |
+| Symptom                                | Check                                                                                                |
+| -------------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| **SSH connection failed**              | Verify `EC2_HOST`, `EC2_USERNAME`, and `EC2_SSH_PRIVATE_KEY` are correct in repo secrets             |
+| **"Repository not found at $APP_DIR"** | Verify `EC2_APP_PATH` is the correct absolute path where you cloned the repo                         |
+| **"Permission denied (publickey)"**    | Ensure the `.pem` private key in `EC2_SSH_PRIVATE_KEY` secret matches the EC2 instance's key pair    |
+| **Git fetch/pull fails**               | Ensure EC2 has git and can reach GitHub (check EC2 security group allows outbound HTTPS on port 443) |
 
 ### EC2 Deployment Script Failures
 
@@ -226,18 +231,19 @@ sudo systemctl status nginx
 curl -i http://127.0.0.1:8080/healthz
 ```
 
-| Symptom | Solution |
-|---------|----------|
-| **Step 4: .env creation paused** | SSH to EC2, edit `.env`, run `sudo bash deploy/deploy.sh` again |
-| **Step 6: Passport key generation fails** | Ensure `storage/` directory is writable; check PHP-FPM user (`www-data`) permissions |
-| **Step 8: Migration fails** | Check database connection in `.env`; verify DB host/port/credentials; check Laravel logs |
-| **Step 10: Queue restart fails** | Ensure Supervisor is running: `sudo systemctl status supervisor` |
+| Symptom                                   | Solution                                                                                 |
+| ----------------------------------------- | ---------------------------------------------------------------------------------------- |
+| **Step 4: .env creation paused**          | SSH to EC2, edit `.env`, run `sudo bash deploy/deploy.sh` again                          |
+| **Step 6: Passport key generation fails** | Ensure `storage/` directory is writable; check PHP-FPM user (`www-data`) permissions     |
+| **Step 8: Migration fails**               | Check database connection in `.env`; verify DB host/port/credentials; check Laravel logs |
+| **Step 10: Queue restart fails**          | Ensure Supervisor is running: `sudo systemctl status supervisor`                         |
 
 ### App Won't Open at http://<EC2_PUBLIC_IP>:8080
 
 **Most common:** Database is unreachable or migrations didn't complete.
 
 Check logs:
+
 ```bash
 cd /var/www/StudyTracker
 tail -50 storage/logs/laravel.log
@@ -249,11 +255,13 @@ php artisan tinker
 ```
 
 **If using external RDS:**
+
 - Verify security group allows EC2 to connect on port 3306
 - Confirm DB username/password in `.env` is correct
 - Test from EC2: `mysql -h <db-host> -u <username> -p<password> study_tracker`
 
 **If using local MySQL:**
+
 - Verify MySQL is running: `sudo systemctl status mysql`
 - Check with: `sudo mysql -u root -p`
 

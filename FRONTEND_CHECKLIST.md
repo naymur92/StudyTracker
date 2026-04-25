@@ -69,7 +69,6 @@ npm run dev
 
 1. Open browser with your application URL:
     - **Local dev (Laragon/XAMPP)**: `http://studytracker.test`
-    - **Docker or EC2**: `http://localhost:8080`
 
 2. Should redirect to login page
 3. Login with demo credentials:

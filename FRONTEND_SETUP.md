@@ -134,7 +134,7 @@ Before logging in, you need to configure OAuth credentials in the store. Edit th
 npm run dev
 ```
 
-The Vite dev server will start at `http://localhost:5173` with hot module reload enabled. However, access your application at `http://studytracker.test` (or `http://localhost:8080` with Docker), not through the Vite port.
+The Vite dev server will start at `http://localhost:5173` with hot module reload enabled. However, access your application at `http://studytracker.test`, not through the Vite port.
 
 ### 5. Build for Production
 
