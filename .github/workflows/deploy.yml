@@ -35,7 +35,7 @@ jobs:
           --health-cmd="mysqladmin ping -h 127.0.0.1 -u root -ptesting_root"
           --health-interval=10s
           --health-timeout=5s
-          --health-retries=10
+          --health-retries:10
 
     steps:
       - name: Checkout repository
@@ -89,7 +89,7 @@ jobs:
           php artisan test
 
   deploy:
-    name: CD (Deploy to EC2 via SSH)
+    name: CD (Deploy to EC2 via Cloudflare Tunnel)
     runs-on: ubuntu-latest
     needs: ci
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
@@ -99,20 +99,49 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Deploy over SSH (Native EC2)
-        uses: appleboy/ssh-action@v1.2.0
-        with:
-          host: ${{ secrets.EC2_HOST }}
-          username: ${{ secrets.EC2_USERNAME }}
-          key: ${{ secrets.EC2_SSH_PRIVATE_KEY }}
-          port: ${{ secrets.EC2_SSH_PORT || 22 }}
-          script_stop: true
-          script: |
+      # ----------------------------------------------------------------
+      # Install cloudflared on the GitHub Actions runner.
+      # This is required so the runner can proxy SSH through the tunnel.
+      # No public IP is needed on the EC2 instance.
+      # ----------------------------------------------------------------
+      - name: Install cloudflared
+        run: |
+          curl -fsSL https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64.deb \
+            -o cloudflared.deb
+          sudo dpkg -i cloudflared.deb
+          cloudflared --version
+
+      # ----------------------------------------------------------------
+      # Write the SSH private key and configure SSH to proxy
+      # all connections to EC2_SSH_TUNNEL_HOST through cloudflared.
+      # ----------------------------------------------------------------
+      - name: Configure SSH for Cloudflare Tunnel
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.EC2_SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+
+          cat >> ~/.ssh/config <<EOF
+          Host ${{ secrets.EC2_SSH_TUNNEL_HOST }}
+              ProxyCommand cloudflared access ssh --hostname %h
+              User ${{ secrets.EC2_USERNAME }}
+              IdentityFile ~/.ssh/id_rsa
+              StrictHostKeyChecking no
+              ServerAliveInterval 30
+              ServerAliveCountMax 3
+          EOF
+
+      - name: Deploy over SSH (via Cloudflare Tunnel)
+        env:
+          TUNNEL_HOST: ${{ secrets.EC2_SSH_TUNNEL_HOST }}
+          APP_PATH: ${{ secrets.EC2_APP_PATH }}
+          COMMIT_SHA: ${{ github.sha }}
+        run: |
+          ssh "$TUNNEL_HOST" bash -se << 'ENDSSH'
             set -e
 
             APP_DIR="${{ secrets.EC2_APP_PATH }}"
 
-            # Check if repository exists on server
             if [ ! -d "$APP_DIR/.git" ]; then
               echo "Repository not found at $APP_DIR"
               echo "Run initial setup manually first:"
@@ -130,13 +159,11 @@ jobs:
 
             cd "$APP_DIR"
 
-            # Pull latest code
             echo "[1/2] Pulling latest changes..."
             git fetch origin main
             git checkout main
             git pull --ff-only origin main
 
-            # Run deployment script
             echo "[2/2] Running deployment script..."
             sudo bash deploy/deploy.sh
 
@@ -145,7 +172,6 @@ jobs:
             echo " Deployment complete!"
             echo "=========================================="
 
-            # Show system resources
             echo ""
             echo "System Resources:"
             free -h
@@ -154,11 +180,12 @@ jobs:
             df -h /var/www
 
             echo "Deploy finished: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          ENDSSH
 
-# Required GitHub repository secrets:
-# EC2_HOST            -> public IP or hostname of EC2
-# EC2_USERNAME        -> SSH user (ubuntu)
-# EC2_SSH_PRIVATE_KEY -> private key content (PEM)
-# EC2_APP_PATH        -> absolute app path on EC2 (e.g. /var/www/study-tracker)
-# Optional:
-# EC2_SSH_PORT        -> defaults to 22
+# -----------------------------------------------------------------------
+# Required GitHub repository secrets (Settings → Secrets → Actions):
+#
+# EC2_SSH_PRIVATE_KEY   -> Contents of your AWS .pem key file
+# EC2_SSH_TUNNEL_HOST   -> Cloudflare Tunnel SSH hostname
+# EC2_USERNAME          -> ubuntu
+# EC2_APP_PATH          -> APP directory on EC2
