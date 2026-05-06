@@ -104,12 +104,20 @@ jobs:
       # This is required so the runner can proxy SSH through the tunnel.
       # No public IP is needed on the EC2 instance.
       # ----------------------------------------------------------------
+      - name: Cache cloudflared
+        id: cache-cloudflared
+        uses: actions/cache@v4
+        with:
+          path: /usr/local/bin/cloudflared
+          key: cloudflared-${{ runner.os }}-2025.4.0
+
       - name: Install cloudflared
+        if: steps.cache-cloudflared.outputs.cache-hit != 'true'
         run: |
-          curl -fsSL https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64.deb \
+          curl -fsSL https://github.com/cloudflare/cloudflared/releases/download/2025.4.0/cloudflared-linux-amd64.deb \
             -o cloudflared.deb
           sudo dpkg -i cloudflared.deb
-          cloudflared --version
+          sudo cp /usr/bin/cloudflared /usr/local/bin/cloudflared
 
       # ----------------------------------------------------------------
       # Write the SSH private key and configure SSH to proxy
