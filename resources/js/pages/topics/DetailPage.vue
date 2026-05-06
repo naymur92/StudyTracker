@@ -32,12 +32,12 @@
             <!-- Main info -->
             <div class="bg-white rounded-lg shadow p-8">
                 <div class="flex items-start justify-between mb-6">
-                    <div>
+                    <div class="flex-1">
                         <h1 class="text-3xl font-bold text-gray-900">{{ topic.title }}</h1>
                         <p class="text-gray-600 mt-2">{{ topic.description }}</p>
                     </div>
                     <span
-                        :class="['px-3 py-1 rounded-full text-xs font-semibold', getDifficultyColor(topic.difficulty)]">
+                        :class="['px-3 py-1 rounded-full text-xs font-semibold ml-4', getDifficultyColor(topic.difficulty)]">
                         {{ capitalizeFirst(topic.difficulty) }}
                     </span>
                 </div>
@@ -59,6 +59,21 @@
                         <p class="text-gray-600 text-sm">First Study</p>
                         <p class="font-semibold text-gray-900">{{ formatDate(topic.first_study_date) }}</p>
                     </div>
+                </div>
+
+                <!-- Source Link -->
+                <div v-if="topic.source_link" class="mt-6 pt-6 border-t border-gray-200">
+                    <p class="text-gray-600 text-sm">Source</p>
+                    <a :href="topic.source_link" target="_blank" rel="noopener noreferrer"
+                        class="text-primary-600 hover:text-primary-700 underline font-medium break-all">
+                        {{ topic.source_link }}
+                    </a>
+                </div>
+
+                <!-- Notes -->
+                <div v-if="topic.notes" class="mt-6 pt-6 border-t border-gray-200">
+                    <p class="text-gray-600 text-sm">Notes</p>
+                    <p class="text-gray-900 mt-2 whitespace-pre-wrap">{{ topic.notes }}</p>
                 </div>
             </div>
 
