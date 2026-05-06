@@ -129,7 +129,8 @@
                         class="p-4 border border-gray-200 rounded-lg hover:shadow-md transition-shadow cursor-pointer flex items-center justify-between">
                         <div class="flex items-center gap-4 flex-1">
                             <input type="checkbox" :checked="task.status === 'completed'"
-                                :disabled="task.status === 'completed'" @change="() => toggleTask(task)"
+                                :disabled="task.status === 'completed' || task.status === 'skipped'"
+                                @change="() => toggleTask(task)"
                                 class="w-5 h-5 text-primary-600 rounded focus:ring-2 focus:ring-primary-500" />
                             <div>
                                 <p class="font-medium text-gray-900">{{ task.topic_title || task.title }}</p>
@@ -232,10 +233,20 @@ const fetchDashboard = async () => {
 }
 
 const toggleTask = async (task) => {
-    if (task.status === 'completed') {
-        // Skip task
-    } else {
-        // Complete task
+    try {
+        const api = authStore.getApiClient()
+        if (task.status === 'completed') {
+            // Task already completed, skip
+            return
+        } else {
+            await taskStore.completeTask(api, task.id, {
+                notes: '',
+                difficulty_feedback: 'medium',
+            })
+            await fetchDashboard()
+        }
+    } catch (err) {
+        error.value = err.response?.data?.msg || err.response?.data?.message || 'Failed to complete task'
     }
 }
 
