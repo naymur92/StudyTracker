@@ -474,10 +474,12 @@ Required: `question` (≤500), `correct_answer` (≤2000), `cause`. Optional: `m
 - `POST /api/study/weekly-plan` — `week_start` (must be your week-start weekday; no overlapping plan), `gear` (`green`/`yellow`/`red`), optional `major_focus`, `minor_focus`, `generate_blocks` (default `true`)
 - `PATCH /api/study/weekly-plan/{week}` — `gear`, focus fields, `reflection` (≤2000), `if_then_plan` (≤500), `output_note` (≤300); blocks are not changed
 - `DELETE /api/study/weekly-plan/{week}`
-- `POST /api/study/weekly-plan/{week}/regenerate` — `{ "gear": "yellow" }`: replaces blocks from today on that are still `planned` with that gear's template
+- `POST /api/study/weekly-plan/{week}/regenerate` — `{ "gear": "yellow" }`: replaces blocks from today on that are still `planned` (and have no active timer) with that gear's template
 - `POST /api/study/weekly-plan/{week}/blocks`, `PATCH /api/study/blocks/{block}`, `DELETE /api/study/blocks/{block}`
 
-Block fields: `block_date` (inside the week), `slot` (`morning`, `class_recap`, `deep`, `block_a`, `block_b`, `review`, `minor`, `other`), `lane` (`major`, `minor`, `review`, `work`), `planned_task` (≤300), `planned_minutes` (5–480), `status` (`planned`, `done`, `partial`, `missed`, `red`), `note` (≤500), optional `category_id`/`topic_id`. `done`, `partial` and `missed` are accepted only for blocks dated today or earlier (`422` otherwise, also when moving a marked block to a later date); future blocks can still be edited, marked `red` or cleared back to `planned`.
+Block fields: `block_date` (inside the week), `slot` (`morning`, `class_recap`, `deep`, `block_a`, `block_b`, `review`, `minor`, `other`), `lane` (`major`, `minor`, `review`, `work`), `planned_task` (≤300), `planned_minutes` (5–480), `status` (`planned`, `done`, `partial`, `missed`, `red`), `note` (≤500), optional `category_id`/`topic_id`, and an optional break pattern: `break_every_minutes` (10–120) and `break_minutes` (1–30), both set or both `null` (breaks fall inside `planned_minutes`). `done`, `partial` and `missed` are accepted only for blocks dated today or earlier (`422` otherwise, also when moving a marked block to a later date); future blocks can still be edited, marked `red` or cleared back to `planned`.
+
+Each block in responses also has `actual_minutes` (time recorded by its ended timer runs, rounded) and `timer` (its active timer object, or `null`). While a block's timer is active (running or paused), changing its `block_date`, `planned_minutes`, `status`, `break_every_minutes` or `break_minutes` returns `422`, and so does deleting it; its task, topic, category, slot, lane and note stay editable.
 
 Gear templates depend on your `study_profile`. Each day is a workday (office day for a job holder, class day for a student) or an off day (from `off_days`):
 
@@ -490,6 +492,52 @@ Gear templates depend on your `study_profile`. Each day is a workday (office day
 The weekly plan response also includes `study_profile` and `gear_options` — for each gear: `gear`, `label`, `description` (in your profile's terms), `minutes` (a full week of that template for your profile and off days) and `hours` (rounded). With Friday and Saturday off: job holder 1130 / 705 / 140 minutes, student 1465 / 780 / 140 minutes. Changing the profile only affects blocks generated afterwards (new plans, regeneration).
 
 `score`: counted blocks are non-red blocks dated before today or already marked (a past `planned` block counts as missed); `percent = round(100 × (done + 0.5 × partial) / counted)`, `on_track = percent ≥ success threshold`. Write routes return `403` for demo users and for another user's plan or block.
+
+### Block Timer
+
+Run a weekly-plan block with a timer. A user has at most one active (running or paused) timer; each run is stored on the server, so it survives reloads, closed tabs and other devices.
+
+- `GET /api/study/timer` (`study-read`) — `{ timer, recent, server_time }`
+- `POST /api/study/blocks/{block}/timer/start` — optional `topic_id`, `planned_minutes` (5–480), saved on the block first
+- `POST /api/study/blocks/{block}/timer/pause`
+- `POST /api/study/blocks/{block}/timer/resume` — only on the block's day
+- `POST /api/study/blocks/{block}/timer/stop`
+- `DELETE /api/study/blocks/{block}/timer` — discard the active run; the block's status and recorded time stay as before the run
+
+Every action returns the lookup shape plus `block` (the acted-on block); `stop` also returns `outcome`: `done`, `partial` or `discarded`. Write routes use `study-write` and return `403` for demo users and for another user's block; an unknown block ID returns `404`.
+
+Rules:
+
+- **Start**: the block must be dated today, have status `planned` or `partial`, planned minutes and time left (`422` on `block_date`, `status` or `planned_minutes`). A block needs a topic unless its lane is `review` (`422` on `topic_id`). Starting while another block's timer is active returns `409`, naming that block, with the lookup payload in `data`.
+- **Time used** counts all runs of the block, excluding paused time. A run that continues past midnight keeps counting.
+- **Runs out**: when the time left reaches zero the run ends at that moment and the block becomes `done`, even with no page open — the timer is settled before `GET /timer`, the weekly plan, the weekly history and every timer action.
+- **Stop**: with more than 30 seconds left the block becomes `partial`; with 30 seconds or less it is completed as `done` with its full planned time; a run shorter than 60 seconds is discarded instead.
+- **Partial blocks** can be started again on their day; their runs add up until the block is `done`.
+- Pause, resume, stop or discard on a block without an active timer returns `422`.
+
+Timer object (`timer`, and `block.timer`):
+
+```json
+{
+  "session_id": "1a2B3c",
+  "block_id": "4d5E6f",
+  "state": "running",
+  "started_at": "2026-10-13T10:00:00+06:00",
+  "planned_seconds": 5400,
+  "used_seconds": 3120,
+  "left_seconds": 2280,
+  "phase": "break",
+  "phase_left_seconds": 480,
+  "next_break_at_seconds": null,
+  "break_every_minutes": 50,
+  "break_minutes": 10,
+  "block": { "id": "4d5E6f", "slot": "morning", "planned_task": "Write Task 2 essay #4", "...": "..." }
+}
+```
+
+`phase` is `work` or `break`: `break_every_minutes` of work then `break_minutes` of break, repeated; a break that would end at or after the block's end is not taken (150 min with 50/10 → work 0–50, break 50–60, work 60–110, break 110–120, work 120–150). The nested `block` appears only on the top-level `timer`.
+
+`recent` is the latest run that ended in the last 12 hours, or `null`: `{ session_id, end_reason ("finished" | "stopped"), ended_at, minutes, block }`.
 
 ### Study Preferences
 
@@ -521,7 +569,7 @@ A user asks for chosen categories of their own data to be deleted. An admin revi
 | `topics` | regular topics, their study tasks and practice logs |
 | `mistakes` | mistake entries, their study tasks and practice logs |
 | `practice_logs` | all practice logs |
-| `weekly_plans` | weekly plans and their blocks |
+| `weekly_plans` | weekly plans, their blocks and the blocks' timer runs (an active run is archived as ended) |
 | `categories` | own categories and their review schedules (topics in them become uncategorised) |
 | `study_settings` | revision templates, category review schedules; study preferences reset to defaults |
 | `report_history` | emailed report records |
@@ -577,7 +625,7 @@ Statuses: `pending` → `approved` → `processing` → `completed` (or `failed`
 
 ## Encoded ID Notes
 
-All IDs returned by resource-based responses are encoded strings (topics, mistakes, tasks, practice logs, categories, weekly plans and blocks, data deletion requests).
+All IDs returned by resource-based responses are encoded strings (topics, mistakes, tasks, practice logs, categories, weekly plans and blocks, block timer runs, data deletion requests).
 
 Examples:
 
@@ -754,5 +802,6 @@ Collection includes:
 
 - Auth verification flow (`register`, `verify-email`, `resend-verification`)
 - Forgot password flow (`forgot-password/request`, `forgot-password/verify`)
-- Encoded ID variables (`category_id`, `topic_id`, `task_id`, `practice_log_id`)
+- Encoded ID variables (`category_id`, `topic_id`, `task_id`, `practice_log_id`, `block_id`)
 - User profile endpoints (`get`, `patch`, `change-password`)
+- Block timer (`timer`, `start`, `pause`, `resume`, `stop`, discard)

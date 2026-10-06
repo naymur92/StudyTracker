@@ -34,28 +34,37 @@
             <div v-if="todayBlocks.length" class="space-y-2">
                 <div v-for="block in todayBlocks" :key="block.id" class="flex items-center justify-between gap-2 border border-gray-200 rounded-lg px-3 py-2">
                     <div class="min-w-0">
-                        <p class="text-sm font-medium text-gray-900">{{ slotLabels[block.slot] }} <span class="text-xs text-gray-500">· {{ block.planned_minutes || '–' }} min</span></p>
-                        <p class="text-xs text-gray-600 truncate">{{ block.planned_task || 'No task decided' }}</p>
+                        <p class="text-sm font-medium text-gray-900">{{ slotLabels[block.slot] }} <span class="text-xs text-gray-500">· <template v-if="block.actual_minutes">{{ block.actual_minutes }} / </template>{{ block.planned_minutes || '–' }} min</span></p>
+                        <p class="text-xs text-gray-600 truncate">{{ block.planned_task || 'No task decided' }}<template v-if="block.topic"> · {{ block.topic.title }}</template></p>
+                        <TimerBadge v-if="timerStore.activeBlockId === block.id" class="mt-1" />
                     </div>
                     <span class="flex gap-1 shrink-0">
-                        <button v-for="s in quickStatuses" :key="s.value" @click="mark(block, s.value)" :title="s.label"
-                            :class="['w-7 h-7 rounded text-xs font-bold', block.status === s.value ? s.style : 'bg-gray-100 text-gray-600 hover:bg-gray-200']">{{ s.short }}</button>
+                        <button v-if="canStart(block)" @click="startBlock(block)" :disabled="!!startBlockedReason()" :title="startBlockedReason() || 'Start the timer'"
+                            class="h-7 px-2 rounded text-xs font-semibold bg-primary-600 text-white hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed">▶ Start</button>
+                        <button v-for="s in quickStatuses" :key="s.value" @click="mark(block, s.value)" :disabled="timerStore.activeBlockId === block.id"
+                            :title="timerStore.activeBlockId === block.id ? 'Stop the timer to mark this block' : s.label"
+                            :class="['w-7 h-7 rounded text-xs font-bold disabled:opacity-40 disabled:cursor-not-allowed', block.status === s.value ? s.style : 'bg-gray-100 text-gray-600 hover:bg-gray-200']">{{ s.short }}</button>
                     </span>
                 </div>
             </div>
             <p v-else class="text-sm text-gray-500">No blocks planned for today.</p>
         </template>
+
+        <StartBlockDialog :block="dialogBlock" @close="dialogBlock = null" @started="load" />
     </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import { useWeeklyPlanStore } from '@/stores/weeklyPlan'
 import { todayLocal } from '@/helpers/dates'
 import { showError } from '@/helpers/alerts'
 import { gearsWithOptions, slotLabels, statuses } from '@/components/weekly/weeklyMeta'
 import ScoreBar from '@/components/weekly/ScoreBar.vue'
+import StartBlockDialog from '@/components/timer/StartBlockDialog.vue'
+import TimerBadge from '@/components/timer/TimerBadge.vue'
+import { useStartBlock } from '@/components/timer/useStartBlock'
 
 const props = defineProps({
     reviewLoad: { type: Object, default: null },
@@ -88,6 +97,15 @@ const mark = async (block, status) => {
         await showError(err.response?.data?.msg || 'Failed to update the block')
     }
 }
+
+// Block timers: Start on today's blocks; reload when a timer changes an outcome.
+const { store: timerStore, dialogBlock, canStart, startBlockedReason, startBlock: startTimer } = useStartBlock(today)
+const startBlock = async (block) => {
+    if (await startTimer(block)) await load()
+}
+watch(() => timerStore.revision, () => {
+    if (week.value?.plan) load()
+})
 
 onMounted(load)
 </script>

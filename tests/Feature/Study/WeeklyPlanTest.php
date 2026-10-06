@@ -238,6 +238,85 @@ class WeeklyPlanTest extends StudyApiTestCase
         $this->patchJson($url($future), ['status' => 'planned'])->assertOk();
     }
 
+    public function test_block_break_pattern(): void
+    {
+        $this->create('green')->assertCreated();
+        $this->assertSame(0, StudyBlock::whereNotNull('break_every_minutes')->orWhereNotNull('break_minutes')->count(), 'generated blocks have no pattern');
+        $this->getJson('/api/study/weekly-plan')->assertJsonPath('data.blocks.0.break_every_minutes', null)
+            ->assertJsonPath('data.blocks.0.break_minutes', null);
+
+        $blockA = StudyBlock::whereDate('block_date', '2026-10-17')->where('slot', 'block_a')->firstOrFail();
+        $url = '/api/study/blocks/'.IdHasher::encode($blockA->id);
+
+        $this->patchJson($url, ['break_every_minutes' => 50, 'break_minutes' => 10])->assertOk()
+            ->assertJsonPath('data.break_every_minutes', 50)
+            ->assertJsonPath('data.break_minutes', 10)
+            ->assertJsonPath('data.planned_minutes', 150);
+
+        // One half can change on its own once the other is stored.
+        $this->patchJson($url, ['break_minutes' => 5])->assertOk()->assertJsonPath('data.break_every_minutes', 50);
+        $this->patchJson($url, ['break_every_minutes' => null, 'break_minutes' => null])->assertOk()
+            ->assertJsonPath('data.break_every_minutes', null);
+
+        $this->patchJson($url, ['break_minutes' => 10])->assertStatus(422)->assertJsonValidationErrors('break_every_minutes', 'errors');
+        $this->patchJson($url, ['break_every_minutes' => 50])->assertStatus(422)->assertJsonValidationErrors('break_minutes', 'errors');
+        $this->patchJson($url, ['break_every_minutes' => 5, 'break_minutes' => 10])->assertStatus(422)->assertJsonValidationErrors('break_every_minutes', 'errors');
+        $this->patchJson($url, ['break_every_minutes' => 50, 'break_minutes' => 31])->assertStatus(422)->assertJsonValidationErrors('break_minutes', 'errors');
+        $this->assertNull($blockA->fresh()->break_minutes);
+    }
+
+    private function startTimer(StudyBlock $block): void
+    {
+        $topic = Topic::factory()->create(['user_id' => $this->user->id]);
+        $this->postJson('/api/study/blocks/'.IdHasher::encode($block->id).'/timer/start', ['topic_id' => IdHasher::encode($topic->id)])->assertOk();
+    }
+
+    public function test_blocks_with_an_active_timer_are_locked(): void
+    {
+        $this->create('green')->assertCreated();
+        $morning = StudyBlock::whereDate('block_date', '2026-10-14')->where('slot', 'morning')->firstOrFail();
+        $url = '/api/study/blocks/'.IdHasher::encode($morning->id);
+        $this->startTimer($morning);
+
+        $this->patchJson($url, ['status' => 'done'])->assertStatus(422)->assertJsonValidationErrors('status', 'errors');
+        $this->patchJson($url, ['planned_minutes' => 60])->assertStatus(422)->assertJsonValidationErrors('planned_minutes', 'errors');
+        $this->patchJson($url, ['block_date' => '2026-10-13'])->assertStatus(422)->assertJsonValidationErrors('block_date', 'errors');
+        $this->patchJson($url, ['break_every_minutes' => 50, 'break_minutes' => 10])->assertStatus(422)
+            ->assertJsonValidationErrors(['break_every_minutes', 'break_minutes'], 'errors');
+        $this->assertSame('planned', $morning->fresh()->status);
+        $this->assertTrue($morning->fresh()->activeSession->isRunning(), 'the timer keeps running');
+
+        // Task, note, slot and lane stay editable.
+        $this->patchJson($url, ['planned_task' => 'Write Task 2 essay #4', 'note' => 'quiet room', 'lane' => 'minor'])->assertOk()
+            ->assertJsonPath('data.planned_task', 'Write Task 2 essay #4')
+            ->assertJsonPath('data.timer.state', 'running');
+
+        // A paused timer locks the block too, including deletion.
+        $this->postJson($url.'/timer/pause')->assertOk();
+        $this->deleteJson($url)->assertStatus(422);
+        $this->assertNotNull($morning->fresh()?->activeSession);
+
+        // Once stopped, the block is editable and deletable again.
+        $this->deleteJson($url.'/timer')->assertOk();
+        $this->patchJson($url, ['planned_minutes' => 60])->assertOk();
+        $this->deleteJson($url)->assertOk();
+    }
+
+    public function test_regenerate_keeps_a_running_block(): void
+    {
+        $this->create('green')->assertCreated();
+        $morning = StudyBlock::whereDate('block_date', '2026-10-14')->where('slot', 'morning')->firstOrFail();
+        $this->startTimer($morning);
+
+        $this->postJson('/api/study/weekly-plan/'.IdHasher::encode($this->week()->id).'/regenerate', ['gear' => 'yellow'])->assertOk();
+
+        $this->assertNotNull($morning->fresh(), 'the running block stays');
+        $this->assertTrue($morning->fresh()->activeSession->isRunning());
+        $this->assertSame(['morning', 'morning', 'review'], $this->blocks('2026-10-14'), 'running block kept, yellow added');
+        $this->assertSame(['morning', 'review'], $this->blocks('2026-10-15'));
+        $this->assertSame(['block_a', 'review'], $this->blocks('2026-10-16'));
+    }
+
     public function test_red_day_is_excluded_from_score(): void
     {
         $this->create('green')->assertCreated();

@@ -87,18 +87,31 @@
                         :class="block.status === 'red' ? 'bg-red-50 border-red-200' : 'border-gray-200'">
                         <div class="flex items-center justify-between gap-1">
                             <span class="text-xs font-medium text-gray-700">{{ slotLabels[block.slot] }}</span>
-                            <span :class="['text-[10px] px-1.5 py-0.5 rounded-full', laneStyles[block.lane]]">{{ block.lane }}</span>
+                            <span class="flex items-center gap-1">
+                                <span :class="['text-[10px] px-1.5 py-0.5 rounded-full', laneStyles[block.lane]]">{{ block.lane }}</span>
+                                <button @click="editing = block" title="Edit block" aria-label="Edit block" class="w-5 h-5 rounded text-xs text-gray-500 hover:bg-gray-100">✎</button>
+                            </span>
                         </div>
                         <input :value="block.planned_task || ''" @change="(e) => saveBlock(block, { planned_task: e.target.value || null })"
                             maxlength="300" class="w-full text-xs border border-gray-200 rounded px-1.5 py-1" placeholder="Exact task…" />
+                        <p v-if="block.topic || block.break_every_minutes" class="text-[11px] text-gray-500 truncate">
+                            <span v-if="block.topic" :title="block.topic.title">{{ block.topic.title }}</span>
+                            <span v-if="block.topic && block.break_every_minutes"> · </span>
+                            <span v-if="block.break_every_minutes">breaks {{ block.break_every_minutes }} + {{ block.break_minutes }}</span>
+                        </p>
+                        <div v-if="timerStore.activeBlockId === block.id" class="flex items-center justify-between gap-1">
+                            <TimerBadge />
+                        </div>
+                        <button v-else-if="canStart(block)" @click="startBlock(block)" :disabled="!!startBlockedReason()" :title="startBlockedReason() || 'Start the timer'"
+                            class="w-full text-xs py-1 rounded bg-primary-600 text-white font-semibold hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed">▶ Start</button>
                         <div class="flex items-center justify-between">
-                            <span class="text-[11px] text-gray-500">{{ block.planned_minutes || '–' }} min</span>
+                            <span class="text-[11px] text-gray-500"><template v-if="block.actual_minutes">{{ block.actual_minutes }} / </template>{{ block.planned_minutes || '–' }} min</span>
                             <span class="flex gap-0.5">
                                 <button v-for="s in statuses" :key="s.value" @click="saveBlock(block, { status: block.status === s.value ? 'planned' : s.value })"
-                                    :disabled="outcomeLocked(day, block, s)"
-                                    :title="outcomeLocked(day, block, s) ? `${s.label} can be marked from ${day.label}` : s.label"
+                                    :disabled="outcomeLocked(day, block, s) || timerStore.activeBlockId === block.id"
+                                    :title="timerStore.activeBlockId === block.id ? 'Stop the timer to mark this block' : outcomeLocked(day, block, s) ? `${s.label} can be marked from ${day.label}` : s.label"
                                     :class="['w-6 h-6 rounded text-xs font-bold disabled:opacity-40 disabled:cursor-not-allowed', block.status === s.value ? s.style : 'bg-gray-100 text-gray-600 hover:bg-gray-200']">{{ s.short }}</button>
-                                <button @click="removeBlock(block)" title="Remove block" class="w-6 h-6 rounded text-xs text-red-600 hover:bg-red-50">🗑</button>
+                                <button @click="removeBlock(block)" :disabled="timerStore.activeBlockId === block.id" title="Remove block" class="w-6 h-6 rounded text-xs text-red-600 hover:bg-red-50 disabled:opacity-40">🗑</button>
                             </span>
                         </div>
                     </div>
@@ -136,11 +149,14 @@
                 </div>
             </div>
         </template>
+
+        <BlockEditorDialog :block="editing" @close="editing = null" @saved="load" />
+        <StartBlockDialog :block="dialogBlock" @close="dialogBlock = null" @started="load" />
     </div>
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted, watch } from 'vue'
 import { format } from 'date-fns'
 import { useAuthStore } from '@/stores/auth'
 import { useWeeklyPlanStore } from '@/stores/weeklyPlan'
@@ -149,6 +165,10 @@ import { showConfirm, showError } from '@/helpers/alerts'
 import { gearsWithOptions, dayTerms, slotLabels, laneStyles, statuses } from '@/components/weekly/weeklyMeta'
 import { usePreferencesStore } from '@/stores/preferences'
 import ScoreBar from '@/components/weekly/ScoreBar.vue'
+import BlockEditorDialog from '@/components/weekly/BlockEditorDialog.vue'
+import StartBlockDialog from '@/components/timer/StartBlockDialog.vue'
+import TimerBadge from '@/components/timer/TimerBadge.vue'
+import { useStartBlock } from '@/components/timer/useStartBlock'
 
 const authStore = useAuthStore()
 const store = useWeeklyPlanStore()
@@ -164,6 +184,23 @@ const newPlan = reactive({ gear: 'green', major_focus: '', minor_focus: '' })
 const planForm = reactive({ major_focus: '', minor_focus: '', reflection: '', if_then_plan: '', output_note: '' })
 
 const preferencesStore = usePreferencesStore()
+const editing = ref(null)
+
+// Block timers: Start on today's blocks; reload when a timer changes an outcome.
+const { store: timerStore, dialogBlock, canStart, startBlockedReason, startBlock: startTimer } = useStartBlock(today)
+const startBlock = async (block) => {
+    if (await startTimer(block)) await load()
+}
+// Only blocks and score are refreshed, so unsaved reflection text is kept.
+watch(() => timerStore.revision, async () => {
+    if (!data.value?.plan || loading.value) return
+    try {
+        const fresh = await store.fetchWeek(api(), date.value)
+        if (fresh.plan?.id === data.value?.plan?.id) data.value = { ...data.value, blocks: fresh.blocks, score: fresh.score }
+    } catch {
+        // The next action or reload refreshes the week.
+    }
+})
 const offDays = ref([])
 const gearList = computed(() => gearsWithOptions(data.value?.gear_options || []))
 const terms = computed(() => dayTerms(data.value?.study_profile))

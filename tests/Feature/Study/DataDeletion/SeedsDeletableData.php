@@ -7,6 +7,8 @@ use App\Models\CategoryReviewSchedule;
 use App\Models\EmailedStudyReport;
 use App\Models\PracticeLog;
 use App\Models\ReviewLoadSnapshot;
+use App\Models\StudyBlock;
+use App\Models\StudyBlockSession;
 use App\Models\StudyTask;
 use App\Models\Topic;
 use App\Models\TopicRevisionTemplate;
@@ -88,6 +90,18 @@ trait SeedsDeletableData
             'months' => [now()->format('Y-m')],
             'status' => 'sent',
             'sent_at' => now(),
+        ]);
+    }
+
+    /** An ended timer run of $minutes on the block. */
+    protected function runFor(StudyBlock $block, int $minutes = 30): StudyBlockSession
+    {
+        return StudyBlockSession::factory()->create([
+            'study_block_id' => $block->id,
+            'user_id' => $block->user_id,
+            'started_at' => now()->subMinutes($minutes),
+            'used_seconds' => $minutes * 60,
+            'ended_at' => now(),
         ]);
     }
 }

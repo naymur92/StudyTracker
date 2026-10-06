@@ -29,6 +29,9 @@
 
         <!-- Topic detail -->
         <div v-else-if="topic" class="space-y-6">
+            <!-- Wrap-up after a block timer finished on this topic -->
+            <WrapUpPanel v-if="showWrapup" :wrapup="timerStore.wrapup" @saved="onWrapupSaved" @done="closeWrapup" />
+
             <!-- Main info -->
             <div class="bg-white rounded-lg shadow p-8">
                 <div class="flex items-start justify-between mb-6">
@@ -191,13 +194,15 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import ScheduleSummary from '@/components/topics/ScheduleSummary.vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useTopicStore } from '@/stores/topics'
 import { formatDate as fmtDate } from 'date-fns'
 import { showConfirm, showError, showSuccess } from '@/helpers/alerts'
+import { useBlockTimerStore } from '@/stores/blockTimer'
+import WrapUpPanel from '@/components/timer/WrapUpPanel.vue'
 
 const router = useRouter()
 const route = useRoute()
@@ -267,8 +272,25 @@ const deleteTopic = async () => {
     }
 }
 
-onMounted(async () => {
+// "What did you learn?" after a block timer finished (?wrapup=<block id>).
+const timerStore = useBlockTimerStore()
+const showWrapup = computed(() => !!route.query.wrapup
+    && timerStore.wrapup?.block_id === route.query.wrapup
+    && timerStore.wrapup?.topic_id === route.params.id)
+
+const closeWrapup = () => {
+    timerStore.clearWrapup()
+    const { wrapup, ...query } = route.query
+    router.replace({ query })
+}
+
+const onWrapupSaved = (log) => {
+    if (log) practiceLogs.value = [log, ...practiceLogs.value]
+}
+
+const loadTopic = async () => {
     loading.value = true
+    error.value = null
     try {
         const api = authStore.getApiClient()
         await topicStore.fetchTopic(api, route.params.id)
@@ -281,5 +303,11 @@ onMounted(async () => {
     } finally {
         loading.value = false
     }
+}
+
+onMounted(loadTopic)
+// A finished block can open another topic's page while this one is shown.
+watch(() => route.params.id, (id, old) => {
+    if (id && id !== old && route.name === 'TopicDetail') loadTopic()
 })
 </script>

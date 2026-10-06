@@ -11,6 +11,7 @@ use App\Models\EmailedStudyReport;
 use App\Models\PracticeLog;
 use App\Models\ReviewLoadSnapshot;
 use App\Models\StudyBlock;
+use App\Models\StudyBlockSession;
 use App\Models\StudyTask;
 use App\Models\StudyWeek;
 use App\Models\Topic;
@@ -148,6 +149,43 @@ class ExecuteDeletionTest extends StudyApiTestCase
         $this->assertEquals(['study_weeks' => 2, 'study_blocks' => 9], $request->deleted_counts);
         $this->assertSame(0, StudyWeek::count());
         $this->assertSame(0, StudyBlock::count());
+    }
+
+    public function test_weekly_plans_include_timer_runs(): void
+    {
+        $blocks = collect();
+        foreach (['2026-09-06', '2026-09-13'] as $weekStart) {
+            $week = StudyWeek::factory()->create(['user_id' => $this->user->id, 'week_start' => $weekStart]);
+            $blocks = $blocks->merge(StudyBlock::factory()->count($weekStart === '2026-09-06' ? 4 : 5)->create(['study_week_id' => $week->id]));
+        }
+        $this->runFor($blocks[0], 40);
+        $this->runFor($blocks[0], 50);
+        $this->runFor($blocks[5], 20);
+
+        $request = $this->process($this->approvedRequest(['weekly_plans']));
+
+        $this->assertEquals(['study_weeks' => 2, 'study_blocks' => 9, 'study_block_sessions' => 3], $request->deleted_counts);
+        $this->assertSame(0, StudyBlockSession::count());
+        $archive = $this->archiveOf($request);
+        $this->assertCount(3, $archive['tables']['study_block_sessions']);
+        $this->assertSame([2400, 3000, 1200], collect($archive['tables']['study_block_sessions'])->pluck('used_seconds')->map(fn ($v) => (int) $v)->all());
+    }
+
+    public function test_active_timer_run_is_archived_as_ended(): void
+    {
+        $week = StudyWeek::factory()->create(['user_id' => $this->user->id, 'week_start' => now()->startOfWeek()->toDateString()]);
+        $block = StudyBlock::factory()->create(['study_week_id' => $week->id, 'block_date' => today()->toDateString(), 'planned_minutes' => 90]);
+        StudyBlockSession::factory()->running(now()->subMinutes(25))->create(['study_block_id' => $block->id, 'user_id' => $this->user->id]);
+
+        $request = $this->process($this->approvedRequest(['weekly_plans']));
+
+        $this->assertSame(DataDeletionRequest::STATUS_COMPLETED, $request->status, (string) $request->error_message);
+        $run = $this->archiveOf($request)['tables']['study_block_sessions'][0];
+        $this->assertNull($run['active_user_id']);
+        $this->assertNull($run['resumed_at']);
+        $this->assertNotNull($run['ended_at']);
+        $this->assertSame('stopped', $run['end_reason']);
+        $this->assertSame(1500, (int) $run['used_seconds']);
     }
 
     public function test_categories_leave_topics_uncategorised_and_spare_system_categories(): void

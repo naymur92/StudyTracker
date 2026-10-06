@@ -147,7 +147,7 @@ class WeeklyPlanService
         return $days;
     }
 
-    /** Replace today's and later still-planned blocks with another gear's template. */
+    /** Replace today's and later still-planned blocks (without an active timer) with another gear's template. */
     public function regenerate(StudyWeek $week, string $gear, StudyPreferences $prefs): void
     {
         DB::transaction(function () use ($week, $gear, $prefs) {
@@ -156,6 +156,7 @@ class WeeklyPlanService
             $week->blocks()
                 ->whereDate('block_date', '>=', $from->toDateString())
                 ->where('status', 'planned')
+                ->whereDoesntHave('activeSession')
                 ->delete();
 
             $week->update(['gear' => $gear]);
@@ -171,7 +172,10 @@ class WeeklyPlanService
     {
         $order = array_flip(config('study.slot_order'));
 
-        return $week->blocks()->with('topic:id,title', 'category:id,name,color')->get()
+        return $week->blocks()
+            ->with('topic:id,title', 'category:id,name,color', 'activeSession')
+            ->withSum(['sessions as ended_seconds' => fn ($q) => $q->whereNotNull('ended_at')], 'used_seconds')
+            ->get()
             ->sortBy(fn (StudyBlock $b) => sprintf('%s-%02d-%010d', $b->block_date->toDateString(), $order[$b->slot] ?? 99, $b->id))
             ->values();
     }

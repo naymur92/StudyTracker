@@ -46,6 +46,7 @@ class DataCategoryRegistry
             'description' => 'Your weekly plans, their blocks and reflections.',
             'notes' => [
                 'All plans, blocks and weekly scores are removed.',
+                'Timer runs of these blocks are deleted too.',
             ],
         ],
         'categories' => [
@@ -90,6 +91,7 @@ class DataCategoryRegistry
         ['topics', 'parent_topic_id', 'topics', false],
         ['topics', 'category_id', 'categories', false],
         ['study_blocks', 'study_week_id', 'study_weeks', true],
+        ['study_block_sessions', 'study_block_id', 'study_blocks', true],
         ['study_blocks', 'topic_id', 'topics', false],
         ['study_blocks', 'category_id', 'categories', false],
         ['category_review_schedules', 'category_id', 'categories', true],
@@ -99,6 +101,7 @@ class DataCategoryRegistry
     public const DELETE_ORDER = [
         'practice_logs',
         'study_tasks',
+        'study_block_sessions',
         'study_blocks',
         'study_weeks',
         'topics',
@@ -124,6 +127,7 @@ class DataCategoryRegistry
         'practice_logs' => 'practiced_on',
         'study_weeks' => 'week_start',
         'study_blocks' => 'block_date',
+        'study_block_sessions' => 'started_at',
         'review_load_snapshots' => 'snapshot_date',
     ];
 
@@ -141,6 +145,7 @@ class DataCategoryRegistry
         'practice_logs' => 'Practice logs',
         'study_weeks' => 'Weekly plans',
         'study_blocks' => 'Weekly plan blocks',
+        'study_block_sessions' => 'Block timer runs',
         'categories' => 'Categories',
         'category_review_schedules' => 'Category review schedules',
         'topic_revision_templates' => 'Revision templates',

@@ -1601,6 +1601,208 @@
             ]
         },
         {
+            "name": "Block Timer",
+            "item": [
+                {
+                    "name": "Get Active Timer",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{url}}/api/study/timer",
+                            "host": [
+                                "{{url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "study",
+                                "timer"
+                            ]
+                        },
+                        "description": "Block timer — see API-DOCUMENTATION.md"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Start Block Timer",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{url}}/api/study/blocks/{{block_id}}/timer/start",
+                            "host": [
+                                "{{url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "study",
+                                "blocks",
+                                "{{block_id}}",
+                                "timer",
+                                "start"
+                            ]
+                        },
+                        "description": "Block timer — see API-DOCUMENTATION.md",
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"topic_id\": \"{{topic_id}}\",\n    \"planned_minutes\": 90\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Pause Block Timer",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{url}}/api/study/blocks/{{block_id}}/timer/pause",
+                            "host": [
+                                "{{url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "study",
+                                "blocks",
+                                "{{block_id}}",
+                                "timer",
+                                "pause"
+                            ]
+                        },
+                        "description": "Block timer — see API-DOCUMENTATION.md"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Resume Block Timer",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{url}}/api/study/blocks/{{block_id}}/timer/resume",
+                            "host": [
+                                "{{url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "study",
+                                "blocks",
+                                "{{block_id}}",
+                                "timer",
+                                "resume"
+                            ]
+                        },
+                        "description": "Block timer — see API-DOCUMENTATION.md"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Stop Block Timer",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{url}}/api/study/blocks/{{block_id}}/timer/stop",
+                            "host": [
+                                "{{url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "study",
+                                "blocks",
+                                "{{block_id}}",
+                                "timer",
+                                "stop"
+                            ]
+                        },
+                        "description": "Block timer — see API-DOCUMENTATION.md"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Discard Block Timer Run",
+                    "request": {
+                        "method": "DELETE",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{url}}/api/study/blocks/{{block_id}}/timer",
+                            "host": [
+                                "{{url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "study",
+                                "blocks",
+                                "{{block_id}}",
+                                "timer"
+                            ]
+                        },
+                        "description": "Block timer — see API-DOCUMENTATION.md"
+                    },
+                    "response": []
+                }
+            ]
+        },
+        {
             "name": "Data Deletion",
             "item": [
                 {
@@ -1818,6 +2020,10 @@
         },
         {
             "key": "data_deletion_request_id",
+            "value": ""
+        },
+        {
+            "key": "block_id",
             "value": ""
         }
     ]

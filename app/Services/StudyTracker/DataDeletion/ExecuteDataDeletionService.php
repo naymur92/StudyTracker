@@ -4,6 +4,7 @@ namespace App\Services\StudyTracker\DataDeletion;
 
 use App\Models\DataDeletionRequest;
 use App\Models\User;
+use App\Services\StudyTracker\BlockTimerService;
 use Illuminate\Support\Facades\DB;
 use RuntimeException;
 use Throwable;
@@ -21,6 +22,7 @@ class ExecuteDataDeletionService
         private DataCollector $collector,
         private DataArchiveService $archives,
         private DataCategoryRegistry $registry,
+        private BlockTimerService $timers,
     ) {}
 
     public function run(DataDeletionRequest $request): void
@@ -45,8 +47,19 @@ class ExecuteDataDeletionService
         try {
             $user = $request->user ?? throw new RuntimeException('The requesting user no longer exists.');
 
+            // A timer that ran out completes its block first, as on any read.
+            if (in_array('weekly_plans', $request->categories, true)) {
+                $this->timers->settle($user);
+            }
+
             $plan = DB::transaction(function () use ($request, $user, &$archive) {
                 User::whereKey($user->id)->lockForUpdate()->first();
+
+                // An active run is archived as ended, so a restore never brings
+                // back a second active timer.
+                if (in_array('weekly_plans', $request->categories, true)) {
+                    $this->timers->endActiveRun($user);
+                }
 
                 $plan = $this->collector->collect($user, $request->categories, lock: true);
 

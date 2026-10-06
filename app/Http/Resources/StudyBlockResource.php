@@ -3,6 +3,7 @@
 namespace App\Http\Resources;
 
 use App\Services\IdHasher;
+use App\Services\StudyTracker\BlockTimerService;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -19,10 +20,16 @@ class StudyBlockResource extends JsonResource
             'lane' => $this->lane,
             'planned_task' => $this->planned_task,
             'planned_minutes' => $this->planned_minutes,
+            'break_every_minutes' => $this->break_every_minutes,
+            'break_minutes' => $this->break_minutes,
             'status' => $this->status,
             'note' => $this->note,
             'category_id' => $this->category_id ? IdHasher::encode($this->category_id) : null,
             'topic' => $this->topic ? ['id' => IdHasher::encode($this->topic->id), 'title' => $this->topic->title] : null,
+            'actual_minutes' => (int) round($this->resource->endedSeconds() / 60),
+            'timer' => $this->activeSession
+                ? app(BlockTimerService::class)->timerFields($this->activeSession, $this->resource)
+                : null,
         ];
     }
 }

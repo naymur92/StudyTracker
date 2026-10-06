@@ -597,6 +597,7 @@ export const algorithms = [
         rule: [
             'Count blocks before today plus any block already marked; red-day blocks are excluded.',
             'A planned block left unmarked after its day counts as missed.',
+            'A block’s timer marks it done when its time runs out, and partial when you stop it early.',
             'Score = (done + ½ × partial) ÷ counted blocks, compared with your success line (default 80%).',
         ],
         example: '7 done, 2 partial and 1 missed out of 10 counted blocks (plus one red-day block) = 80%: on track.',

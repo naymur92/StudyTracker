@@ -5,6 +5,7 @@ namespace App\Http\Requests\StudyTracker;
 use App\Models\StudyBlock;
 use App\Models\StudyWeek;
 use App\Services\IdHasher;
+use App\Services\StudyTracker\BlockTimerService;
 use Carbon\Carbon;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -28,6 +29,9 @@ class StudyBlockRequest extends FormRequest
             'lane' => [$required, Rule::in(StudyBlock::LANES)],
             'planned_task' => ['nullable', 'string', 'max:300'],
             'planned_minutes' => ['nullable', 'integer', 'min:5', 'max:480'],
+            // Break pattern: both set or both null (no breaks); see after().
+            'break_every_minutes' => ['nullable', 'integer', 'min:10', 'max:120'],
+            'break_minutes' => ['nullable', 'integer', 'min:1', 'max:30'],
             'status' => ['sometimes', Rule::in(StudyBlock::STATUSES)],
             'note' => ['nullable', 'string', 'max:500'],
             'category_id' => [
@@ -43,9 +47,46 @@ class StudyBlockRequest extends FormRequest
         ];
     }
 
+    /** Fields that cannot change while the block's timer is active. */
+    public const TIMER_LOCKED_FIELDS = ['block_date', 'planned_minutes', 'status', 'break_every_minutes', 'break_minutes'];
+
     public function after(): array
     {
         return [
+            // A running or paused timer depends on the block's day, minutes,
+            // status and breaks; those wait until the timer is stopped.
+            function (Validator $validator) {
+                $block = $this->route('block');
+                if (! $block instanceof StudyBlock || $block->user_id !== $this->user()?->id) {
+                    return;
+                }
+
+                app(BlockTimerService::class)->settle($this->user());
+                if (! $block->activeSession()->exists()) {
+                    return;
+                }
+
+                foreach (self::TIMER_LOCKED_FIELDS as $field) {
+                    if ($this->has($field) && ! $validator->errors()->has($field)) {
+                        $validator->errors()->add($field, 'Stop the block\'s timer before changing this.');
+                    }
+                }
+            },
+            // A break pattern needs both halves, counting the stored values on update.
+            function (Validator $validator) {
+                if ($validator->errors()->hasAny(['break_every_minutes', 'break_minutes'])) {
+                    return;
+                }
+
+                $block = $this->route('block');
+                $every = $this->has('break_every_minutes') ? $this->input('break_every_minutes') : $block?->break_every_minutes;
+                $break = $this->has('break_minutes') ? $this->input('break_minutes') : $block?->break_minutes;
+
+                if (($every === null) !== ($break === null)) {
+                    $missing = $every === null ? 'break_every_minutes' : 'break_minutes';
+                    $validator->errors()->add($missing, 'A break pattern needs both the work minutes and the break minutes.');
+                }
+            },
             // done / partial / missed record what happened, so a future block
             // cannot carry them (it would count in the week's score early).
             // Planning edits and red stay open for future days.

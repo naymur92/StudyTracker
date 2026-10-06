@@ -1,4 +1,5 @@
 import { defineStore } from 'pinia'
+import { useBlockTimerStore } from '@/stores/blockTimer'
 import axios from 'axios'
 import { resolveApiBaseUrl } from '@/config/urls'
 
@@ -357,6 +358,8 @@ export const useAuthStore = defineStore('auth', {
             this.user = null
             this.isDemo = false
             setDefaultAuthorizationHeader(null)
+            // The timer mirror belongs to this user; the server keeps the timer itself.
+            useBlockTimerStore().$reset()
         },
 
         getApiClient() {

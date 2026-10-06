@@ -42,6 +42,7 @@ A full-featured **spaced repetition study management** application with Laravel 
 - **Schedule Presets per Category** — Standard (1·7·30·90), Exam soon (1·3·7·14 then weekly until an exam date), Long horizon (1·3·7·21·60 then every 90 days) or custom schedules per category; each topic keeps the schedule it was created with
 - **Question-First Review** — A review page serves today's due topics one at a time (overdue first, then mixed across categories): answer the recall questions from memory, reveal the answer key, grade Again/Hard/Good/Easy with the next date shown on each button; sessions stop at your daily time budget
 - **Weekly Plan with Gears** — Choose Green/Yellow/Red per week, get blocks shaped for your study profile — a job holder (office and off days) or a student (class recap and deep block on class days, two long blocks on free days) — pre-decide each block's task, mark done/partial/missed/red, and score the week against an 80% success line; the dashboard shows this week's score and "Next up"
+- **Block Timer** — Start any of today's blocks from the Weekly Plan or the dashboard; a mini timer stays on top of every page (and can pop out above other apps in Chrome/Edge), alerts at the block's breaks and at its end, marks the block done when its time runs out or partial when stopped early, then opens a "What did you learn?" wrap-up on the topic page
 - **Mistakes Notebook** — Log every wrong answer with its cause; it is reviewed at +1/+3/+7 days and then merged into its parent topic's recall questions
 - **Recall Cards** — Each topic can hold up to 10 recall questions (with optional answers), a summary used as the answer key, a practice prompt and a lane (Major/Minor/Work)
 - **Review Load** — "Due today: N topics ≈ M min" banner with a warning above your budget, plus soft warnings for review debt, the weekly new-topic cap and missed days
@@ -418,6 +419,12 @@ All endpoints below require the `Authorization: Bearer <token>` header.
 | `POST`                         | `/api/study/weekly-plan/{id}/blocks`           | Add a block                    | 30/min/user |
 | `PATCH`                        | `/api/study/blocks/{id}`                       | Update a block                 | 30/min/user |
 | `DELETE`                       | `/api/study/blocks/{id}`                       | Delete a block                 | 30/min/user |
+| `GET`                          | `/api/study/timer`                             | Active timer + recent run      | 60/min/user |
+| `POST`                         | `/api/study/blocks/{id}/timer/start`           | Start a block's timer          | 30/min/user |
+| `POST`                         | `/api/study/blocks/{id}/timer/pause`           | Pause the timer                | 30/min/user |
+| `POST`                         | `/api/study/blocks/{id}/timer/resume`          | Resume the timer               | 30/min/user |
+| `POST`                         | `/api/study/blocks/{id}/timer/stop`            | Stop (done / partial)          | 30/min/user |
+| `DELETE`                       | `/api/study/blocks/{id}/timer`                 | Discard the active run         | 30/min/user |
 | **Study Preferences**          |                                                |                                |             |
 | `GET`                          | `/api/study/preferences`                       | Get study preferences          | 60/min/user |
 | `PUT`                          | `/api/study/preferences`                       | Update study preferences       | 30/min/user |
@@ -539,10 +546,10 @@ users ─┬─< topics ─┬─< study_tasks ──< practice_logs
        │
        ├─< topic_revision_templates
        ├─< review_load_snapshots
-       └─< study_weeks ──< study_blocks
+       └─< study_weeks ──< study_blocks ──< study_block_sessions
 ```
 
-**Study Tracker tables:** `categories`, `topics`, `topic_revision_templates`, `study_tasks`, `practice_logs`, `category_review_schedules`, `review_load_snapshots`, `study_weeks`, `study_blocks`
+**Study Tracker tables:** `categories`, `topics`, `topic_revision_templates`, `study_tasks`, `practice_logs`, `category_review_schedules`, `review_load_snapshots`, `study_weeks`, `study_blocks`, `study_block_sessions`
 
 Notable columns added by the adaptive learning system:
 

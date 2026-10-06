@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\UserApiController;
+use App\Http\Controllers\Api\StudyTracker\BlockTimerApiController;
 use App\Http\Controllers\Api\StudyTracker\CategoryApiController;
 use App\Http\Controllers\Api\StudyTracker\CategoryScheduleApiController;
 use App\Http\Controllers\Api\StudyTracker\DashboardApiController;
@@ -106,6 +107,14 @@ Route::middleware('auth:api')->group(function () {
         Route::post('/weekly-plan/{week}/blocks', [WeeklyPlanApiController::class, 'storeBlock'])->middleware(['throttle:study-write', 'deny.demo'])->name('weekly-plan.blocks.store');
         Route::patch('/blocks/{block}', [WeeklyPlanApiController::class, 'updateBlock'])->middleware(['throttle:study-write', 'deny.demo'])->name('blocks.update');
         Route::delete('/blocks/{block}', [WeeklyPlanApiController::class, 'destroyBlock'])->middleware(['throttle:study-write', 'deny.demo'])->name('blocks.destroy');
+
+        // Block timers (one active run per user; outcomes recorded on end)
+        Route::get('/timer', [BlockTimerApiController::class, 'show'])->middleware('throttle:study-read')->name('timer.show');
+        Route::post('/blocks/{block}/timer/start', [BlockTimerApiController::class, 'start'])->middleware(['throttle:study-write', 'deny.demo'])->name('blocks.timer.start');
+        Route::post('/blocks/{block}/timer/pause', [BlockTimerApiController::class, 'pause'])->middleware(['throttle:study-write', 'deny.demo'])->name('blocks.timer.pause');
+        Route::post('/blocks/{block}/timer/resume', [BlockTimerApiController::class, 'resume'])->middleware(['throttle:study-write', 'deny.demo'])->name('blocks.timer.resume');
+        Route::post('/blocks/{block}/timer/stop', [BlockTimerApiController::class, 'stop'])->middleware(['throttle:study-write', 'deny.demo'])->name('blocks.timer.stop');
+        Route::delete('/blocks/{block}/timer', [BlockTimerApiController::class, 'discard'])->middleware(['throttle:study-write', 'deny.demo'])->name('blocks.timer.discard');
 
         // Study preferences (review budget, week layout, success line)
         Route::get('/preferences', [StudyPreferenceApiController::class, 'show'])->middleware('throttle:study-read')->name('preferences.show');

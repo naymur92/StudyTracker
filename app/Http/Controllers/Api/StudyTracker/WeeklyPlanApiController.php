@@ -11,6 +11,7 @@ use App\Http\Resources\StudyWeekResource;
 use App\Models\StudyBlock;
 use App\Models\StudyWeek;
 use App\Models\User;
+use App\Services\StudyTracker\BlockTimerService;
 use App\Services\StudyTracker\StudyPreferences;
 use App\Services\StudyTracker\WeeklyPlanService;
 use App\Traits\CustomResponseTrait;
@@ -19,13 +20,14 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Symfony\Component\HttpFoundation\Response as HttpResponse;
 
 class WeeklyPlanApiController extends Controller
 {
     use CustomResponseTrait;
 
-    public function __construct(private WeeklyPlanService $service) {}
+    public function __construct(private WeeklyPlanService $service, private BlockTimerService $timers) {}
 
     /**
      * GET /api/study/weekly-plan?date=YYYY-MM-DD
@@ -44,6 +46,7 @@ class WeeklyPlanApiController extends Controller
     public function history(Request $request): JsonResponse
     {
         $request->validate(['weeks' => ['nullable', 'integer', 'min:1', 'max:26']]);
+        $this->timers->settle($request->user());
 
         return $this->ok('Weekly history fetched successfully.', $this->service->history($request->user(), (int) $request->input('weeks', 8)));
     }
@@ -125,6 +128,12 @@ class WeeklyPlanApiController extends Controller
     public function destroyBlock(Request $request, StudyBlock $block): JsonResponse
     {
         $this->authorise($block, $request->user()->id);
+
+        $this->timers->settle($request->user());
+        if ($block->activeSession()->exists()) {
+            throw ValidationException::withMessages(['block' => 'Stop the block\'s timer before deleting it.']);
+        }
+
         $block->delete();
 
         return $this->ok('Block deleted.', []);
@@ -132,6 +141,9 @@ class WeeklyPlanApiController extends Controller
 
     private function payload(User $user, CarbonInterface $date): array
     {
+        // A timer that ran out while no page was open completes its block first.
+        $this->timers->settle($user);
+
         $prefs = StudyPreferences::for($user);
         $week = $this->service->findWeek($user->id, $date);
         $weekStart = $week?->week_start->copy() ?? $this->service->weekStart($date, $prefs);

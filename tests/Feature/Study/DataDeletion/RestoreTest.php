@@ -9,6 +9,7 @@ use App\Models\DataDeletionRequest;
 use App\Models\PracticeLog;
 use App\Models\ReviewLoadSnapshot;
 use App\Models\StudyBlock;
+use App\Models\StudyBlockSession;
 use App\Models\StudyTask;
 use App\Models\StudyWeek;
 use App\Models\Topic;
@@ -122,6 +123,25 @@ class RestoreTest extends StudyApiTestCase
         $this->assertNotNull(StudyWeek::find($other->id));
         $this->assertSame(0, StudyBlock::where('study_week_id', $newPlan->id)->count());
         $this->assertSame(2, StudyBlock::where('study_week_id', $other->id)->count());
+    }
+
+    public function test_restore_brings_timer_runs_back(): void
+    {
+        $week = StudyWeek::factory()->create(['user_id' => $this->user->id, 'week_start' => '2026-09-06']);
+        $block = StudyBlock::factory()->create(['study_week_id' => $week->id, 'status' => 'partial']);
+        $this->runFor($block, 40);
+        $this->runFor($block, 25);
+        $before = $block->fresh()->endedSeconds();
+
+        $request = $this->deleted(['weekly_plans']);
+        $this->assertSame(0, StudyBlockSession::count());
+
+        $report = $this->service()->restore($request, $this->admin);
+
+        $this->assertSame(2, $report['tables']['study_block_sessions']['restored']);
+        $this->assertSame($before, $block->fresh()->endedSeconds());
+        $this->assertSame(65 * 60, $before);
+        $this->assertNull($block->fresh()->activeSession);
     }
 
     public function test_snapshot_clash_is_skipped(): void

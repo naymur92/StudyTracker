@@ -88,6 +88,9 @@
                 </div>
             </main>
         </div>
+
+        <!-- Block timer: mini timer, panel and alerts, on top of every app page -->
+        <BlockTimerHost />
     </div>
 </template>
 
@@ -98,6 +101,7 @@ import { ref } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import DemoBanner from '@/components/DemoBanner.vue'
+import BlockTimerHost from '@/components/timer/BlockTimerHost.vue'
 
 const router = useRouter()
 const route = useRoute()
