@@ -17,6 +17,9 @@ class StudyBlock extends Model
 
     public const STATUSES = ['planned', 'done', 'partial', 'missed', 'red'];
 
+    /** Outcomes that record what happened; only allowed once the day has come. */
+    public const OUTCOME_STATUSES = ['done', 'partial', 'missed'];
+
     protected $fillable = [
         'user_id',
         'study_week_id',

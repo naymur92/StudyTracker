@@ -95,8 +95,9 @@
                             <span class="text-[11px] text-gray-500">{{ block.planned_minutes || '–' }} min</span>
                             <span class="flex gap-0.5">
                                 <button v-for="s in statuses" :key="s.value" @click="saveBlock(block, { status: block.status === s.value ? 'planned' : s.value })"
-                                    :title="s.label"
-                                    :class="['w-6 h-6 rounded text-xs font-bold', block.status === s.value ? s.style : 'bg-gray-100 text-gray-600 hover:bg-gray-200']">{{ s.short }}</button>
+                                    :disabled="outcomeLocked(day, block, s)"
+                                    :title="outcomeLocked(day, block, s) ? `${s.label} can be marked from ${day.label}` : s.label"
+                                    :class="['w-6 h-6 rounded text-xs font-bold disabled:opacity-40 disabled:cursor-not-allowed', block.status === s.value ? s.style : 'bg-gray-100 text-gray-600 hover:bg-gray-200']">{{ s.short }}</button>
                                 <button @click="removeBlock(block)" title="Remove block" class="w-6 h-6 rounded text-xs text-red-600 hover:bg-red-50">🗑</button>
                             </span>
                         </div>
@@ -166,6 +167,10 @@ const preferencesStore = usePreferencesStore()
 const offDays = ref([])
 const gearList = computed(() => gearsWithOptions(data.value?.gear_options || []))
 const terms = computed(() => dayTerms(data.value?.study_profile))
+
+// Done / partial / missed record what happened, so future days can't be marked
+// (red and planning edits stay open). An existing mark can still be cleared.
+const outcomeLocked = (day, block, status) => status.outcome && day.date > today && block.status !== status.value
 
 const isCurrentWeek = computed(() => data.value && today >= data.value.week_start && today <= data.value.week_end)
 const rangeLabel = computed(() => data.value

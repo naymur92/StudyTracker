@@ -135,14 +135,16 @@
 
                 <div v-else class="space-y-3">
                     <div v-for="task in flattenedTasks" :key="task.id"
-                        class="p-4 border border-gray-200 rounded-lg hover:shadow-md transition-shadow cursor-pointer flex items-center justify-between">
+                        class="p-4 border border-gray-200 rounded-lg flex items-center justify-between">
                         <div class="flex items-center gap-4 flex-1">
                             <input type="checkbox" :checked="task.status === 'completed'"
                                 :disabled="task.status === 'completed' || task.status === 'skipped'"
                                 @change="(e) => toggleTask(task, e)"
                                 class="w-5 h-5 text-primary-600 rounded focus:ring-2 focus:ring-primary-500" />
                             <div>
-                                <p class="font-medium text-gray-900">{{ task.topic_title || task.title }}</p>
+                                <router-link v-if="task.topic_id" :to="`/app/topics/${task.topic_id}`"
+                                    class="font-medium text-gray-900 hover:text-primary-600 hover:underline">{{ task.topic_title || task.title }}</router-link>
+                                <p v-else class="font-medium text-gray-900">{{ task.topic_title || task.title }}</p>
                                 <p class="text-sm text-gray-600">{{ task.task_type }} • {{ task.notes }}</p>
                             </div>
                         </div>

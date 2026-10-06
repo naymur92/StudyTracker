@@ -477,7 +477,7 @@ Required: `question` (≤500), `correct_answer` (≤2000), `cause`. Optional: `m
 - `POST /api/study/weekly-plan/{week}/regenerate` — `{ "gear": "yellow" }`: replaces blocks from today on that are still `planned` with that gear's template
 - `POST /api/study/weekly-plan/{week}/blocks`, `PATCH /api/study/blocks/{block}`, `DELETE /api/study/blocks/{block}`
 
-Block fields: `block_date` (inside the week), `slot` (`morning`, `class_recap`, `deep`, `block_a`, `block_b`, `review`, `minor`, `other`), `lane` (`major`, `minor`, `review`, `work`), `planned_task` (≤300), `planned_minutes` (5–480), `status` (`planned`, `done`, `partial`, `missed`, `red`), `note` (≤500), optional `category_id`/`topic_id`.
+Block fields: `block_date` (inside the week), `slot` (`morning`, `class_recap`, `deep`, `block_a`, `block_b`, `review`, `minor`, `other`), `lane` (`major`, `minor`, `review`, `work`), `planned_task` (≤300), `planned_minutes` (5–480), `status` (`planned`, `done`, `partial`, `missed`, `red`), `note` (≤500), optional `category_id`/`topic_id`. `done`, `partial` and `missed` are accepted only for blocks dated today or earlier (`422` otherwise, also when moving a marked block to a later date); future blocks can still be edited, marked `red` or cleared back to `planned`.
 
 Gear templates depend on your `study_profile`. Each day is a workday (office day for a job holder, class day for a student) or an off day (from `off_days`):
 

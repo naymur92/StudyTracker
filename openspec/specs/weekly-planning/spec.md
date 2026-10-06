@@ -173,6 +173,21 @@ A block SHALL have these content fields, and the system SHALL reject invalid val
 - **WHEN** a user marks all blocks of an Eid day as `red`
 - **THEN** those blocks are excluded from the week's score
 
+### Requirement: Outcomes only on or after the block's day
+A block dated after today SHALL NOT be given status `done`, `partial` or `missed`. The API SHALL reject such a change with a 422 response, whether it comes from setting the status or from moving a marked block to a later date. `red`, `planned` and the content fields SHALL stay editable for future days, and a stored outcome on a future block SHALL still be clearable back to `planned`.
+
+#### Scenario: Mark tomorrow done
+- **WHEN** a user sets tomorrow's morning block to `done`
+- **THEN** the API responds 422 with a validation error on `status` and the week's score is unchanged
+
+#### Scenario: Plan a holiday ahead
+- **WHEN** a user marks next Thursday's blocks as `red`
+- **THEN** the change is saved
+
+#### Scenario: Move a done block forward
+- **WHEN** a user moves today's block marked `done` to tomorrow
+- **THEN** the API responds 422 with a validation error on `block_date`
+
 ### Requirement: Weekly score
 The plan `score` SHALL count only blocks that are not `red` and that are either dated before today or have status `done`, `partial` or `missed`. A `planned` block dated before today counts as missed. The score SHALL return:
 - `percent`: round(100 × (done + 0.5 × partial) ÷ counted), or null when nothing is counted;
@@ -223,7 +238,7 @@ A week without a plan SHALL offer to create one from a chosen gear.
 - **THEN** the page shows the generated blocks and the score bar appears with the 80% marker
 
 ### Requirement: Block grid and weekly review on the page
-The Weekly Plan page SHALL show a seven-day grid of blocks. Each block's status can be set to done, partial, missed or red, and blocks can be added, edited and removed. The page SHALL include the weekly reflection fields and a "Plan next week" action.
+The Weekly Plan page SHALL show a seven-day grid of blocks. Each block's status can be set to done, partial, missed or red (done, partial and missed only from the block's day on; those buttons are disabled on future days), and blocks can be added, edited and removed. The page SHALL include the weekly reflection fields and a "Plan next week" action.
 
 #### Scenario: Marking a block done
 - **WHEN** a user marks today's morning block as done

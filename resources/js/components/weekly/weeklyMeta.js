@@ -44,8 +44,8 @@ export const laneStyles = {
 }
 
 export const statuses = [
-    { value: 'done', label: 'Done', short: '✓', style: 'bg-success-600 text-white' },
-    { value: 'partial', label: 'Partial', short: '½', style: 'bg-amber-500 text-white' },
-    { value: 'missed', label: 'Missed', short: '✗', style: 'bg-gray-500 text-white' },
+    { value: 'done', outcome: true, label: 'Done', short: '✓', style: 'bg-success-600 text-white' },
+    { value: 'partial', outcome: true, label: 'Partial', short: '½', style: 'bg-amber-500 text-white' },
+    { value: 'missed', outcome: true, label: 'Missed', short: '✗', style: 'bg-gray-500 text-white' },
     { value: 'red', label: 'Red day', short: 'R', style: 'bg-red-600 text-white' },
 ]

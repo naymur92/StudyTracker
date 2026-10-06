@@ -201,6 +201,43 @@ class WeeklyPlanTest extends StudyApiTestCase
         $this->assertSame(21, StudyBlock::count());
     }
 
+    public function test_future_blocks_cannot_be_marked_with_an_outcome(): void
+    {
+        $this->create('green')->assertCreated(); // today is Wednesday 2026-10-14
+        $url = fn (StudyBlock $b) => '/api/study/blocks/'.IdHasher::encode($b->id);
+        $future = StudyBlock::whereDate('block_date', '2026-10-15')->orderBy('id')->firstOrFail();
+        $today = StudyBlock::whereDate('block_date', '2026-10-14')->orderBy('id')->firstOrFail();
+        $past = StudyBlock::whereDate('block_date', '2026-10-12')->orderBy('id')->firstOrFail();
+        $counted = $this->getJson('/api/study/weekly-plan')->json('data.score.counted');
+
+        foreach (['done', 'partial', 'missed'] as $status) {
+            $this->patchJson($url($future), ['status' => $status])
+                ->assertStatus(422)->assertJsonValidationErrors('status', 'errors');
+        }
+        $this->assertSame('planned', $future->fresh()->status);
+        $this->assertSame($counted, $this->getJson('/api/study/weekly-plan')->json('data.score.counted'));
+
+        // Planning a future day stays open: task, red day, new blocks.
+        $this->patchJson($url($future), ['planned_task' => 'Mock test section 2'])->assertOk();
+        $this->patchJson($url($future), ['status' => 'red'])->assertOk();
+        $this->postJson('/api/study/weekly-plan/'.IdHasher::encode($this->week()->id).'/blocks', [
+            'block_date' => '2026-10-16', 'slot' => 'other', 'lane' => 'work', 'status' => 'done',
+        ])->assertStatus(422)->assertJsonValidationErrors('status', 'errors');
+
+        // Today and past days can be marked.
+        $this->patchJson($url($today), ['status' => 'done'])->assertOk();
+        $this->patchJson($url($past), ['status' => 'partial'])->assertOk();
+
+        // A marked block cannot be moved into the future.
+        $this->patchJson($url($today), ['block_date' => '2026-10-16'])
+            ->assertStatus(422)->assertJsonValidationErrors('block_date', 'errors');
+        $this->assertSame('2026-10-14', $today->fresh()->block_date->toDateString());
+
+        // An outcome already stored on a future block (older data) can be cleared.
+        $future->forceFill(['status' => 'done'])->save();
+        $this->patchJson($url($future), ['status' => 'planned'])->assertOk();
+    }
+
     public function test_red_day_is_excluded_from_score(): void
     {
         $this->create('green')->assertCreated();

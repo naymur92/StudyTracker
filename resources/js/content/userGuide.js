@@ -123,7 +123,7 @@ export const guideSections = [
             'Blocks are generated from your profile and off days (Study Settings): office days and off days for a job holder, class days and free days for a student. Add, remove or edit blocks as needed.',
             'Students get a short class recap on class days — recall today’s lectures from memory the same day — plus a deep block, and two long blocks on free days. Use Yellow for assignment or deadline weeks.',
             'Write the exact task in each block (“Write Task 2 essay #4”), not just “Study”.',
-            'During the week, mark each block Done, Partial or Missed. Mark planned holidays as Red so they never count as failures.',
+            'During the week, mark each block Done, Partial or Missed once its day has come (future days can only be planned or marked Red). Mark planned holidays as Red so they never count as failures.',
             'Week turned out harder? Switch gear: only blocks from today on that are still planned change.',
             'At the end of the week, fill in the weekly review — what got in the way, one if-then plan, what you shipped — and plan next week.',
         ],

@@ -46,6 +46,25 @@ class StudyBlockRequest extends FormRequest
     public function after(): array
     {
         return [
+            // done / partial / missed record what happened, so a future block
+            // cannot carry them (it would count in the week's score early).
+            // Planning edits and red stay open for future days.
+            function (Validator $validator) {
+                if ($validator->errors()->hasAny(['block_date', 'status'])) {
+                    return;
+                }
+
+                $block = $this->route('block');
+                $status = $this->input('status', $block?->status ?? 'planned');
+                $date = $this->input('block_date', $block?->block_date?->toDateString());
+
+                if (in_array($status, StudyBlock::OUTCOME_STATUSES, true) && $date && Carbon::parse($date)->gt(today())) {
+                    $validator->errors()->add(
+                        $this->has('status') ? 'status' : 'block_date',
+                        'A block can be marked done, partial or missed only on or after its day.'
+                    );
+                }
+            },
             function (Validator $validator) {
                 if ($validator->errors()->has('block_date') || ! $this->filled('block_date')) {
                     return;

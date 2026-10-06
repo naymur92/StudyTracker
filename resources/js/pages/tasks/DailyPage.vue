@@ -43,8 +43,9 @@
                             :disabled="task.status === 'completed' || task.status === 'skipped'"
                             @change="(e) => completeTask(task, e)" class="w-5 h-5 text-primary-600 rounded" />
                         <div>
-                            <p class="font-medium text-gray-900">{{ task.topic?.title || task.topic_title || task.title
-                                }}</p>
+                            <router-link v-if="task.topic_id" :to="`/app/topics/${task.topic_id}`"
+                                class="font-medium text-gray-900 hover:text-primary-600 hover:underline">{{ task.topic?.title || task.topic_title || task.title }}</router-link>
+                            <p v-else class="font-medium text-gray-900">{{ task.topic?.title || task.topic_title || task.title }}</p>
                             <p class="text-sm text-gray-600">{{ task.notes }}</p>
                         </div>
                     </div>
