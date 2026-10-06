@@ -32,10 +32,10 @@ echo "Using PHP: $(php -v | head -n 1)"
 
 # ── 1. Get code ──────────────────────────────
 if [ ! -d "$PROJECT_DIR/.git" ]; then
-    echo "[1/10] Cloning repository..."
+    echo "[1/11] Cloning repository..."
     git clone -b "$BRANCH" "$REPO_URL" "$PROJECT_DIR"
 else
-    echo "[1/10] Pulling latest changes..."
+    echo "[1/11] Pulling latest changes..."
     cd "$PROJECT_DIR"
     git fetch origin
     git reset --hard "origin/${BRANCH}"
@@ -44,18 +44,18 @@ fi
 cd "$PROJECT_DIR"
 
 # ── 2. Install PHP dependencies ──────────────
-echo "[2/10] Installing Composer dependencies..."
+echo "[2/11] Installing Composer dependencies..."
 export COMPOSER_ALLOW_SUPERUSER=1
 composer install --no-dev --optimize-autoloader --no-interaction
 
 # ── 3. Build frontend ────────────────────────
-echo "[3/10] Building frontend assets..."
+echo "[3/11] Building frontend assets..."
 npm ci --ignore-scripts
 npm run build
 
 # ── 4. Environment setup (first deploy) ──────
 if [ ! -f .env ]; then
-    echo "[4/10] Creating .env from template..."
+    echo "[4/11] Creating .env from template..."
     cp deploy/.env.production .env 2>/dev/null || cp .env.example .env
     php artisan key:generate --force
     echo ""
@@ -65,11 +65,11 @@ if [ ! -f .env ]; then
     echo "  ╚══════════════════════════════════════════════╝"
     exit 0
 else
-    echo "[4/10] .env exists, skipping."
+    echo "[4/11] .env exists, skipping."
 fi
 
 # ── 5. Create directories ────────────────────
-echo "[5/10] Ensuring directories exist..."
+echo "[5/11] Ensuring directories exist..."
 mkdir -p storage/framework/{cache,sessions,views}
 mkdir -p storage/logs
 mkdir -p bootstrap/cache
@@ -82,10 +82,10 @@ chmod 755 storage bootstrap public
 
 # ── 6. Passport keys ─────────────────────────
 if [ ! -f storage/oauth-private.key ] || [ ! -f storage/oauth-public.key ]; then
-    echo "[6/10] Generating Passport keys..."
+    echo "[6/11] Generating Passport keys..."
     php artisan passport:keys --force --no-interaction
 else
-    echo "[6/10] Passport keys exist, skipping."
+    echo "[6/11] Passport keys exist, skipping."
 fi
 # Set key permissions immediately after generation (script runs as root;
 # keys are readable only by www-data, never world-readable).
@@ -105,7 +105,7 @@ if [ -f storage/oauth-private.key ] && [ -f storage/oauth-public.key ]; then
 fi
 
 # ── 7. Permissions ───────────────────────────
-echo "[7/10] Setting file permissions..."
+echo "[7/11] Setting file permissions..."
 # Change ownership only for runtime-writable paths.
 # On shared servers, SSH deploy users often cannot chown the whole repo tree.
 chown -R www-data:www-data storage bootstrap/cache public/uploads 2>/dev/null || true
@@ -151,11 +151,11 @@ if command -v sudo >/dev/null 2>&1; then
 fi
 
 # ── 8. Database ──────────────────────────────
-echo "[8/10] Running migrations..."
+echo "[8/11] Running migrations..."
 php artisan migrate --force --no-interaction
 
 # ── 9. Laravel caching ───────────────────────
-echo "[9/10] Caching config/routes/views..."
+echo "[9/11] Caching config/routes/views..."
 php artisan storage:link --force 2>/dev/null || true
 php artisan optimize:clear
 php artisan config:cache
@@ -164,9 +164,15 @@ php artisan view:cache || true
 php artisan event:cache || true
 
 # ── 10. Restart workers ──────────────────────
-echo "[10/10] Restarting queue workers..."
+echo "[10/11] Restarting queue workers..."
 php artisan queue:restart
 supervisorctl restart "${PROJECT_NAME}-worker:*" 2>/dev/null || true
+
+# ── 11. Cleanup ──────────────────────────────
+# node_modules is only needed for the frontend build (step 3) and takes
+# heavy storage on the server. The next deploy's `npm ci` recreates it.
+echo "[11/11] Removing node_modules to free disk space..."
+rm -rf "$PROJECT_DIR/node_modules"
 
 echo ""
 echo "=========================================="
