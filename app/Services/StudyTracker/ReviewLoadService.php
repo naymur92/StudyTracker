@@ -94,16 +94,22 @@ class ReviewLoadService
     /** Record (or refresh) the start-of-day load snapshot. */
     public function recordSnapshot(int $userId, CarbonInterface $date, int $dueTopics, int $estimated, bool $overwrite = true): void
     {
-        $attributes = ['user_id' => $userId, 'snapshot_date' => $date->toDateString()];
+        // whereDate: a date cast is stored as "Y-m-d 00:00:00" on SQLite.
+        $existing = ReviewLoadSnapshot::where('user_id', $userId)
+            ->whereDate('snapshot_date', $date->toDateString())
+            ->first();
 
-        if (! $overwrite && ReviewLoadSnapshot::where($attributes)->exists()) {
+        if ($existing && ! $overwrite) {
             return;
         }
 
-        ReviewLoadSnapshot::updateOrCreate($attributes, [
-            'due_topics' => $dueTopics,
-            'estimated_minutes' => $estimated,
-        ]);
+        $values = ['due_topics' => $dueTopics, 'estimated_minutes' => $estimated];
+
+        if ($existing) {
+            $existing->update($values);
+        } else {
+            ReviewLoadSnapshot::create(['user_id' => $userId, 'snapshot_date' => $date->toDateString()] + $values);
+        }
     }
 
     /** Snapshot the current load of a user (used by the daily command). */
@@ -128,7 +134,8 @@ class ReviewLoadService
         $lookback = (int) config('study.review.debt_lookback_days', 15);
 
         $snapshots = ReviewLoadSnapshot::where('user_id', $userId)
-            ->whereBetween('snapshot_date', [$date->copy()->subDays($lookback - 1)->toDateString(), $date->toDateString()])
+            ->whereDate('snapshot_date', '>=', $date->copy()->subDays($lookback - 1)->toDateString())
+            ->whereDate('snapshot_date', '<=', $date->toDateString())
             ->get()
             ->mapWithKeys(fn ($s) => [$s->snapshot_date->toDateString() => $s->estimated_minutes]);
 

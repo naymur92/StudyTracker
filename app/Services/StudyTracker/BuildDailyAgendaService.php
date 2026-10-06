@@ -18,10 +18,10 @@ class BuildDailyAgendaService
         $tasks = StudyTask::with('topic.category')
             ->where('user_id', $userId)
             ->whereHas('topic')
-            ->where(function ($query) use ($date) {
-                $query->where('scheduled_date', $date)
-                    ->orWhere(function ($q) use ($date) {
-                        $q->where('scheduled_date', '<', $date)
+            ->where(function ($query) use ($targetDate) {
+                $query->whereDate('scheduled_date', $targetDate->toDateString())
+                    ->orWhere(function ($q) use ($targetDate) {
+                        $q->whereDate('scheduled_date', '<', $targetDate->toDateString())
                             ->whereIn('status', ['pending', 'missed']);
                     });
             })
