@@ -4,6 +4,7 @@ namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
 use Spatie\Permission\Models\Permission;
+use Spatie\Permission\Models\Role;
 
 
 class PermissionTableSeeder extends Seeder
@@ -47,10 +48,18 @@ class PermissionTableSeeder extends Seeder
       'backup-restore',
       'backup-delete',
       'cache-clear',
+      'data-request-list',
+      'data-request-view',
+      'data-request-approve',
+      'data-request-restore',
+      'data-request-archive-download',
     ];
 
     foreach ($permissions as $permission) {
       Permission::firstOrCreate(['name' => $permission]);
     }
+
+    // Keep an existing Super Admin role complete when new permissions ship.
+    Role::where('name', 'Super Admin')->first()?->givePermissionTo($permissions);
   }
 }

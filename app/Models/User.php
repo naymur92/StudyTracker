@@ -135,4 +135,9 @@ class User extends Authenticatable implements OAuthenticatable
     {
         return $this->hasMany(PracticeLog::class);
     }
+
+    public function dataDeletionRequests()
+    {
+        return $this->hasMany(DataDeletionRequest::class);
+    }
 }

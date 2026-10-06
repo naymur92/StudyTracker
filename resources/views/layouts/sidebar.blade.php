@@ -85,6 +85,18 @@
     </li>
 
 
+    @can('data-request-list')
+        <li class="nav-item {{ request()->routeIs('data-requests.*') ? 'active' : '' }}">
+            <a class="nav-link" href="{{ route('data-requests.index') }}">
+                <i class="fas fa-fw fa-user-shield"></i>
+                <span>Data Requests</span>
+                @if (($pendingDataRequestCount ?? 0) > 0)
+                    <span class="badge badge-danger badge-counter ml-1" id="pending-data-requests-badge">{{ $pendingDataRequestCount }}</span>
+                @endif
+            </a>
+        </li>
+    @endcan
+
     <!-- Divider -->
     {{-- <hr class="sidebar-divider"> --}}
     <!-- Heading -->

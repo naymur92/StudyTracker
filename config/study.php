@@ -164,4 +164,11 @@ return [
         'max_review_seconds' => 3600,
         'debt_lookback_days' => 15,
     ],
+
+    // Data deletion requests: archives written before approved deletions.
+    'data_deletion' => [
+        'archive_disk' => 'local',
+        'archive_dir' => 'data-archives',
+        'archive_retention_days' => (int) env('DATA_ARCHIVE_RETENTION_DAYS', 90),
+    ],
 ];

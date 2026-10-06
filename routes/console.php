@@ -11,3 +11,4 @@ Artisan::command('inspire', function () {
 Schedule::command('study:mark-missed')->dailyAt('00:01');
 Schedule::command('study:snapshot-review-load')->dailyAt('00:03');
 Schedule::command('demo:reset')->dailyAt('00:05');
+Schedule::command('data-requests:purge-archives')->dailyAt('00:10');

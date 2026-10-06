@@ -5,6 +5,7 @@ use App\Http\Controllers\Api\UserApiController;
 use App\Http\Controllers\Api\StudyTracker\CategoryApiController;
 use App\Http\Controllers\Api\StudyTracker\CategoryScheduleApiController;
 use App\Http\Controllers\Api\StudyTracker\DashboardApiController;
+use App\Http\Controllers\Api\StudyTracker\DataDeletionApiController;
 use App\Http\Controllers\Api\StudyTracker\MistakeApiController;
 use App\Http\Controllers\Api\StudyTracker\PracticeLogApiController;
 use App\Http\Controllers\Api\StudyTracker\ReportApiController;
@@ -109,5 +110,11 @@ Route::middleware('auth:api')->group(function () {
         // Study preferences (review budget, week layout, success line)
         Route::get('/preferences', [StudyPreferenceApiController::class, 'show'])->middleware('throttle:study-read')->name('preferences.show');
         Route::put('/preferences', [StudyPreferenceApiController::class, 'update'])->middleware(['throttle:study-write', 'deny.demo'])->name('preferences.update');
+
+        // Data deletion requests (reviewed by an admin, archived before deletion)
+        Route::get('/data-deletion/summary', [DataDeletionApiController::class, 'summary'])->middleware('throttle:study-read')->name('data-deletion.summary');
+        Route::get('/data-deletion/requests', [DataDeletionApiController::class, 'index'])->middleware('throttle:study-read')->name('data-deletion.requests.index');
+        Route::post('/data-deletion/requests', [DataDeletionApiController::class, 'store'])->middleware(['throttle:study-write', 'deny.demo'])->name('data-deletion.requests.store');
+        Route::get('/data-deletion/requests/{dataDeletionRequest}', [DataDeletionApiController::class, 'show'])->middleware('throttle:study-read')->name('data-deletion.requests.show');
     });
 });

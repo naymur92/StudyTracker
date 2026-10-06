@@ -21,7 +21,7 @@ php artisan passport:keys && php artisan passport:client --password   # Required
 
 Tests run on in-memory SQLite with sync queues (forced in `phpunit.xml`), regardless of `.env`. There are almost no tests yet — `tests/Unit/BuildStudyReportServiceTest.php` is the real example to follow.
 
-CI (`.github/workflows/deploy.yml`) runs `npm run build` + `php artisan test` on PRs; pushes to `main` auto-deploy to EC2 (via Cloudflare Tunnel SSH, running `deploy/deploy.sh`). Scheduled commands: `study:mark-missed` (daily 00:01, marks overdue tasks), `study:snapshot-review-load` (daily 00:03, start-of-day review load for review-debt detection) and `demo:reset` (daily 00:05), registered in `routes/console.php`.
+CI (`.github/workflows/deploy.yml`) runs `npm run build` + `php artisan test` on PRs; pushes to `main` auto-deploy to EC2 (via Cloudflare Tunnel SSH, running `deploy/deploy.sh`). Scheduled commands: `study:mark-missed` (daily 00:01, marks overdue tasks), `study:snapshot-review-load` (daily 00:03, start-of-day review load for review-debt detection), `demo:reset` (daily 00:05) and `data-requests:purge-archives` (daily 00:10, deletes data-deletion archives past `DATA_ARCHIVE_RETENTION_DAYS`), registered in `routes/console.php`.
 
 ## Architecture
 

@@ -1599,6 +1599,112 @@
                     "response": []
                 }
             ]
+        },
+        {
+            "name": "Data Deletion",
+            "item": [
+                {
+                    "name": "Data Deletion Summary",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{url}}/api/study/data-deletion/summary",
+                            "host": ["{{url}}"],
+                            "path": ["api", "study", "data-deletion", "summary"]
+                        },
+                        "description": "Data deletion requests — see API-DOCUMENTATION.md"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "List Data Deletion Requests",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{url}}/api/study/data-deletion/requests",
+                            "host": ["{{url}}"],
+                            "path": ["api", "study", "data-deletion", "requests"]
+                        },
+                        "description": "Data deletion requests — see API-DOCUMENTATION.md"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Request Data Deletion",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{url}}/api/study/data-deletion/requests",
+                            "host": ["{{url}}"],
+                            "path": ["api", "study", "data-deletion", "requests"]
+                        },
+                        "description": "Data deletion requests — see API-DOCUMENTATION.md",
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"categories\": [\"practice_logs\", \"review_history\"],\n    \"reason\": \"Starting over for the next exam\",\n    \"confirmation\": \"DELETE\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Get Data Deletion Request",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{url}}/api/study/data-deletion/requests/{{data_deletion_request_id}}",
+                            "host": ["{{url}}"],
+                            "path": ["api", "study", "data-deletion", "requests", "{{data_deletion_request_id}}"]
+                        },
+                        "description": "Data deletion requests — see API-DOCUMENTATION.md"
+                    },
+                    "response": []
+                }
+            ]
         }
     ],
     "variable": [
@@ -1709,6 +1815,10 @@
             "value": "Password@123",
             "type": "string",
             "description": "Current password for authenticated password change"
+        },
+        {
+            "key": "data_deletion_request_id",
+            "value": ""
         }
     ]
 }

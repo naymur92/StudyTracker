@@ -4,6 +4,7 @@ use App\Http\Controllers\ActivityLogController;
 use App\Http\Controllers\BackupController;
 use App\Http\Controllers\CacheController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\DataDeletionRequestController;
 use App\Http\Controllers\LoginHistoryController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\OAuthClientController;
@@ -112,6 +113,18 @@ Route::group(['middleware' => ['auth', 'admin'], 'prefix' => 'admin'], function 
         Route::post('/clear-optimization', [CacheController::class, 'clearOptimization'])->name('cache.clear-optimization');
     });
 
+
+    // Data deletion requests (review, archive, restore)
+    Route::prefix('data-requests')->name('data-requests.')->group(function () {
+        Route::get('/', [DataDeletionRequestController::class, 'index'])->name('index');
+        Route::get('/{dataDeletionRequest}', [DataDeletionRequestController::class, 'show'])->name('show');
+        Route::post('/{dataDeletionRequest}/approve', [DataDeletionRequestController::class, 'approve'])->name('approve');
+        Route::post('/{dataDeletionRequest}/reject', [DataDeletionRequestController::class, 'reject'])->name('reject');
+        Route::post('/{dataDeletionRequest}/retry', [DataDeletionRequestController::class, 'retry'])->name('retry');
+        Route::get('/{dataDeletionRequest}/restore', [DataDeletionRequestController::class, 'restorePreview'])->name('restore.preview');
+        Route::post('/{dataDeletionRequest}/restore', [DataDeletionRequestController::class, 'restore'])->name('restore');
+        Route::get('/{dataDeletionRequest}/archive', [DataDeletionRequestController::class, 'downloadArchive'])->name('archive');
+    });
 
     // ─────────────────────────────────────────────────────
     // Study Tracker — Admin Overview & Reports

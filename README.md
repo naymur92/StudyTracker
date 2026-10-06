@@ -73,6 +73,7 @@ A full-featured **spaced repetition study management** application with Laravel 
 - **Topics Report** — All topics with task/practice counts, filterable by status, difficulty, and search
 - **Categories Report** — System vs user categories with topic counts and task completion stats
 - **Tasks Report** — Advanced task management with 7 filters (status, type, user, topic, date range, sort)
+- **Data Deletion Requests** — Review users' requests to delete chosen data: live data summary, approve (archive → verify → delete) or reject with a reason, download the archive, restore it within the retention period
 - **User Management** — Create/edit users, change status, reset passwords
 - **Role & Permission Management** — Full CRUD for roles and permissions
 - **OAuth Client Management** — Manage Passport password grant clients, regenerate secrets
@@ -420,6 +421,11 @@ All endpoints below require the `Authorization: Bearer <token>` header.
 | **Study Preferences**          |                                                |                                |             |
 | `GET`                          | `/api/study/preferences`                       | Get study preferences          | 60/min/user |
 | `PUT`                          | `/api/study/preferences`                       | Update study preferences       | 30/min/user |
+| **Data Deletion**              |                                                |                                |             |
+| `GET`                          | `/api/study/data-deletion/summary`             | Deletable data per category    | 60/min/user |
+| `GET`                          | `/api/study/data-deletion/requests`            | Own deletion requests          | 60/min/user |
+| `POST`                         | `/api/study/data-deletion/requests`            | Request data deletion          | 30/min/user |
+| `GET`                          | `/api/study/data-deletion/requests/{id}`       | One deletion request           | 60/min/user |
 
 ---
 
@@ -439,6 +445,7 @@ Access the admin panel at `/admin` after logging in with a Super Admin (type 1) 
 | `/admin/study-tracker/topics-report`     | All topics with completion stats            |
 | `/admin/study-tracker/categories-report` | Category analysis                           |
 | `/admin/study-tracker/tasks-report`      | Advanced task management                    |
+| `/admin/data-requests`                   | Data deletion requests (review, archive, restore) |
 | `/admin/users`                           | User management (CRUD, status, password)    |
 | `/admin/roles`                           | Role management                             |
 | `/admin/permissions`                     | Permission management                       |
@@ -450,6 +457,27 @@ Access the admin panel at `/admin` after logging in with a Super Admin (type 1) 
 | `/admin/backups`                         | Backup & restore                            |
 | `/admin/cache/info`                      | Cache management                            |
 
+### Data Deletion Requests
+
+Users ask for data to be deleted from their Profile page ("Delete my data"); each request appears on the admin dashboard and under **Data Requests** in the sidebar (with a pending badge).
+
+1. **Review** — open the request at `/admin/data-requests/{id}`: user, chosen categories, reason, the counts taken when the user asked, and a **live data summary** (rows per kind of record, date ranges, sample titles, links that will be cleared). Counts that changed since the request are highlighted.
+2. **Approve** — after confirming, a queued job (`default` queue, never retried automatically) collects the rows, writes a gzip JSON archive to `storage/app/private/data-archives/{user_id}/{uuid}.json.gz`, reads it back to verify the SHA-256 and row counts, and only then deletes exactly those rows in one transaction. On failure nothing is deleted and the request becomes `failed` (retry or reject it).
+3. **Reject** — requires a reason, which the user sees. Nothing is deleted.
+4. **Archive** — download it (logged) or restore it (preview first; rows come back with their original IDs, current data wins on clashes) until it is purged after `DATA_ARCHIVE_RETENTION_DAYS` (default 90).
+
+The account itself, system categories, login history and activity logs are never deleted. Every step is written to the activity log (`data_deletion`).
+
+| Permission                      | Allows                       |
+| ------------------------------- | ---------------------------- |
+| `data-request-list`             | List requests, dashboard card, sidebar item |
+| `data-request-view`             | Request detail and live data summary |
+| `data-request-approve`          | Approve, reject, retry       |
+| `data-request-restore`          | Restore from archive         |
+| `data-request-archive-download` | Download the archive         |
+
+**Deploying this feature to an existing server:** run `php artisan db:seed --class=PermissionTableSeeder --force` once. It creates the five permissions and grants them to the existing `Super Admin` role; give them to other roles from `/admin/roles`.
+
 ---
 
 ## Scheduled Commands
@@ -459,12 +487,14 @@ Access the admin panel at `/admin` after logging in with a Super Admin (type 1) 
 | `study:mark-missed`           | Daily at 00:01 | Marks overdue pending tasks as `missed`                           |
 | `study:snapshot-review-load`  | Daily at 00:03 | Records each user's start-of-day review load (review-debt history) |
 | `demo:reset`                  | Daily at 00:05 | Resets the demo account's sample data                             |
+| `data-requests:purge-archives` | Daily at 00:10 | Deletes data-deletion archives older than `DATA_ARCHIVE_RETENTION_DAYS` (default 90); `--dry-run` lists them |
 
 Run manually:
 
 ```bash
 php artisan study:mark-missed
 php artisan study:snapshot-review-load
+php artisan data-requests:purge-archives --dry-run
 ```
 
 ---
@@ -519,6 +549,8 @@ Notable columns added by the adaptive learning system:
 - `topics` — recall card (`recall_questions`, `summary`, `practice_prompt`, `lane`), mistake entries (`kind`, `parent_topic_id`, `mistake_details`, `merged_at`), schedule state (`srs_step`, `srs_lapses`, `last_reviewed_on`) and the schedule snapshot (`srs_offsets`, `srs_repeat_every_days`, `srs_repeat_until`, `srs_schedule_source`)
 - `study_tasks` — `recall_grade`, `review_seconds`, `review_kind`
 - `users` — `study_preferences` (JSON, merged over `config/study.php` defaults)
+
+`data_deletion_requests` — a user's request to delete data categories: status, request-time counts, reviewer, archive path/size/SHA-256 and purge time, deleted counts and restore report.
 
 ---
 

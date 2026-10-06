@@ -111,6 +111,9 @@
                 </div>
             </div>
 
+            <!-- Delete my data -->
+            <DataDeletionSection />
+
             <!-- Actions -->
             <div>
                 <button @click="logout"
@@ -128,6 +131,7 @@ import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useUserStore } from '@/stores/user'
 import { formatDate as fmtDate } from 'date-fns'
+import DataDeletionSection from '@/components/profile/DataDeletionSection.vue'
 
 const router = useRouter()
 const authStore = useAuthStore()

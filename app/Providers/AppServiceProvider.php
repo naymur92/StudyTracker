@@ -2,11 +2,13 @@
 
 namespace App\Providers;
 
+use App\Models\DataDeletionRequest;
 use Carbon\CarbonInterval;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
 use Laravel\Passport\Passport;
 
@@ -33,6 +35,13 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         Paginator::useBootstrapFour();
+
+        // Pending data deletion requests badge in the admin sidebar.
+        View::composer('layouts.sidebar', function ($view) {
+            $view->with('pendingDataRequestCount', auth()->user()?->can('data-request-list')
+                ? DataDeletionRequest::status(DataDeletionRequest::STATUS_PENDING)->count()
+                : null);
+        });
 
         // Conservative API rate limits for low-resource deployments (e.g., AWS free tier).
         RateLimiter::for('auth-token', function (Request $request) {

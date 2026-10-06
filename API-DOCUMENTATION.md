@@ -507,11 +507,77 @@ The weekly plan response also includes `study_profile` and `gear_options` — fo
 | `success_threshold_percent` | 80 | 50–100 |
 | `study_profile` | `job_holder` | `job_holder` or `student` — selects the weekly gear templates; for a student `off_days` are the days without classes |
 
+### Data Deletion Requests
+
+A user asks for chosen categories of their own data to be deleted. An admin reviews the request in the admin panel (`/admin/data-requests`); on approval the data is archived, the archive is verified, and only then are the rows deleted. The account itself, system categories, login history and activity logs are never deleted.
+
+- `GET /api/study/data-deletion/summary` — every category with its label, description, side-effect `notes`, current `total` and per-record `records` counts (demo users allowed)
+- `GET /api/study/data-deletion/requests` — the user's own requests, newest first
+- `POST /api/study/data-deletion/requests` — create a request; demo users get `403`
+- `GET /api/study/data-deletion/requests/{request}` — one of the user's requests; another user's request returns `404`
+
+| Category key | Deletes |
+| --- | --- |
+| `topics` | regular topics, their study tasks and practice logs |
+| `mistakes` | mistake entries, their study tasks and practice logs |
+| `practice_logs` | all practice logs |
+| `weekly_plans` | weekly plans and their blocks |
+| `categories` | own categories and their review schedules (topics in them become uncategorised) |
+| `study_settings` | revision templates, category review schedules; study preferences reset to defaults |
+| `report_history` | emailed report records |
+| `review_history` | review-load snapshots |
+
+References from rows that stay are cleared, not cascaded: deleting `topics` keeps mistakes (without a parent topic) and weekly blocks (without the topic link).
+
+```json
+{
+    "categories": ["practice_logs", "review_history"],
+    "reason": "Starting over for the next exam",
+    "confirmation": "DELETE"
+}
+```
+
+Rules: `categories` — non-empty array of distinct keys from the table; `reason` — optional, ≤1000; `confirmation` — must be exactly `DELETE`. Only one open request (`pending`, `approved`, `processing` or `failed`) is allowed at a time; a second one returns `422` on `categories`.
+
+Response (`201`):
+
+```json
+{
+    "flag": true,
+    "msg": "Data deletion request submitted. An admin will review it.",
+    "data": {
+        "id": "xY7kPq2A",
+        "reference": "DDR-3F9A1C2B",
+        "categories": [
+            { "key": "practice_logs", "label": "Practice logs" },
+            { "key": "review_history", "label": "Review-load history" }
+        ],
+        "reason": "Starting over for the next exam",
+        "status": "pending",
+        "status_label": "Pending review",
+        "is_open": true,
+        "rejection_reason": null,
+        "request_counts": [
+            { "key": "practice_logs", "label": "Practice logs", "count": 12 },
+            { "key": "review_load_snapshots", "label": "Review-load snapshots", "count": 30 }
+        ],
+        "deleted_counts": null,
+        "created_at": "2026-10-08 10:15:00",
+        "reviewed_at": null,
+        "completed_at": null,
+        "restored_at": null
+    },
+    "response_code": 201
+}
+```
+
+Statuses: `pending` → `approved` → `processing` → `completed` (or `failed`, which an admin can retry); `pending`/`failed` → `rejected` (with `rejection_reason`); `completed` → `restored` (an admin restored the archive). `deleted_counts` is filled once completed. Archive location and checksum are never returned to the user.
+
 ---
 
 ## Encoded ID Notes
 
-All IDs returned by resource-based responses are encoded strings (topics, mistakes, tasks, practice logs, categories, weekly plans and blocks).
+All IDs returned by resource-based responses are encoded strings (topics, mistakes, tasks, practice logs, categories, weekly plans and blocks, data deletion requests).
 
 Examples:
 
