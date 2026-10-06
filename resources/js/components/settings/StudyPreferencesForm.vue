@@ -10,6 +10,19 @@
         </div>
 
         <form v-else @submit.prevent="save" class="space-y-5">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">I am a…</label>
+                <div class="flex flex-wrap gap-2">
+                    <label v-for="p in profiles" :key="p.value"
+                        class="flex items-start gap-2 px-3 py-2 rounded-lg border text-sm cursor-pointer max-w-xs"
+                        :class="form.study_profile === p.value ? 'border-primary-500 bg-primary-50 text-primary-800' : 'border-gray-200 text-gray-700'">
+                        <input type="radio" class="mt-1" :value="p.value" v-model="form.study_profile" />
+                        <span><span class="block font-medium">{{ p.label }}</span><span class="block text-xs opacity-80">{{ p.hint }}</span></span>
+                    </label>
+                </div>
+                <p v-if="errors.study_profile" class="text-xs text-red-600 mt-1">{{ errors.study_profile[0] }}</p>
+            </div>
+
             <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
                 <div v-for="field in numberFields" :key="field.key">
                     <label class="block text-sm font-medium text-gray-700 mb-1">{{ field.label }}</label>
@@ -29,7 +42,7 @@
             </div>
 
             <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">Off days (no office)</label>
+                <label class="block text-sm font-medium text-gray-700 mb-2">{{ offDaysLabel }}</label>
                 <div class="flex flex-wrap gap-2">
                     <label v-for="(day, idx) in dayNames" :key="day"
                         class="flex items-center gap-2 px-3 py-1.5 rounded-lg border text-sm cursor-pointer"
@@ -39,7 +52,7 @@
                         {{ day }}
                     </label>
                 </div>
-                <p class="text-xs text-gray-500 mt-1">Used by weekly plans to choose office-day or off-day blocks.</p>
+                <p class="text-xs text-gray-500 mt-1">{{ offDaysHint }}</p>
                 <p v-if="offDayError" class="text-xs text-red-600 mt-1">{{ offDayError }}</p>
             </div>
 
@@ -72,7 +85,13 @@ const defaults = {
     week_starts_on: 0,
     off_days: [5, 6],
     success_threshold_percent: 80,
+    study_profile: 'job_holder',
 }
+
+const profiles = [
+    { value: 'job_holder', label: 'Job holder', hint: 'Weekly plans use office days and off days' },
+    { value: 'student', label: 'Student', hint: 'Weekly plans use class days and free days' },
+]
 
 const numberFields = [
     { key: 'review_budget_minutes', label: 'Daily review budget (minutes)', min: 5, max: 180, hint: 'Warn when due reviews need more than this.' },
@@ -86,6 +105,11 @@ const form = reactive({ ...defaults, off_days: [...defaults.off_days] })
 const errors = ref({})
 const loading = ref(false)
 const saving = ref(false)
+
+const offDaysLabel = computed(() => (form.study_profile === 'student' ? 'Days without classes' : 'Off days (no office)'))
+const offDaysHint = computed(() => (form.study_profile === 'student'
+    ? 'Used by weekly plans to choose class-day or free-day blocks.'
+    : 'Used by weekly plans to choose office-day or off-day blocks.'))
 
 const offDayError = computed(() => {
     const keys = Object.keys(errors.value).filter((k) => k.startsWith('off_days'))

@@ -234,4 +234,84 @@ class WeeklyPlanTest extends StudyApiTestCase
         $this->assertSame(13, $week->blocks()->count());
         $this->assertSame(1, $week->blocks()->where('slot', 'block_a')->count());
     }
+
+    private function asStudent(): void
+    {
+        StudyPreferences::update($this->user, ['study_profile' => 'student']);
+    }
+
+    public function test_student_green_yellow_red_templates(): void
+    {
+        $this->asStudent();
+
+        $this->create('green')->assertCreated()->assertJsonPath('data.study_profile', 'student');
+        $this->assertSame(26, StudyBlock::count());
+        $this->assertSame(1465, (int) StudyBlock::sum('planned_minutes'));
+        $this->assertSame(['class_recap', 'deep', 'minor', 'review'], $this->blocks('2026-10-11'));
+        $this->assertSame(['block_a', 'block_b', 'review'], $this->blocks('2026-10-16'));
+
+        $this->deleteJson('/api/study/weekly-plan/'.IdHasher::encode($this->week()->id))->assertOk();
+        $this->create('yellow')->assertCreated();
+        $this->assertSame(19, StudyBlock::count());
+        $this->assertSame(780, (int) StudyBlock::sum('planned_minutes'));
+        $this->assertSame(['block_a', 'review'], $this->blocks('2026-10-16'));
+        $this->assertSame(['block_a', 'review'], $this->blocks('2026-10-17'));
+
+        $this->deleteJson('/api/study/weekly-plan/'.IdHasher::encode($this->week()->id))->assertOk();
+        $this->create('red')->assertCreated();
+        $this->assertSame(7, StudyBlock::count());
+    }
+
+    public function test_student_free_days_follow_off_days(): void
+    {
+        StudyPreferences::update($this->user, ['study_profile' => 'student', 'off_days' => [0, 6]]);
+        $this->create('green')->assertCreated();
+
+        $this->assertSame(['block_a', 'block_b', 'review'], $this->blocks('2026-10-11'));
+        $this->assertSame(['class_recap', 'deep', 'minor', 'review'], $this->blocks('2026-10-16'));
+    }
+
+    public function test_gear_options_per_profile(): void
+    {
+        $options = fn () => collect($this->getJson('/api/study/weekly-plan')->assertOk()->json('data.gear_options'))->keyBy('gear');
+
+        $job = $options();
+        $this->assertSame([1130, 19], [$job['green']['minutes'], $job['green']['hours']]);
+        $this->assertSame([705, 12], [$job['yellow']['minutes'], $job['yellow']['hours']]);
+        $this->assertSame([140, 2], [$job['red']['minutes'], $job['red']['hours']]);
+
+        $this->asStudent();
+        $student = $options();
+        $this->assertSame([1465, 24], [$student['green']['minutes'], $student['green']['hours']]);
+        $this->assertSame([780, 13], [$student['yellow']['minutes'], $student['yellow']['hours']]);
+        $this->assertSame([140, 2], [$student['red']['minutes'], $student['red']['hours']]);
+        $this->assertStringContainsString('Assignment', $student['yellow']['description']);
+    }
+
+    public function test_class_recap_block_orders_before_deep(): void
+    {
+        $this->create('green')->assertCreated();
+        $url = '/api/study/weekly-plan/'.IdHasher::encode($this->week()->id).'/blocks';
+
+        $this->postJson($url, ['block_date' => '2026-10-15', 'slot' => 'deep', 'lane' => 'major'])->assertCreated();
+        $this->postJson($url, ['block_date' => '2026-10-15', 'slot' => 'class_recap', 'lane' => 'major'])->assertCreated();
+
+        $slots = collect($this->getJson('/api/study/weekly-plan')->json('data.blocks'))
+            ->where('block_date', '2026-10-15')->pluck('slot')->values()->all();
+        $this->assertSame(['morning', 'class_recap', 'deep', 'review', 'minor'], $slots);
+    }
+
+    public function test_profile_change_keeps_existing_blocks(): void
+    {
+        $this->create('green')->assertCreated(); // job holder, today = Wednesday 14 Oct
+        StudyBlock::whereDate('block_date', '2026-10-15')->where('slot', 'morning')->update(['status' => 'done']);
+        $this->asStudent();
+
+        $this->postJson('/api/study/weekly-plan/'.IdHasher::encode($this->week()->id).'/regenerate', ['gear' => 'yellow'])->assertOk();
+
+        $this->assertSame(['minor', 'morning', 'review'], $this->blocks('2026-10-13'), 'past job-holder blocks kept');
+        $this->assertSame(['class_recap', 'deep', 'review'], $this->blocks('2026-10-14'));
+        $this->assertSame(['class_recap', 'deep', 'morning', 'review'], $this->blocks('2026-10-15'), 'marked job-holder block kept');
+        $this->assertSame(['block_a', 'review'], $this->blocks('2026-10-16'));
+    }
 }

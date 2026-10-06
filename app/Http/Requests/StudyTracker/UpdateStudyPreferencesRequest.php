@@ -4,6 +4,7 @@ namespace App\Http\Requests\StudyTracker;
 
 use App\Services\StudyTracker\StudyPreferences;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
 
 class UpdateStudyPreferencesRequest extends FormRequest
@@ -24,6 +25,7 @@ class UpdateStudyPreferencesRequest extends FormRequest
             'off_days' => ['sometimes', 'array', 'max:6'],
             'off_days.*' => ['integer', 'min:0', 'max:6', 'distinct'],
             'success_threshold_percent' => ['sometimes', 'integer', 'min:50', 'max:100'],
+            'study_profile' => ['sometimes', 'string', Rule::in(config('study.study_profiles'))],
         ];
     }
 

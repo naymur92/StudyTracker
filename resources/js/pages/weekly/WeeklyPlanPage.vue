@@ -24,9 +24,12 @@
         <!-- No plan yet -->
         <div v-else-if="data && !data.plan" class="bg-white rounded-lg shadow p-6 space-y-4">
             <h2 class="text-xl font-bold text-gray-900">Plan this week</h2>
-            <p class="text-gray-600 text-sm">Pick a gear before the week starts. Blocks are generated from your office and off days (Study Settings).</p>
+            <p class="text-gray-600 text-sm">
+                Pick a gear before the week starts. Blocks are generated from your {{ terms.workdays }} and
+                {{ terms.offs }} (Study Settings<span v-if="data.study_profile === 'student'"> — student profile</span>).
+            </p>
             <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
-                <label v-for="g in gears" :key="g.value" class="p-4 border-2 rounded-lg cursor-pointer"
+                <label v-for="g in gearList" :key="g.value" class="p-4 border-2 rounded-lg cursor-pointer"
                     :class="newPlan.gear === g.value ? g.soft : 'border-gray-200'">
                     <input type="radio" class="sr-only" :value="g.value" v-model="newPlan.gear" />
                     <span class="flex items-center justify-between"><span class="font-semibold">{{ g.label }}</span><span class="text-sm text-gray-600">{{ g.hours }}</span></span>
@@ -46,7 +49,7 @@
                 <div class="bg-white rounded-lg shadow p-5 space-y-3">
                     <p class="text-sm font-semibold text-gray-900">Gear</p>
                     <div class="flex gap-2">
-                        <button v-for="g in gears" :key="g.value" @click="changeGear(g.value)" :title="`${g.desc} (${g.hours})`"
+                        <button v-for="g in gearList" :key="g.value" @click="changeGear(g.value)" :title="`${g.desc} (${g.hours})`"
                             :class="['px-3 py-1.5 rounded-lg text-sm font-semibold border', data.plan.gear === g.value ? g.chip : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50']">
                             {{ g.label }} <span class="font-normal opacity-80">{{ g.hours }}</span>
                         </button>
@@ -78,7 +81,7 @@
                     :class="day.date === today ? 'ring-2 ring-primary-400' : ''">
                     <div class="flex items-baseline justify-between">
                         <p class="font-semibold text-gray-900 text-sm">{{ day.label }}</p>
-                        <p class="text-xs text-gray-500">{{ day.short }}</p>
+                        <p class="text-xs text-gray-500">{{ day.short }} · {{ day.isOff ? terms.off : terms.workday }}</p>
                     </div>
                     <div v-for="block in day.blocks" :key="block.id" class="border rounded-lg p-2 space-y-1.5"
                         :class="block.status === 'red' ? 'bg-red-50 border-red-200' : 'border-gray-200'">
@@ -126,7 +129,7 @@
                     <button class="btn-primary" :disabled="saving" @click="savePlan">Save review</button>
                     <span class="text-sm text-gray-600">Plan next week:</span>
                     <select v-model="nextGear" class="input-base w-auto">
-                        <option v-for="g in gears" :key="g.value" :value="g.value">{{ g.label }} ({{ g.hours }})</option>
+                        <option v-for="g in gearList" :key="g.value" :value="g.value">{{ g.label }} ({{ g.hours }})</option>
                     </select>
                     <button class="btn-secondary" :disabled="saving" @click="planNextWeek">Plan next week</button>
                 </div>
@@ -142,7 +145,8 @@ import { useAuthStore } from '@/stores/auth'
 import { useWeeklyPlanStore } from '@/stores/weeklyPlan'
 import { todayLocal, shiftDate, parseLocalDate } from '@/helpers/dates'
 import { showConfirm, showError } from '@/helpers/alerts'
-import { gears, slotLabels, laneStyles, statuses } from '@/components/weekly/weeklyMeta'
+import { gearsWithOptions, dayTerms, slotLabels, laneStyles, statuses } from '@/components/weekly/weeklyMeta'
+import { usePreferencesStore } from '@/stores/preferences'
 import ScoreBar from '@/components/weekly/ScoreBar.vue'
 
 const authStore = useAuthStore()
@@ -158,6 +162,11 @@ const nextGear = ref('green')
 const newPlan = reactive({ gear: 'green', major_focus: '', minor_focus: '' })
 const planForm = reactive({ major_focus: '', minor_focus: '', reflection: '', if_then_plan: '', output_note: '' })
 
+const preferencesStore = usePreferencesStore()
+const offDays = ref([])
+const gearList = computed(() => gearsWithOptions(data.value?.gear_options || []))
+const terms = computed(() => dayTerms(data.value?.study_profile))
+
 const isCurrentWeek = computed(() => data.value && today >= data.value.week_start && today <= data.value.week_end)
 const rangeLabel = computed(() => data.value
     ? `${format(parseLocalDate(data.value.week_start), 'd MMM')} – ${format(parseLocalDate(data.value.week_end), 'd MMM yyyy')}`
@@ -172,6 +181,7 @@ const days = computed(() => {
             label: format(parseLocalDate(d), 'EEEE'),
             short: format(parseLocalDate(d), 'd MMM'),
             blocks: data.value.blocks.filter((b) => b.block_date === d),
+            isOff: offDays.value.includes(parseLocalDate(d).getDay()),
         }
     })
 })
@@ -285,5 +295,12 @@ const planNextWeek = async () => {
     }
 }
 
-onMounted(load)
+onMounted(async () => {
+    await load()
+    try {
+        offDays.value = (await preferencesStore.fetchPreferences(api())).off_days || []
+    } catch {
+        offDays.value = []
+    }
+})
 </script>

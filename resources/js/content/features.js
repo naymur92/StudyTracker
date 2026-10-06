@@ -42,7 +42,7 @@ export const features = [
     {
         id: 'weekly-plan',
         title: 'Weekly plan with gears',
-        desc: 'Pick a Green, Yellow or Red gear for the week, get blocks from your office and off days, pre-decide each task, and score the week against an 80% success line.',
+        desc: 'Pick a Green, Yellow or Red gear for the week, get blocks shaped for a job holder (office and off days) or a student (class and free days), pre-decide each task, and score the week against an 80% success line.',
         techniques: ['implementation-intentions', 'realistic-planning', 'consistency'],
     },
     {

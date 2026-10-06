@@ -15,7 +15,7 @@
 
         <template v-else>
             <div class="flex items-center gap-3">
-                <span :class="['px-2 py-0.5 rounded-full text-xs font-semibold', gear.chip]">{{ gear.label }}</span>
+                <span :class="['px-2 py-0.5 rounded-full text-xs font-semibold', gear.chip]" :title="gear.desc">{{ gear.label }}<template v-if="gear.hours"> · {{ gear.hours }}</template></span>
                 <div class="flex-1">
                     <ScoreBar :percent="week.score.percent" :threshold="week.success_threshold_percent" :on-track="week.score.on_track" />
                 </div>
@@ -54,7 +54,7 @@ import { useAuthStore } from '@/stores/auth'
 import { useWeeklyPlanStore } from '@/stores/weeklyPlan'
 import { todayLocal } from '@/helpers/dates'
 import { showError } from '@/helpers/alerts'
-import { gearByValue, slotLabels, statuses } from '@/components/weekly/weeklyMeta'
+import { gearsWithOptions, slotLabels, statuses } from '@/components/weekly/weeklyMeta'
 import ScoreBar from '@/components/weekly/ScoreBar.vue'
 
 const props = defineProps({
@@ -67,7 +67,7 @@ const week = ref(null)
 const today = todayLocal()
 
 const quickStatuses = statuses.filter((s) => s.value !== 'red')
-const gear = computed(() => gearByValue(week.value?.plan?.gear))
+const gear = computed(() => gearsWithOptions(week.value?.gear_options || []).find((g) => g.value === week.value?.plan?.gear) || gearsWithOptions()[0])
 const todayBlocks = computed(() => (week.value?.blocks || []).filter((b) => b.block_date === today))
 const nextUp = computed(() => todayBlocks.value.find((b) => b.status === 'planned' && b.planned_task))
 const hasDueReviews = computed(() => (props.reviewLoad?.due_topics || 0) > 0)

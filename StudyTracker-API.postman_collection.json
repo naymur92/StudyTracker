@@ -999,10 +999,10 @@
                             "host": ["{{url}}"],
                             "path": ["api", "study", "preferences"]
                         },
-                        "description": "Partial update; only sent keys change. review_debt_threshold_minutes must not be below the budget. Demo users get 403.",
+                        "description": "Partial update; only sent keys change. study_profile (job_holder|student) selects weekly gear templates. review_debt_threshold_minutes must not be below the budget. Demo users get 403.",
                         "body": {
                             "mode": "raw",
-                            "raw": "{\n    \"review_budget_minutes\": 20,\n    \"off_days\": [\n        5,\n        6\n    ]\n}",
+                            "raw": "{\n    \"review_budget_minutes\": 20,\n    \"off_days\": [\n        5,\n        6\n    ],\n    \"study_profile\": \"student\"\n}",
                             "options": {
                                 "raw": {
                                     "language": "json"

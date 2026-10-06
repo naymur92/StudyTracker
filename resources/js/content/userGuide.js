@@ -120,7 +120,8 @@ export const guideSections = [
         purpose: 'Plan the week as a gear and a set of pre-decided blocks, then score it against your success line.',
         steps: [
             'Before the week starts, open Weekly Plan and pick a gear: Green for a normal week, Yellow for a busy one, Red for Eid, illness or travel.',
-            'Blocks are generated from your office and off days (set them in Study Settings). Add, remove or edit blocks as needed.',
+            'Blocks are generated from your profile and off days (Study Settings): office days and off days for a job holder, class days and free days for a student. Add, remove or edit blocks as needed.',
+            'Students get a short class recap on class days — recall today’s lectures from memory the same day — plus a deep block, and two long blocks on free days. Use Yellow for assignment or deadline weeks.',
             'Write the exact task in each block (“Write Task 2 essay #4”), not just “Study”.',
             'During the week, mark each block Done, Partial or Missed. Mark planned holidays as Red so they never count as failures.',
             'Week turned out harder? Switch gear: only blocks from today on that are still planned change.',
@@ -128,6 +129,7 @@ export const guideSections = [
         ],
         tips: [
             { text: 'Downgrading is part of the plan. The only real failure is stopping.', refs: ['lally2010'] },
+            { text: 'Switching profile only changes blocks generated afterwards — regenerate the week if you want the new profile’s blocks now.' },
             { text: 'Inside a deep block: recall warm-up (10 min) → pre-test the new section (5) → learn in two chunks and rebuild from memory (50) → mixed practice (15) → summary and recall questions (10).', refs: ['richland2009', 'slamecka1978'] },
             { text: 'Do your reviews in the evening: sleep after learning helps consolidation, and relearning after a night’s sleep was faster and lasted longer.', refs: ['diekelmann2010', 'mazza2016'] },
             { text: 'If a block gets interrupted, write one line — where you stopped and the next step — before leaving it.', refs: ['leroyglomb2018'] },
@@ -243,7 +245,8 @@ export const guideSections = [
         purpose: 'Your study preferences and the default review intervals for topics.',
         steps: [
             'Set your daily review budget, the review-debt threshold and the minutes-per-review estimate.',
-            'Set the weekly new-topic cap, the day your week starts, your off days and your weekly success line.',
+            'Choose your profile: Job holder (office days and off days) or Student (class days and free days). It decides the blocks of new weekly plans.',
+            'Set the weekly new-topic cap, the day your week starts, your off days (for a student: days without classes) and your weekly success line.',
             'Edit the default review intervals (for example +1, +7, +30, +90), or start from a preset. They apply to new topics in categories without their own schedule.',
         ],
         tips: [

@@ -145,6 +145,8 @@ class WeeklyPlanApiController extends Controller
             'score' => $week ? $this->service->score($blocks, $prefs) : null,
             'stats' => $this->service->stats($user, $weekStart, $prefs),
             'success_threshold_percent' => $prefs->successThresholdPercent(),
+            'study_profile' => $prefs->studyProfile(),
+            'gear_options' => $this->service->gearOptions($prefs, $weekStart),
         ];
     }
 

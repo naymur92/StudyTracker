@@ -11,7 +11,7 @@ class StudyBlock extends Model
 {
     use HasFactory, HashesIds;
 
-    public const SLOTS = ['morning', 'block_a', 'block_b', 'review', 'minor', 'other'];
+    public const SLOTS = ['morning', 'class_recap', 'deep', 'block_a', 'block_b', 'review', 'minor', 'other'];
 
     public const LANES = ['major', 'minor', 'review', 'work'];
 

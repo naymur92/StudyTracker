@@ -71,37 +71,16 @@ class WeeklyPlanService
      */
     public function generateBlocks(StudyWeek $week, string $gear, StudyPreferences $prefs, ?CarbonInterface $fromDate = null): void
     {
-        $template = config("study.gear_templates.{$gear}");
-        $offDays = $prefs->offDays();
-        $start = $week->week_start->copy()->startOfDay();
-
-        $firstOffDay = null;
-        for ($d = 0; $d < 7; $d++) {
-            if (in_array($start->copy()->addDays($d)->dayOfWeek, $offDays, true)) {
-                $firstOffDay = $start->copy()->addDays($d);
-                break;
-            }
-        }
-
-        for ($d = 0; $d < 7; $d++) {
-            $date = $start->copy()->addDays($d);
-
-            if ($fromDate !== null && $date->lt(Carbon::parse($fromDate)->startOfDay())) {
+        foreach ($this->plannedDays($week->week_start, $gear, $prefs) as $day) {
+            if ($fromDate !== null && $day['date']->lt(Carbon::parse($fromDate)->startOfDay())) {
                 continue;
             }
 
-            $isOff = in_array($date->dayOfWeek, $offDays, true);
-            $blocks = $isOff ? $template['off'] : $template['office'];
-
-            if ($isOff && $firstOffDay?->isSameDay($date)) {
-                $blocks = array_merge($template['first_off_day_only'] ?? [], $blocks);
-            }
-
-            foreach ($blocks as $block) {
+            foreach ($day['blocks'] as $block) {
                 StudyBlock::create([
                     'user_id' => $week->user_id,
                     'study_week_id' => $week->id,
-                    'block_date' => $date->toDateString(),
+                    'block_date' => $day['date']->toDateString(),
                     'slot' => $block['slot'],
                     'lane' => $block['lane'],
                     'planned_minutes' => $block['minutes'],
@@ -109,6 +88,63 @@ class WeeklyPlanService
                 ]);
             }
         }
+    }
+
+    /**
+     * Each gear's label, description and weekly minutes/hours for the user's
+     * study profile and off days.
+     *
+     * @return array<int, array{gear: string, label: string, description: string, minutes: int, hours: int}>
+     */
+    public function gearOptions(StudyPreferences $prefs, ?CarbonInterface $weekStart = null): array
+    {
+        $weekStart ??= $this->weekStart(today(), $prefs);
+        $profile = $prefs->studyProfile();
+
+        return collect(StudyWeek::GEARS)->map(function (string $gear) use ($prefs, $weekStart, $profile) {
+            $minutes = collect($this->plannedDays($weekStart, $gear, $prefs))
+                ->sum(fn ($day) => array_sum(array_column($day['blocks'], 'minutes')));
+            $text = config("study.gear_descriptions.{$profile}.{$gear}");
+
+            return [
+                'gear' => $gear,
+                'label' => $text['label'] ?? ucfirst($gear),
+                'description' => $text['description'] ?? '',
+                'minutes' => (int) $minutes,
+                'hours' => (int) round($minutes / 60),
+            ];
+        })->all();
+    }
+
+    /**
+     * The template blocks for each of the seven days of a week, for the user's
+     * profile: workdays (office or class days) vs off days, with the
+     * first-off-day-only blocks on the week's first off day.
+     *
+     * @return array<int, array{date: Carbon, blocks: array}>
+     */
+    private function plannedDays(CarbonInterface $weekStart, string $gear, StudyPreferences $prefs): array
+    {
+        $template = config("study.gear_templates.{$prefs->studyProfile()}.{$gear}");
+        $offDays = $prefs->offDays();
+        $start = Carbon::parse($weekStart)->startOfDay();
+        $days = [];
+        $seenOffDay = false;
+
+        for ($d = 0; $d < 7; $d++) {
+            $date = $start->copy()->addDays($d);
+            $isOff = in_array($date->dayOfWeek, $offDays, true);
+            $blocks = $isOff ? $template['off'] : $template['workday'];
+
+            if ($isOff && ! $seenOffDay) {
+                $blocks = array_merge($template['first_off_day_only'] ?? [], $blocks);
+                $seenOffDay = true;
+            }
+
+            $days[] = ['date' => $date, 'blocks' => $blocks];
+        }
+
+        return $days;
     }
 
     /** Replace today's and later still-planned blocks with another gear's template. */

@@ -45,4 +45,18 @@ class StudyPreferencesApiTest extends StudyApiTestCase
         $this->putJson('/api/study/preferences', ['review_budget_minutes' => 20])->assertForbidden();
         $this->assertNull($demo->fresh()->study_preferences);
     }
+
+    public function test_study_profile_defaults_saves_and_validates(): void
+    {
+        $this->getJson('/api/study/preferences')->assertJsonPath('data.study_profile', 'job_holder');
+
+        $this->putJson('/api/study/preferences', ['study_profile' => 'student'])
+            ->assertOk()
+            ->assertJsonPath('data.study_profile', 'student');
+        $this->getJson('/api/study/preferences')->assertJsonPath('data.study_profile', 'student');
+
+        $this->putJson('/api/study/preferences', ['study_profile' => 'teacher'])
+            ->assertStatus(422)
+            ->assertJsonValidationErrors('study_profile', 'errors');
+    }
 }

@@ -52,49 +52,107 @@ return [
         'week_starts_on' => 0, // 0 = Sunday
         'off_days' => [5, 6], // Friday, Saturday
         'success_threshold_percent' => 80,
+        'study_profile' => 'job_holder', // job_holder | student
     ],
 
-    // Weekly gear templates: blocks per office day / off day.
-    // Yellow's off-day block A is only created on the first off day of the week.
+    // Weekly gear templates per study profile. Each day is a workday (office
+    // day for a job holder, class day for a student) or an off day (from the
+    // user's `off_days`). `first_off_day_only` blocks go on the week's first
+    // off day only.
     'gear_templates' => [
-        'green' => [
-            'office' => [
-                ['slot' => 'morning', 'lane' => 'major', 'minutes' => 90],
-                ['slot' => 'review', 'lane' => 'review', 'minutes' => 20],
-                ['slot' => 'minor', 'lane' => 'minor', 'minutes' => 20],
+        'job_holder' => [
+            'green' => [
+                'workday' => [
+                    ['slot' => 'morning', 'lane' => 'major', 'minutes' => 90],
+                    ['slot' => 'review', 'lane' => 'review', 'minutes' => 20],
+                    ['slot' => 'minor', 'lane' => 'minor', 'minutes' => 20],
+                ],
+                'off' => [
+                    ['slot' => 'block_a', 'lane' => 'major', 'minutes' => 150],
+                    ['slot' => 'block_b', 'lane' => 'minor', 'minutes' => 75],
+                    ['slot' => 'review', 'lane' => 'review', 'minutes' => 15],
+                ],
+                'first_off_day_only' => [],
             ],
-            'off' => [
-                ['slot' => 'block_a', 'lane' => 'major', 'minutes' => 150],
-                ['slot' => 'block_b', 'lane' => 'minor', 'minutes' => 75],
-                ['slot' => 'review', 'lane' => 'review', 'minutes' => 15],
+            'yellow' => [
+                'workday' => [
+                    ['slot' => 'morning', 'lane' => 'major', 'minutes' => 90],
+                    ['slot' => 'review', 'lane' => 'review', 'minutes' => 15],
+                ],
+                'off' => [
+                    ['slot' => 'review', 'lane' => 'review', 'minutes' => 15],
+                ],
+                'first_off_day_only' => [
+                    ['slot' => 'block_a', 'lane' => 'major', 'minutes' => 150],
+                ],
             ],
-            'first_off_day_only' => [],
+            'red' => [
+                'workday' => [
+                    ['slot' => 'review', 'lane' => 'review', 'minutes' => 20],
+                ],
+                'off' => [
+                    ['slot' => 'review', 'lane' => 'review', 'minutes' => 20],
+                ],
+                'first_off_day_only' => [],
+            ],
         ],
-        'yellow' => [
-            'office' => [
-                ['slot' => 'morning', 'lane' => 'major', 'minutes' => 90],
-                ['slot' => 'review', 'lane' => 'review', 'minutes' => 15],
+        'student' => [
+            'green' => [
+                'workday' => [
+                    ['slot' => 'class_recap', 'lane' => 'major', 'minutes' => 30],
+                    ['slot' => 'deep', 'lane' => 'major', 'minutes' => 90],
+                    ['slot' => 'review', 'lane' => 'review', 'minutes' => 25],
+                    ['slot' => 'minor', 'lane' => 'minor', 'minutes' => 30],
+                ],
+                'off' => [
+                    ['slot' => 'block_a', 'lane' => 'major', 'minutes' => 150],
+                    ['slot' => 'block_b', 'lane' => 'minor', 'minutes' => 120],
+                    ['slot' => 'review', 'lane' => 'review', 'minutes' => 25],
+                ],
+                'first_off_day_only' => [],
             ],
-            'off' => [
-                ['slot' => 'review', 'lane' => 'review', 'minutes' => 15],
+            'yellow' => [
+                'workday' => [
+                    ['slot' => 'class_recap', 'lane' => 'major', 'minutes' => 20],
+                    ['slot' => 'deep', 'lane' => 'major', 'minutes' => 60],
+                    ['slot' => 'review', 'lane' => 'review', 'minutes' => 20],
+                ],
+                'off' => [
+                    ['slot' => 'block_a', 'lane' => 'major', 'minutes' => 120],
+                    ['slot' => 'review', 'lane' => 'review', 'minutes' => 20],
+                ],
+                'first_off_day_only' => [],
             ],
-            'first_off_day_only' => [
-                ['slot' => 'block_a', 'lane' => 'major', 'minutes' => 150],
+            'red' => [
+                'workday' => [
+                    ['slot' => 'review', 'lane' => 'review', 'minutes' => 20],
+                ],
+                'off' => [
+                    ['slot' => 'review', 'lane' => 'review', 'minutes' => 20],
+                ],
+                'first_off_day_only' => [],
             ],
-        ],
-        'red' => [
-            'office' => [
-                ['slot' => 'review', 'lane' => 'review', 'minutes' => 20],
-            ],
-            'off' => [
-                ['slot' => 'review', 'lane' => 'review', 'minutes' => 20],
-            ],
-            'first_off_day_only' => [],
         ],
     ],
+
+    // Gear labels and descriptions per study profile (shown with gear options).
+    'gear_descriptions' => [
+        'job_holder' => [
+            'green' => ['label' => 'Green', 'description' => 'Normal week: a morning deep block on office days, long blocks on off days'],
+            'yellow' => ['label' => 'Yellow', 'description' => 'Busy week (release, guests, Ramadan): mornings, short reviews, one Block A'],
+            'red' => ['label' => 'Red', 'description' => 'Eid, illness, travel: 20 minutes of reviews a day'],
+        ],
+        'student' => [
+            'green' => ['label' => 'Green', 'description' => 'Normal week: class recap and a deep block on class days, two long blocks on free days'],
+            'yellow' => ['label' => 'Yellow', 'description' => 'Assignment or deadline week: shorter recap and deep block, Block A on free days'],
+            'red' => ['label' => 'Red', 'description' => 'Illness, travel, Eid: 20 minutes of reviews a day'],
+        ],
+    ],
+
+    'study_profiles' => ['job_holder', 'student'],
 
     // Display / sort order of block slots within a day.
-    'slot_order' => ['morning', 'block_a', 'block_b', 'review', 'minor', 'other'],
+    'slot_order' => ['morning', 'class_recap', 'deep', 'block_a', 'block_b', 'review', 'minor', 'other'],
 
     // Review constants.
     'review' => [

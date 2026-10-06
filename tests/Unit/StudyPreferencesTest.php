@@ -20,7 +20,9 @@ class StudyPreferencesTest extends TestCase
             'week_starts_on' => 0,
             'off_days' => [5, 6],
             'success_threshold_percent' => 80,
+            'study_profile' => 'job_holder',
         ], $prefs->all());
+        $this->assertFalse($prefs->isStudent());
     }
 
     public function test_saved_values_override_defaults_and_unknown_keys_are_ignored(): void

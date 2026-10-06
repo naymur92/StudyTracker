@@ -477,9 +477,17 @@ Required: `question` (≤500), `correct_answer` (≤2000), `cause`. Optional: `m
 - `POST /api/study/weekly-plan/{week}/regenerate` — `{ "gear": "yellow" }`: replaces blocks from today on that are still `planned` with that gear's template
 - `POST /api/study/weekly-plan/{week}/blocks`, `PATCH /api/study/blocks/{block}`, `DELETE /api/study/blocks/{block}`
 
-Block fields: `block_date` (inside the week), `slot` (`morning`, `block_a`, `block_b`, `review`, `minor`, `other`), `lane` (`major`, `minor`, `review`, `work`), `planned_task` (≤300), `planned_minutes` (5–480), `status` (`planned`, `done`, `partial`, `missed`, `red`), `note` (≤500), optional `category_id`/`topic_id`.
+Block fields: `block_date` (inside the week), `slot` (`morning`, `class_recap`, `deep`, `block_a`, `block_b`, `review`, `minor`, `other`), `lane` (`major`, `minor`, `review`, `work`), `planned_task` (≤300), `planned_minutes` (5–480), `status` (`planned`, `done`, `partial`, `missed`, `red`), `note` (≤500), optional `category_id`/`topic_id`.
 
-Gear templates (office day / off day, from `off_days`): **green** morning 90 + review 20 + minor 20 / block A 150 + block B 75 + review 15; **yellow** morning 90 + review 15 / review 15, plus block A 150 on the first off day; **red** review 20 every day.
+Gear templates depend on your `study_profile`. Each day is a workday (office day for a job holder, class day for a student) or an off day (from `off_days`):
+
+| Gear | Job holder: office day / off day | Student: class day / free day |
+| --- | --- | --- |
+| green | morning 90 + review 20 + minor 20 / block A 150 + block B 75 + review 15 | class recap 30 + deep 90 + review 25 + minor 30 / block A 150 + block B 120 + review 25 |
+| yellow | morning 90 + review 15 / review 15, plus block A 150 on the first off day | class recap 20 + deep 60 + review 20 / block A 120 + review 20 |
+| red | review 20 every day | review 20 every day |
+
+The weekly plan response also includes `study_profile` and `gear_options` — for each gear: `gear`, `label`, `description` (in your profile's terms), `minutes` (a full week of that template for your profile and off days) and `hours` (rounded). With Friday and Saturday off: job holder 1130 / 705 / 140 minutes, student 1465 / 780 / 140 minutes. Changing the profile only affects blocks generated afterwards (new plans, regeneration).
 
 `score`: counted blocks are non-red blocks dated before today or already marked (a past `planned` block counts as missed); `percent = round(100 × (done + 0.5 × partial) / counted)`, `on_track = percent ≥ success threshold`. Write routes return `403` for demo users and for another user's plan or block.
 
@@ -497,6 +505,7 @@ Gear templates (office day / off day, from `off_days`): **green** morning 90 + r
 | `week_starts_on` | 0 (Sunday) | 0–6 |
 | `off_days` | `[5, 6]` (Fri, Sat) | up to 6 distinct values 0–6 |
 | `success_threshold_percent` | 80 | 50–100 |
+| `study_profile` | `job_holder` | `job_holder` or `student` — selects the weekly gear templates; for a student `off_days` are the days without classes |
 
 ---
 

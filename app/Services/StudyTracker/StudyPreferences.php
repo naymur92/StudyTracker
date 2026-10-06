@@ -69,6 +69,19 @@ class StudyPreferences
         return array_map('intval', (array) $this->values['off_days']);
     }
 
+    /** `job_holder` or `student`: selects the weekly gear templates. */
+    public function studyProfile(): string
+    {
+        $profile = (string) $this->values['study_profile'];
+
+        return in_array($profile, config('study.study_profiles'), true) ? $profile : 'job_holder';
+    }
+
+    public function isStudent(): bool
+    {
+        return $this->studyProfile() === 'student';
+    }
+
     public function successThresholdPercent(): int
     {
         return (int) $this->values['success_threshold_percent'];

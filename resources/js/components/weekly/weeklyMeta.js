@@ -1,15 +1,34 @@
-// Display metadata for weekly plans. Approximate hours come from the gear
-// templates in config/study.php with two off days per week.
+// Display metadata for weekly plans. Gear hours and descriptions come from the
+// API (`gear_options`), because they depend on the study profile and off days.
 export const gears = [
-    { value: 'green', label: 'Green', hours: '≈ 19 h', desc: 'Normal week: everything in the template', chip: 'bg-green-600 text-white', soft: 'bg-green-50 border-green-300' },
-    { value: 'yellow', label: 'Yellow', hours: '≈ 11 h', desc: 'Busy week: mornings, short reviews, one Block A', chip: 'bg-yellow-500 text-white', soft: 'bg-yellow-50 border-yellow-300' },
-    { value: 'red', label: 'Red', hours: '≈ 2 h', desc: 'Eid, illness, travel: 20 minutes of reviews a day', chip: 'bg-red-600 text-white', soft: 'bg-red-50 border-red-300' },
+    { value: 'green', label: 'Green', chip: 'bg-green-600 text-white', soft: 'bg-green-50 border-green-300' },
+    { value: 'yellow', label: 'Yellow', chip: 'bg-yellow-500 text-white', soft: 'bg-yellow-50 border-yellow-300' },
+    { value: 'red', label: 'Red', chip: 'bg-red-600 text-white', soft: 'bg-red-50 border-red-300' },
 ]
+
+/** Gear styling merged with the API's gear option (label, description, hours). */
+export const gearsWithOptions = (options = []) =>
+    gears.map((g) => {
+        const option = options.find((o) => o.gear === g.value) || {}
+        return {
+            ...g,
+            label: option.label || g.label,
+            desc: option.description || '',
+            hours: option.hours !== undefined ? `≈ ${option.hours} h` : '',
+        }
+    })
+
+/** Day-type wording for a study profile. */
+export const dayTerms = (profile) => (profile === 'student'
+    ? { workday: 'class day', off: 'free day', workdays: 'class days', offs: 'free days' }
+    : { workday: 'office day', off: 'off day', workdays: 'office days', offs: 'off days' })
 
 export const gearByValue = (value) => gears.find((g) => g.value === value) || gears[0]
 
 export const slotLabels = {
     morning: 'Morning deep block',
+    class_recap: 'Class recap',
+    deep: 'Deep block',
     block_a: 'Block A',
     block_b: 'Block B',
     review: 'Reviews',
