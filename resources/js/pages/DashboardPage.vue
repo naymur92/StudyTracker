@@ -48,6 +48,15 @@
 
         <!-- Dashboard content -->
         <div v-else class="space-y-6">
+            <div v-if="stats.total_topics === 0" class="rounded-lg border border-primary-200 bg-primary-50 p-4 text-primary-900">
+                New here?
+                <router-link to="/app/guide#getting-started" class="font-semibold underline">Read Getting started</router-link>
+                — it takes five minutes and explains how reviews and grades work.
+            </div>
+            <DueTodayBanner :load="stats.review_load" />
+            <LoadWarnings :load="stats.review_load" :show-never-miss-twice="true" />
+            <ThisWeekWidget :review-load="stats.review_load" />
+
             <!-- Quick Stats -->
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 <div class="card p-6">
@@ -130,7 +139,7 @@
                         <div class="flex items-center gap-4 flex-1">
                             <input type="checkbox" :checked="task.status === 'completed'"
                                 :disabled="task.status === 'completed' || task.status === 'skipped'"
-                                @change="() => toggleTask(task)"
+                                @change="(e) => toggleTask(task, e)"
                                 class="w-5 h-5 text-primary-600 rounded focus:ring-2 focus:ring-primary-500" />
                             <div>
                                 <p class="font-medium text-gray-900">{{ task.topic_title || task.title }}</p>
@@ -144,6 +153,8 @@
                 </div>
             </div>
         </div>
+        <GradePicker :open="!!gradingTask" :busy="grading" :title="gradingTask?.topic_title || gradingTask?.title || ''"
+            @select="submitGrade" @cancel="gradingTask = null" />
     </div>
 </template>
 
@@ -151,14 +162,19 @@
 import { ref, computed, onMounted } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import { useTaskStore } from '@/stores/tasks'
-import { formatDate as fmtDate, addDays, format } from 'date-fns'
+import GradePicker from '@/components/review/GradePicker.vue'
+import { formatDate as fmtDate, format } from 'date-fns'
+import { todayLocal, shiftDate, parseLocalDate } from '@/helpers/dates'
+import DueTodayBanner from '@/components/review/DueTodayBanner.vue'
+import LoadWarnings from '@/components/review/LoadWarnings.vue'
+import ThisWeekWidget from '@/components/weekly/ThisWeekWidget.vue'
 
 const authStore = useAuthStore()
 const taskStore = useTaskStore()
 
 const loading = ref(false)
 const error = ref(null)
-const selectedDate = ref(new Date().toISOString().split('T')[0])
+const selectedDate = ref(todayLocal())
 const stats = ref({})
 const tasks = ref(null)
 
@@ -171,12 +187,11 @@ const flattenedTasks = computed(() => {
 })
 
 const dayName = computed(() => {
-    const date = new Date(selectedDate.value)
-    return format(date, 'EEEE')
+    return format(parseLocalDate(selectedDate.value), 'EEEE')
 })
 
 const formatDate = (date) => {
-    return fmtDate(new Date(date), 'MMM d, yyyy')
+    return fmtDate(parseLocalDate(date), 'MMM d, yyyy')
 }
 
 const capitalizeFirst = (str) => str ? str.charAt(0).toUpperCase() + str.slice(1) : ''
@@ -192,21 +207,17 @@ const getStatusColor = (status) => {
 }
 
 const previousDay = () => {
-    const date = new Date(selectedDate.value)
-    const prev = addDays(date, -1)
-    selectedDate.value = prev.toISOString().split('T')[0]
+    selectedDate.value = shiftDate(selectedDate.value, -1)
     fetchDashboard()
 }
 
 const nextDay = () => {
-    const date = new Date(selectedDate.value)
-    const next = addDays(date, 1)
-    selectedDate.value = next.toISOString().split('T')[0]
+    selectedDate.value = shiftDate(selectedDate.value, 1)
     fetchDashboard()
 }
 
 const goToToday = () => {
-    selectedDate.value = new Date().toISOString().split('T')[0]
+    selectedDate.value = todayLocal()
     fetchDashboard()
 }
 
@@ -232,22 +243,37 @@ const fetchDashboard = async () => {
     }
 }
 
-const toggleTask = async (task) => {
+const gradingTask = ref(null)
+const grading = ref(false)
+
+const completeTask = async (task, body = {}) => {
     try {
         const api = authStore.getApiClient()
-        if (task.status === 'completed') {
-            // Task already completed, skip
-            return
-        } else {
-            await taskStore.completeTask(api, task.id, {
-                notes: '',
-                difficulty_feedback: 'medium',
-            })
-            await fetchDashboard()
-        }
+        await taskStore.completeTask(api, task.id, body)
+        await fetchDashboard()
     } catch (err) {
         error.value = err.response?.data?.msg || err.response?.data?.message || 'Failed to complete task'
     }
+}
+
+const toggleTask = async (task, event) => {
+    if (task.status === 'completed') return
+    if (task.task_type === 'revision') {
+        if (event?.target) event.target.checked = false
+        // Revisions need a recall grade: it decides when the topic comes back.
+        gradingTask.value = task
+        return
+    }
+    await completeTask(task)
+}
+
+const submitGrade = async (grade) => {
+    if (!gradingTask.value) return
+    grading.value = true
+    const task = gradingTask.value
+    await completeTask(task, { recall_grade: grade })
+    gradingTask.value = null
+    grading.value = false
 }
 
 onMounted(() => {

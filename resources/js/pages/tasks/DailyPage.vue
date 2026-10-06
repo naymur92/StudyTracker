@@ -2,6 +2,8 @@
     <div class="space-y-6">
         <h1 class="text-3xl font-bold text-gray-900">Daily Tasks</h1>
 
+        <DueTodayBanner :load="reviewLoad" />
+
         <!-- Date Navigation -->
         <div class="flex items-center justify-between bg-white rounded-lg shadow p-4">
             <button @click="previousDay" class="p-2 rounded-lg hover:bg-gray-100">
@@ -39,7 +41,7 @@
                     <div class="flex items-center gap-4 flex-1">
                         <input type="checkbox" :checked="task.status === 'completed'"
                             :disabled="task.status === 'completed' || task.status === 'skipped'"
-                            @change="completeTask(task)" class="w-5 h-5 text-primary-600 rounded" />
+                            @change="(e) => completeTask(task, e)" class="w-5 h-5 text-primary-600 rounded" />
                         <div>
                             <p class="font-medium text-gray-900">{{ task.topic?.title || task.topic_title || task.title
                                 }}</p>
@@ -79,6 +81,8 @@
                 </form>
             </div>
         </div>
+        <GradePicker :open="!!gradingTask" :busy="grading" :title="gradingTask?.topic_title || gradingTask?.title || ''"
+            @select="submitGrade" @cancel="gradingTask = null" />
     </div>
 </template>
 
@@ -87,21 +91,27 @@ import { ref, computed, onMounted } from 'vue'
 import DatePicker from '@/components/DatePicker.vue'
 import { useAuthStore } from '@/stores/auth'
 import { useTaskStore } from '@/stores/tasks'
-import { formatDate as fmtDate, addDays } from 'date-fns'
+import GradePicker from '@/components/review/GradePicker.vue'
+import { formatDate as fmtDate } from 'date-fns'
+import { todayLocal, shiftDate, parseLocalDate } from '@/helpers/dates'
+import { useReviewStore } from '@/stores/review'
+import DueTodayBanner from '@/components/review/DueTodayBanner.vue'
 import { showError, showSuccess } from '@/helpers/alerts'
 
 const authStore = useAuthStore()
 const taskStore = useTaskStore()
 
 const loading = ref(false)
-const selectedDate = ref(new Date().toISOString().split('T')[0])
+const selectedDate = ref(todayLocal())
+const reviewStore = useReviewStore()
+const reviewLoad = ref(null)
 const tasks = ref([])
 const showRescheduleModal = ref(false)
 const selectedTask = ref(null)
-const rescheduleDate = ref(new Date().toISOString().split('T')[0])
+const rescheduleDate = ref(todayLocal())
 const actionError = ref(null)
 
-const formatDate = (date) => fmtDate(new Date(date), 'EEEE, MMM d, yyyy')
+const formatDate = (date) => fmtDate(parseLocalDate(date), 'EEEE, MMM d, yyyy')
 const capitalizeFirst = (str) => str ? str.charAt(0).toUpperCase() + str.slice(1) : ''
 const getStatusColor = (status) => {
     const colors = {
@@ -143,8 +153,12 @@ const fetchTasks = async () => {
     loading.value = true
     try {
         const api = authStore.getApiClient()
-        await taskStore.fetchDailyTasks(api, selectedDate.value)
+        const [, load] = await Promise.all([
+            taskStore.fetchDailyTasks(api, selectedDate.value),
+            reviewStore.fetchLoad(api, selectedDate.value).catch(() => null),
+        ])
         tasks.value = taskStore.tasks
+        reviewLoad.value = load
     } catch (err) {
         console.error(err)
         await showError('Failed to load tasks')
@@ -154,34 +168,48 @@ const fetchTasks = async () => {
 }
 
 const previousDay = () => {
-    const date = new Date(selectedDate.value)
-    selectedDate.value = addDays(date, -1).toISOString().split('T')[0]
+    selectedDate.value = shiftDate(selectedDate.value, -1)
     fetchTasks()
 }
 
 const nextDay = () => {
-    const date = new Date(selectedDate.value)
-    selectedDate.value = addDays(date, 1).toISOString().split('T')[0]
+    selectedDate.value = shiftDate(selectedDate.value, 1)
     fetchTasks()
 }
 
-const completeTask = async (task) => {
+const gradingTask = ref(null)
+const grading = ref(false)
+
+const finishTask = async (task, body = {}) => {
     try {
         const api = authStore.getApiClient()
-        if (task.status === 'completed') {
-            // Skip
-        } else {
-            await taskStore.completeTask(api, task.id, {
-                notes: '',
-                difficulty_feedback: 'medium',
-            })
-            await fetchTasks()
-            await showSuccess('Task marked as completed.')
-        }
+        await taskStore.completeTask(api, task.id, body)
+        await fetchTasks()
+        await showSuccess('Task marked as completed.')
     } catch (err) {
         console.error(err)
         await showError(err.response?.data?.msg || err.response?.data?.message || 'Failed to complete task')
     }
+}
+
+const completeTask = async (task, event) => {
+    if (task.status === 'completed') return
+    if (task.task_type === 'revision') {
+        // Revisions need a recall grade: it decides when the topic comes back.
+        if (event?.target) event.target.checked = false
+        gradingTask.value = task
+        return
+    }
+    await finishTask(task)
+}
+
+const submitGrade = async (grade) => {
+    if (!gradingTask.value) return
+    grading.value = true
+    const task = gradingTask.value
+    await finishTask(task, { recall_grade: grade })
+    gradingTask.value = null
+    grading.value = false
 }
 
 const skipTask = async (task) => {
@@ -201,7 +229,7 @@ const skipTask = async (task) => {
 
 const openRescheduleModal = (task) => {
     selectedTask.value = task
-    rescheduleDate.value = task.scheduled_date || new Date().toISOString().split('T')[0]
+    rescheduleDate.value = task.scheduled_date || todayLocal()
     actionError.value = null
     showRescheduleModal.value = true
 }

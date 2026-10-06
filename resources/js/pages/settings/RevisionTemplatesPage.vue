@@ -1,9 +1,16 @@
 <template>
     <div class="space-y-6 max-w-4xl">
+        <div>
+            <h1 class="text-3xl font-bold text-gray-900">Study Settings</h1>
+            <p class="text-gray-600">Your preferences and default review intervals.</p>
+        </div>
+
+        <StudyPreferencesForm />
+
         <div class="flex items-center justify-between">
             <div>
-                <h1 class="text-3xl font-bold text-gray-900">Revision Templates</h1>
-                <p class="text-gray-600">Configure your spaced repetition schedule.</p>
+                <h2 class="text-xl font-bold text-gray-900">Default Review Intervals</h2>
+                <p class="text-gray-600 text-sm">Used for topics in categories without their own schedule.</p>
             </div>
             <div class="flex gap-3">
                 <button @click="addTemplate" class="btn-secondary">+ Add Step</button>
@@ -14,6 +21,15 @@
                     Save
                 </button>
             </div>
+        </div>
+
+        <div v-if="presets.length" class="flex flex-wrap items-center gap-2 text-sm">
+            <span class="text-gray-600">Start from a preset:</span>
+            <button v-for="preset in presets" :key="preset.key" type="button" @click="usePreset(preset)"
+                class="px-3 py-1 rounded-full border border-gray-200 hover:bg-primary-50 hover:border-primary-300" :title="preset.description">
+                {{ preset.name }} ({{ preset.offsets.join(' · ') }})
+            </button>
+            <span class="text-xs text-gray-500">Repeat rules and exam dates are set per category on the Categories page.</span>
         </div>
 
         <div v-if="loading" class="text-center py-12">
@@ -63,11 +79,24 @@ import { ref, onMounted } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import { useRevisionTemplateStore } from '@/stores/revisionTemplates'
 import { showError, showInfo, showSuccess } from '@/helpers/alerts'
+import StudyPreferencesForm from '@/components/settings/StudyPreferencesForm.vue'
 
 const authStore = useAuthStore()
 const revisionTemplateStore = useRevisionTemplateStore()
 
 const templates = ref([])
+const presets = ref([])
+
+const usePreset = (preset) => {
+    templates.value = preset.offsets.map((offset, index) => ({
+        id: null,
+        sequence_no: index + 1,
+        name: `Revision ${index + 1}`,
+        day_offset: offset,
+        is_active: true,
+    }))
+    showInfo('Preset loaded — select Save to use it as your default.')
+}
 const loading = ref(false)
 const error = ref(null)
 
@@ -150,5 +179,13 @@ const resetTemplates = async () => {
     }
 }
 
-onMounted(loadTemplates)
+onMounted(async () => {
+    await loadTemplates()
+    try {
+        const response = await authStore.getApiClient().get('/study/schedule-presets')
+        presets.value = response.data.data || []
+    } catch {
+        presets.value = []
+    }
+})
 </script>

@@ -26,13 +26,24 @@ class StudyTask extends Model
         'parent_task_id',
         'notes',
         'difficulty_feedback',
+        'recall_grade',
+        'review_seconds',
+        'review_kind',
     ];
+
+    public const GRADES = ['again', 'hard', 'good', 'easy'];
+
+    public const REVIEW_KIND_STEP = 'step';
+    public const REVIEW_KIND_RELEARN = 'relearn';
+    public const REVIEW_KIND_REPEAT = 'repeat';
+    public const REVIEW_KINDS = [self::REVIEW_KIND_STEP, self::REVIEW_KIND_RELEARN, self::REVIEW_KIND_REPEAT];
 
     protected $casts = [
         'scheduled_date'   => 'date',
         'completed_at'     => 'datetime',
         'locked_at'        => 'datetime',
         'is_date_locked'   => 'boolean',
+        'review_seconds'   => 'integer',
     ];
 
     public function user(): BelongsTo
@@ -84,7 +95,11 @@ class StudyTask extends Model
     {
         return match ($this->task_type) {
             'learn'    => 'Learn',
-            'revision' => "Revision {$this->revision_no}",
+            'revision' => match ($this->review_kind) {
+                self::REVIEW_KIND_RELEARN => "Relearn check (Revision {$this->revision_no})",
+                self::REVIEW_KIND_REPEAT  => "Maintenance review (Revision {$this->revision_no})",
+                default                   => "Revision {$this->revision_no}",
+            },
             'practice' => 'Practice',
             'custom'   => 'Custom',
             default    => ucfirst($this->task_type),

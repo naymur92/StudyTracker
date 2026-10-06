@@ -48,7 +48,7 @@ class StudyTaskApiController extends Controller
         $this->authorise($task, $request->user()->id);
 
         try {
-            $updated = $this->completeService->execute($task, $request->validated());
+            $result = $this->completeService->execute($task, $request->validated());
         } catch (ValidationException $e) {
             return $this->jsonResponse(
                 message: $e->getMessage(),
@@ -60,7 +60,10 @@ class StudyTaskApiController extends Controller
         return $this->jsonResponse(
             flag: true,
             message: 'Task marked as completed!',
-            data: new StudyTaskResource($updated),
+            data: array_merge(
+                (new StudyTaskResource($result['task']))->resolve($request),
+                ['schedule_outcome' => $result['schedule_outcome']],
+            ),
             responseCode: HttpResponse::HTTP_OK,
         );
     }

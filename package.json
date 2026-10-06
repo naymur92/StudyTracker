@@ -3,7 +3,9 @@
     "private": true,
     "type": "module",
     "scripts": {
+        "prebuild": "npm run check:content",
         "build": "vite build",
+        "check:content": "node scripts/check-learning-content.mjs",
         "dev": "vite"
     },
     "devDependencies": {

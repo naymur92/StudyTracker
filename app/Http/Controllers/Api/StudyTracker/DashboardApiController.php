@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\StudyTask;
 use App\Models\Topic;
 use App\Services\StudyTracker\BuildDailyAgendaService;
+use App\Services\StudyTracker\ReviewLoadService;
 use App\Traits\CustomResponseTrait;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -16,7 +17,8 @@ class DashboardApiController extends Controller
     use CustomResponseTrait;
 
     public function __construct(
-        private BuildDailyAgendaService $agendaService
+        private BuildDailyAgendaService $agendaService,
+        private ReviewLoadService $loadService,
     ) {}
 
     /**
@@ -34,18 +36,22 @@ class DashboardApiController extends Controller
             'total_topics'    => Topic::where('user_id', $userId)->count(),
             'active_topics'   => Topic::where('user_id', $userId)->where('status', 'active')->count(),
             'today_pending'   => StudyTask::where('user_id', $userId)
+                ->whereHas('topic')
                 ->where('scheduled_date', today())
                 ->where('status', 'pending')
                 ->count(),
             'overdue'         => StudyTask::where('user_id', $userId)
+                ->whereHas('topic')
                 ->where('scheduled_date', '<', today())
                 ->whereIn('status', ['pending', 'missed'])
                 ->count(),
             'completed_today' => StudyTask::where('user_id', $userId)
+                ->whereHas('topic')
                 ->whereDate('completed_at', today())
                 ->where('status', 'completed')
                 ->count(),
             'streak'          => $this->calculateStreak($userId),
+            'review_load'     => $this->loadService->forDate($request->user(), \Carbon\Carbon::parse($date)),
         ];
 
         return $this->jsonResponse(
@@ -72,6 +78,7 @@ class DashboardApiController extends Controller
         $end   = $start->copy()->endOfMonth();
 
         $tasks = StudyTask::where('user_id', $userId)
+            ->whereHas('topic')
             ->whereBetween('scheduled_date', [$start->toDateString(), $end->toDateString()])
             ->selectRaw('scheduled_date, status, count(*) as count')
             ->groupBy('scheduled_date', 'status')

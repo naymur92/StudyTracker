@@ -26,6 +26,7 @@ class CategoryApiController extends Controller
             $q->where('user_id', $userId)->orWhereNull('user_id');
         })
             ->withCount('topics')
+            ->with(['reviewSchedules' => fn ($q) => $q->where('user_id', $userId)])
             ->orderBy('name')
             ->get();
 

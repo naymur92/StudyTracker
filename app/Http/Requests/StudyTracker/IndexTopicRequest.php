@@ -19,6 +19,8 @@ class IndexTopicRequest extends FormRequest
             'status'      => ['nullable', 'in:active,completed,archived'],
             'category_id' => ['nullable'],
             'difficulty'  => ['nullable', 'in:easy,medium,hard'],
+            'lane'        => ['nullable', 'in:major,minor,work'],
+            'kind'        => ['nullable', 'in:topic,mistake,all'],
             'per_page'    => ['nullable', 'integer', 'min:1', 'max:100'],
             'page'        => ['nullable', 'integer', 'min:1'],
         ];

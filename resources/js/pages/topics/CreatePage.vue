@@ -8,6 +8,8 @@
             <h1 class="text-3xl font-bold text-gray-900 mt-4">Create New Topic</h1>
         </div>
 
+        <LoadWarnings :load="reviewLoad" :show-cap="true" class="max-w-2xl" />
+
         <!-- Form -->
         <div class="bg-white rounded-lg shadow p-8 max-w-2xl">
             <form @submit.prevent="handleSubmit" class="space-y-6">
@@ -21,6 +23,12 @@
                         </option>
                     </select>
                 </div>
+
+                <p class="text-sm text-gray-600 -mt-4" v-if="appliedSchedule">
+                    <ScheduleSummary :offsets="appliedSchedule.offsets" :repeat-every-days="appliedSchedule.repeat_every_days"
+                        :repeat-until="appliedSchedule.repeat_until" />
+                    <span class="text-gray-500"> — {{ appliedSchedule.label }}</span>
+                </p>
 
                 <!-- Title -->
                 <div>
@@ -67,6 +75,8 @@
                         rows="3"></textarea>
                 </div>
 
+                <RecallCardFields :form="form" :errors="fieldErrors" />
+
                 <!-- Error message -->
                 <div v-if="error" class="p-4 bg-red-50 border border-red-200 rounded-lg">
                     <p class="text-sm text-red-700">{{ error }}</p>
@@ -88,13 +98,19 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useTopicStore } from '@/stores/topics'
 import { useCategoryStore } from '@/stores/categories'
 import { format } from 'date-fns'
 import DatePicker from '@/components/DatePicker.vue'
+import RecallCardFields from '@/components/topics/RecallCardFields.vue'
+import LoadWarnings from '@/components/review/LoadWarnings.vue'
+import ScheduleSummary from '@/components/topics/ScheduleSummary.vue'
+import { useRevisionTemplateStore } from '@/stores/revisionTemplates'
+import { useReviewStore } from '@/stores/review'
+import { todayLocal } from '@/helpers/dates'
 
 const router = useRouter()
 const authStore = useAuthStore()
@@ -103,7 +119,21 @@ const categoryStore = useCategoryStore()
 
 const loading = ref(false)
 const error = ref(null)
-const today = format(new Date(), 'yyyy-MM-dd')
+const today = todayLocal()
+const reviewStore = useReviewStore()
+const reviewLoad = ref(null)
+const revisionTemplateStore = useRevisionTemplateStore()
+const defaultOffsets = ref([])
+
+// Which review schedule the new topic will get: its category's, or your default.
+const appliedSchedule = computed(() => {
+    const category = categories.value.find((c) => c.id === form.category_id)
+    if (category?.review_schedule) {
+        return { ...category.review_schedule, label: `${category.name} schedule` }
+    }
+    if (!defaultOffsets.value.length) return null
+    return { offsets: defaultOffsets.value, repeat_every_days: null, repeat_until: null, label: 'your default schedule (Study Settings)' }
+})
 
 const form = reactive({
     category_id: '',
@@ -113,7 +143,13 @@ const form = reactive({
     first_study_date: format(new Date(), 'yyyy-MM-dd'),
     source_link: '',
     notes: '',
+    recall_questions: [],
+    summary: '',
+    practice_prompt: '',
+    lane: null,
 })
+
+const fieldErrors = ref({})
 
 const categories = ref([])
 
@@ -123,10 +159,15 @@ const handleSubmit = async () => {
 
     try {
         const api = authStore.getApiClient()
-        await topicStore.createTopic(api, form)
+        fieldErrors.value = {}
+        await topicStore.createTopic(api, {
+            ...form,
+            recall_questions: form.recall_questions.filter((q) => q.question.trim() !== ''),
+        })
         router.push({ name: 'Topics' })
     } catch (err) {
-        error.value = err.response?.data?.message || 'Failed to create topic'
+        fieldErrors.value = err.response?.data?.errors || {}
+        error.value = err.response?.data?.msg || err.response?.data?.message || 'Failed to create topic'
     } finally {
         loading.value = false
     }
@@ -137,6 +178,12 @@ onMounted(async () => {
         const api = authStore.getApiClient()
         await categoryStore.fetchCategories(api)
         categories.value = categoryStore.categories
+        reviewLoad.value = await reviewStore.fetchLoad(api).catch(() => null)
+        await revisionTemplateStore.fetchTemplates(api).catch(() => null)
+        defaultOffsets.value = (revisionTemplateStore.templates || [])
+            .filter((t) => t.is_active)
+            .sort((a, b) => a.sequence_no - b.sequence_no)
+            .map((t) => t.day_offset)
     } catch (err) {
         error.value = 'Failed to load categories'
     }

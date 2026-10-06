@@ -16,16 +16,11 @@ import HomePage from '@/pages/HomePage.vue'
 import AboutPage from '@/pages/AboutPage.vue'
 import DashboardPage from '@/pages/DashboardPage.vue'
 import TopicsListPage from '@/pages/topics/ListPage.vue'
-import TopicDetailPage from '@/pages/topics/DetailPage.vue'
-import TopicCreatePage from '@/pages/topics/CreatePage.vue'
-import TopicEditPage from '@/pages/topics/EditPage.vue'
-import CategoriesPage from '@/pages/categories/ListPage.vue'
 import DailyTasksPage from '@/pages/tasks/DailyPage.vue'
 import PracticeLogsPage from '@/pages/practice-logs/ListPage.vue'
 import CalendarPage from '@/pages/calendar/CalendarPage.vue'
 import ReportsPage from '@/pages/reports/ReportsPage.vue'
 import ProfilePage from '@/pages/ProfilePage.vue'
-import RevisionTemplatesPage from '@/pages/settings/RevisionTemplatesPage.vue'
 import NotFoundPage from '@/pages/NotFoundPage.vue'
 
 const routes = [
@@ -39,6 +34,17 @@ const routes = [
                 path: '',
                 name: 'Home',
                 component: HomePage,
+            },
+        ],
+    },
+    {
+        path: '/features',
+        component: PublicLayout,
+        children: [
+            {
+                path: '',
+                name: 'Features',
+                component: () => import('@/pages/features/FeaturesPage.vue'),
             },
         ],
     },
@@ -73,22 +79,22 @@ const routes = [
             {
                 path: 'topics/create',
                 name: 'CreateTopic',
-                component: TopicCreatePage,
+                component: () => import('@/pages/topics/CreatePage.vue'),
             },
             {
                 path: 'topics/:id',
                 name: 'TopicDetail',
-                component: TopicDetailPage,
+                component: () => import('@/pages/topics/DetailPage.vue'),
             },
             {
                 path: 'topics/:id/edit',
                 name: 'EditTopic',
-                component: TopicEditPage,
+                component: () => import('@/pages/topics/EditPage.vue'),
             },
             {
                 path: 'categories',
                 name: 'Categories',
-                component: CategoriesPage,
+                component: () => import('@/pages/categories/ListPage.vue'),
             },
             {
                 path: 'tasks',
@@ -116,9 +122,29 @@ const routes = [
                 component: ProfilePage,
             },
             {
+                path: 'week',
+                name: 'WeeklyPlan',
+                component: () => import('@/pages/weekly/WeeklyPlanPage.vue'),
+            },
+            {
+                path: 'mistakes',
+                name: 'Mistakes',
+                component: () => import('@/pages/mistakes/MistakesPage.vue'),
+            },
+            {
+                path: 'guide',
+                name: 'UserGuide',
+                component: () => import('@/pages/guide/UserGuidePage.vue'),
+            },
+            {
+                path: 'review',
+                name: 'Review',
+                component: () => import('@/pages/review/ReviewPage.vue'),
+            },
+            {
                 path: 'revision-templates',
                 name: 'RevisionTemplates',
-                component: RevisionTemplatesPage,
+                component: () => import('@/pages/settings/RevisionTemplatesPage.vue'),
             },
         ],
     },
@@ -164,7 +190,14 @@ const routes = [
 const router = createRouter({
     history: createWebHistory('/'),
     routes,
-    scrollBehavior() {
+    scrollBehavior(to, from, savedPosition) {
+        if (savedPosition) {
+            return savedPosition
+        }
+        // Deep links such as /features#references or /app/guide#review
+        if (to.hash) {
+            return { el: to.hash, top: 80, behavior: 'smooth' }
+        }
         return { top: 0 }
     },
 })

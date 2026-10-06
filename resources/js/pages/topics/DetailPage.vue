@@ -61,6 +61,69 @@
                     </div>
                 </div>
 
+                <!-- Schedule progress -->
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mt-6 pt-6 border-t border-gray-200">
+                    <div>
+                        <p class="text-gray-600 text-sm">Lane</p>
+                        <span v-if="topic.lane" :class="['inline-block mt-1 px-2 py-0.5 rounded-full text-xs font-semibold', laneColor(topic.lane)]">
+                            {{ capitalizeFirst(topic.lane) }}
+                        </span>
+                        <p v-else class="font-semibold text-gray-900">—</p>
+                    </div>
+                    <div>
+                        <p class="text-gray-600 text-sm">Progress</p>
+                        <p class="font-semibold text-gray-900">
+                            <template v-if="topic.srs_steps_total">Step {{ Math.min(topic.srs_step, topic.srs_steps_total) }} of {{ topic.srs_steps_total }}</template>
+                            <template v-else>—</template>
+                        </p>
+                    </div>
+                    <div>
+                        <p class="text-gray-600 text-sm">Lapses</p>
+                        <p class="font-semibold text-gray-900">{{ topic.srs_lapses || 0 }}</p>
+                    </div>
+                    <div>
+                        <p class="text-gray-600 text-sm">Next review</p>
+                        <p class="font-semibold text-gray-900">{{ topic.next_review_date ? formatDate(topic.next_review_date) : 'None scheduled' }}</p>
+                    </div>
+                    <div class="md:col-span-4 text-sm text-gray-600" v-if="topic.review_schedule">
+                        <ScheduleSummary :offsets="topic.review_schedule.offsets"
+                            :repeat-every-days="topic.review_schedule.repeat_every_days"
+                            :repeat-until="topic.review_schedule.repeat_until" />
+                    </div>
+                </div>
+
+                <!-- Recall card -->
+                <div v-if="topic.recall_questions?.length" class="mt-6 pt-6 border-t border-gray-200">
+                    <p class="text-gray-600 text-sm mb-3">Recall questions</p>
+                    <ol class="space-y-2">
+                        <li v-for="(q, idx) in topic.recall_questions" :key="idx" class="border border-gray-200 rounded-lg p-3">
+                            <div class="flex items-start justify-between gap-3">
+                                <p class="text-gray-900"><span class="font-semibold text-gray-500">{{ idx + 1 }}.</span> {{ q.question }}</p>
+                                <button v-if="q.answer" type="button" @click="toggleAnswer(idx)"
+                                    class="text-xs text-primary-600 hover:underline whitespace-nowrap">
+                                    {{ openAnswers.has(idx) ? 'Hide answer' : 'Show answer' }}
+                                </button>
+                            </div>
+                            <p v-if="q.answer && openAnswers.has(idx)" class="mt-2 text-sm text-gray-700 whitespace-pre-wrap bg-gray-50 rounded p-2">{{ q.answer }}</p>
+                        </li>
+                    </ol>
+                </div>
+                <div v-else class="mt-6 pt-6 border-t border-gray-200 text-sm text-gray-600">
+                    No recall questions yet.
+                    <router-link :to="`/app/topics/${route.params.id}/edit`" class="text-primary-600 hover:underline">Add 3–5 questions</router-link>
+                    so reviews become self-tests.
+                </div>
+
+                <div v-if="topic.summary" class="mt-6 pt-6 border-t border-gray-200">
+                    <p class="text-gray-600 text-sm">Summary (answer key)</p>
+                    <p class="text-gray-900 mt-2 whitespace-pre-wrap">{{ topic.summary }}</p>
+                </div>
+
+                <div v-if="topic.practice_prompt" class="mt-6 pt-6 border-t border-gray-200">
+                    <p class="text-gray-600 text-sm">Practice prompt</p>
+                    <p class="text-gray-900 mt-2">{{ topic.practice_prompt }}</p>
+                </div>
+
                 <!-- Source Link -->
                 <div v-if="topic.source_link" class="mt-6 pt-6 border-t border-gray-200">
                     <p class="text-gray-600 text-sm">Source</p>
@@ -87,8 +150,12 @@
                     <div v-for="task in studyTasks" :key="task.id" class="p-4 border border-gray-200 rounded-lg">
                         <div class="flex items-center justify-between">
                             <div>
-                                <p class="font-medium text-gray-900">{{ task.task_type_label ||
-                    capitalizeFirst(task.task_type) }}</p>
+                                <p class="font-medium text-gray-900">
+                                    {{ task.task_type_label || capitalizeFirst(task.task_type) }}
+                                    <span v-if="task.review_kind === 'relearn'" class="ml-2 px-2 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-800">Relearn</span>
+                                    <span v-if="task.review_kind === 'repeat'" class="ml-2 px-2 py-0.5 rounded-full text-xs font-semibold bg-purple-100 text-purple-800">Maintenance</span>
+                                    <span v-if="task.recall_grade" class="ml-2 px-2 py-0.5 rounded-full text-xs font-semibold" :class="gradeColor(task.recall_grade)">{{ capitalizeFirst(task.recall_grade) }}</span>
+                                </p>
                                 <p class="text-sm text-gray-600">Scheduled: {{ formatDate(task.scheduled_date) }}</p>
                             </div>
                             <span
@@ -125,6 +192,7 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
+import ScheduleSummary from '@/components/topics/ScheduleSummary.vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useTopicStore } from '@/stores/topics'
@@ -154,11 +222,32 @@ const getDifficultyColor = (difficulty) => {
     return colors[difficulty] || 'bg-gray-100 text-gray-800'
 }
 
+const openAnswers = ref(new Set())
+const toggleAnswer = (idx) => {
+    const next = new Set(openAnswers.value)
+    next.has(idx) ? next.delete(idx) : next.add(idx)
+    openAnswers.value = next
+}
+
+const laneColor = (lane) => ({
+    major: 'bg-primary-100 text-primary-800',
+    minor: 'bg-indigo-100 text-indigo-800',
+    work: 'bg-slate-200 text-slate-800',
+}[lane] || 'bg-gray-100 text-gray-800')
+
+const gradeColor = (grade) => ({
+    again: 'bg-red-100 text-red-800',
+    hard: 'bg-amber-100 text-amber-800',
+    good: 'bg-success-100 text-success-800',
+    easy: 'bg-blue-100 text-blue-800',
+}[grade] || 'bg-gray-100 text-gray-800')
+
 const getTaskStatusColor = (status) => {
     const colors = {
         pending: 'bg-gray-100 text-gray-800',
         completed: 'bg-success-100 text-success-800',
         skipped: 'bg-gray-100 text-gray-800',
+        missed: 'bg-red-100 text-red-800',
     }
     return colors[status] || 'bg-gray-100 text-gray-800'
 }

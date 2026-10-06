@@ -3,12 +3,17 @@
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\UserApiController;
 use App\Http\Controllers\Api\StudyTracker\CategoryApiController;
+use App\Http\Controllers\Api\StudyTracker\CategoryScheduleApiController;
 use App\Http\Controllers\Api\StudyTracker\DashboardApiController;
+use App\Http\Controllers\Api\StudyTracker\MistakeApiController;
 use App\Http\Controllers\Api\StudyTracker\PracticeLogApiController;
 use App\Http\Controllers\Api\StudyTracker\ReportApiController;
+use App\Http\Controllers\Api\StudyTracker\ReviewApiController;
 use App\Http\Controllers\Api\StudyTracker\RevisionTemplateApiController;
+use App\Http\Controllers\Api\StudyTracker\StudyPreferenceApiController;
 use App\Http\Controllers\Api\StudyTracker\StudyTaskApiController;
 use App\Http\Controllers\Api\StudyTracker\TopicApiController;
+use App\Http\Controllers\Api\StudyTracker\WeeklyPlanApiController;
 use Illuminate\Support\Facades\Route;
 
 // Authorization Routes
@@ -68,9 +73,41 @@ Route::middleware('auth:api')->group(function () {
         Route::match(['put', 'patch'], '/categories/{category}', [CategoryApiController::class, 'update'])->middleware(['throttle:study-write', 'deny.demo'])->name('categories.update');
         Route::delete('/categories/{category}', [CategoryApiController::class, 'destroy'])->middleware(['throttle:study-write', 'deny.demo'])->name('categories.destroy');
 
+        // Review schedules: preset library and per-user category schedules
+        Route::get('/schedule-presets', [CategoryScheduleApiController::class, 'presets'])->middleware('throttle:study-read')->name('schedule-presets');
+        Route::get('/categories/{category}/schedule', [CategoryScheduleApiController::class, 'show'])->middleware('throttle:study-read')->name('categories.schedule.show');
+        Route::put('/categories/{category}/schedule', [CategoryScheduleApiController::class, 'update'])->middleware(['throttle:study-write', 'deny.demo'])->name('categories.schedule.update');
+        Route::delete('/categories/{category}/schedule', [CategoryScheduleApiController::class, 'destroy'])->middleware(['throttle:study-write', 'deny.demo'])->name('categories.schedule.destroy');
+
         // Revision Template Configuration (user-level spacing setup)
         Route::get('/revision-templates', [RevisionTemplateApiController::class, 'index'])->middleware('throttle:study-read')->name('revision-templates.index');
         Route::put('/revision-templates', [RevisionTemplateApiController::class, 'update'])->middleware(['throttle:study-write', 'deny.demo'])->name('revision-templates.update');
         Route::post('/revision-templates/reset', [RevisionTemplateApiController::class, 'reset'])->middleware(['throttle:study-write', 'deny.demo'])->name('revision-templates.reset');
+
+        // Review load (due-today estimate, budget, review debt)
+        Route::get('/review-load', [ReviewApiController::class, 'load'])->middleware('throttle:study-read')->name('review-load');
+        Route::get('/review-queue', [ReviewApiController::class, 'queue'])->middleware('throttle:study-read')->name('review-queue');
+
+        // Mistake notebook
+        Route::get('/mistakes', [MistakeApiController::class, 'index'])->middleware('throttle:study-read')->name('mistakes.index');
+        Route::post('/mistakes', [MistakeApiController::class, 'store'])->middleware(['throttle:study-write', 'deny.demo'])->name('mistakes.store');
+        Route::patch('/mistakes/{mistake}', [MistakeApiController::class, 'update'])->middleware(['throttle:study-write', 'deny.demo'])->name('mistakes.update');
+        Route::delete('/mistakes/{mistake}', [MistakeApiController::class, 'destroy'])->middleware(['throttle:study-write', 'deny.demo'])->name('mistakes.destroy');
+        Route::post('/mistakes/{mistake}/merge', [MistakeApiController::class, 'merge'])->middleware(['throttle:study-write', 'deny.demo'])->name('mistakes.merge');
+
+        // Weekly planning (gears, blocks, score)
+        Route::get('/weekly-plan/history', [WeeklyPlanApiController::class, 'history'])->middleware('throttle:study-read')->name('weekly-plan.history');
+        Route::get('/weekly-plan', [WeeklyPlanApiController::class, 'show'])->middleware('throttle:study-read')->name('weekly-plan.show');
+        Route::post('/weekly-plan', [WeeklyPlanApiController::class, 'store'])->middleware(['throttle:study-write', 'deny.demo'])->name('weekly-plan.store');
+        Route::patch('/weekly-plan/{week}', [WeeklyPlanApiController::class, 'update'])->middleware(['throttle:study-write', 'deny.demo'])->name('weekly-plan.update');
+        Route::delete('/weekly-plan/{week}', [WeeklyPlanApiController::class, 'destroy'])->middleware(['throttle:study-write', 'deny.demo'])->name('weekly-plan.destroy');
+        Route::post('/weekly-plan/{week}/regenerate', [WeeklyPlanApiController::class, 'regenerate'])->middleware(['throttle:study-write', 'deny.demo'])->name('weekly-plan.regenerate');
+        Route::post('/weekly-plan/{week}/blocks', [WeeklyPlanApiController::class, 'storeBlock'])->middleware(['throttle:study-write', 'deny.demo'])->name('weekly-plan.blocks.store');
+        Route::patch('/blocks/{block}', [WeeklyPlanApiController::class, 'updateBlock'])->middleware(['throttle:study-write', 'deny.demo'])->name('blocks.update');
+        Route::delete('/blocks/{block}', [WeeklyPlanApiController::class, 'destroyBlock'])->middleware(['throttle:study-write', 'deny.demo'])->name('blocks.destroy');
+
+        // Study preferences (review budget, week layout, success line)
+        Route::get('/preferences', [StudyPreferenceApiController::class, 'show'])->middleware('throttle:study-read')->name('preferences.show');
+        Route::put('/preferences', [StudyPreferenceApiController::class, 'update'])->middleware(['throttle:study-write', 'deny.demo'])->name('preferences.update');
     });
 });

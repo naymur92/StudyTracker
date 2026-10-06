@@ -47,6 +47,20 @@
                     </div>
                 </div>
                 <p class="text-gray-600 text-sm">{{ category.topics_count || 0 }} topics</p>
+                <div class="mt-3 flex items-center justify-between gap-2">
+                    <span class="text-xs px-2 py-1 rounded-full" :class="category.review_schedule ? 'bg-primary-100 text-primary-800' : 'bg-gray-100 text-gray-600'">
+                        <template v-if="category.review_schedule">
+                            {{ presetName(category.review_schedule.preset_key) }}:
+                            <ScheduleSummary :offsets="category.review_schedule.offsets"
+                                :repeat-every-days="category.review_schedule.repeat_every_days"
+                                :repeat-until="category.review_schedule.repeat_until" />
+                        </template>
+                        <template v-else>Default schedule</template>
+                    </span>
+                    <button @click="scheduleCategory = category" class="text-xs text-primary-600 hover:underline whitespace-nowrap">
+                        Review schedule
+                    </button>
+                </div>
             </div>
         </div>
 
@@ -106,6 +120,7 @@
                 </form>
             </div>
         </div>
+        <CategoryScheduleModal :category="scheduleCategory" :presets="presets" @close="scheduleCategory = null" />
     </div>
 </template>
 
@@ -115,6 +130,8 @@ import { useAuthStore } from '@/stores/auth'
 import { useCategoryStore } from '@/stores/categories'
 import { showConfirm, showError, showSuccess } from '@/helpers/alerts'
 import IconPicker from '@/components/IconPicker.vue'
+import CategoryScheduleModal from '@/components/categories/CategoryScheduleModal.vue'
+import ScheduleSummary from '@/components/topics/ScheduleSummary.vue'
 
 const authStore = useAuthStore()
 const categoryStore = useCategoryStore()
@@ -138,6 +155,9 @@ const editCategory = reactive({
 })
 
 const categories = computed(() => categoryStore.categories)
+const presets = ref([])
+const scheduleCategory = ref(null)
+const presetName = (key) => presets.value.find((p) => p.key === key)?.name || 'Custom'
 
 const getCategoryIconClass = (icon) => {
     if (!icon) return 'fas fa-folder text-2xl'
@@ -156,6 +176,7 @@ const fetchCategories = async () => {
     try {
         const api = authStore.getApiClient()
         await categoryStore.fetchCategories(api)
+        presets.value = await categoryStore.fetchPresets(api).catch(() => [])
     } catch (err) {
         error.value = 'Failed to load categories'
         await showError(error.value)

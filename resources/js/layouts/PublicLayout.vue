@@ -10,6 +10,10 @@
 
                 <!-- Desktop nav -->
                 <nav class="hidden sm:flex items-center gap-3">
+                    <router-link to="/features"
+                        class="text-sm text-gray-600 hover:text-gray-900 px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors">
+                        Features
+                    </router-link>
                     <router-link to="/about"
                         class="text-sm text-gray-600 hover:text-gray-900 px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors">
                         About
@@ -45,12 +49,16 @@
 
             <!-- Mobile menu -->
             <nav v-if="mobileMenuOpen" class="sm:hidden border-t border-gray-100 bg-white px-4 py-3 space-y-1">
+                <router-link to="/features" @click="mobileMenuOpen = false"
+                    class="block text-sm text-gray-600 hover:text-gray-900 px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors">
+                    Features
+                </router-link>
                 <router-link to="/about" @click="mobileMenuOpen = false"
                     class="block text-sm text-gray-600 hover:text-gray-900 px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors">
                     About
                 </router-link>
                 <template v-if="isLoggedIn">
-                    <router-link to="/app/dashboard" @click="mobileMenuOpen = false"
+                    <router-link to="/app" @click="mobileMenuOpen = false"
                         class="block text-sm font-medium text-center text-white bg-primary-600 hover:bg-primary-700 px-4 py-2 rounded-lg transition-colors">
                         Go To App
                     </router-link>

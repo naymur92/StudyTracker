@@ -69,6 +69,8 @@
                         class="input-base bg-gray-50" />
                 </div>
 
+                <RecallCardFields :form="form" :errors="fieldErrors" />
+
                 <div v-if="error" class="p-4 bg-red-50 border border-red-200 rounded-lg">
                     <p class="text-sm text-red-700">{{ error }}</p>
                 </div>
@@ -88,6 +90,7 @@
 <script setup>
 import { reactive, ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import RecallCardFields from '@/components/topics/RecallCardFields.vue'
 import { useAuthStore } from '@/stores/auth'
 import { useTopicStore } from '@/stores/topics'
 import { useCategoryStore } from '@/stores/categories'
@@ -113,7 +116,13 @@ const form = reactive({
     status: 'active',
     source_link: '',
     notes: '',
+    recall_questions: [],
+    summary: '',
+    practice_prompt: '',
+    lane: null,
 })
+
+const fieldErrors = ref({})
 
 const formatDate = (date) => date || 'N/A'
 
@@ -138,6 +147,10 @@ const loadPage = async () => {
         form.status = topic.value?.status || 'active'
         form.source_link = topic.value?.source_link || ''
         form.notes = topic.value?.notes || ''
+        form.recall_questions = (topic.value?.recall_questions || []).map((q) => ({ question: q.question, answer: q.answer || '' }))
+        form.summary = topic.value?.summary || ''
+        form.practice_prompt = topic.value?.practice_prompt || ''
+        form.lane = topic.value?.lane || null
     } catch (err) {
         error.value = err.response?.data?.message || 'Failed to load topic'
         await showError(error.value)
@@ -152,11 +165,16 @@ const handleSubmit = async () => {
 
     try {
         const api = authStore.getApiClient()
-        await topicStore.updateTopic(api, route.params.id, form)
+        fieldErrors.value = {}
+        await topicStore.updateTopic(api, route.params.id, {
+            ...form,
+            recall_questions: form.recall_questions.filter((q) => q.question.trim() !== ''),
+        })
         await showSuccess('Topic updated successfully.')
         router.push({ name: 'TopicDetail', params: { id: route.params.id } })
     } catch (err) {
-        error.value = err.response?.data?.message || 'Failed to update topic'
+        fieldErrors.value = err.response?.data?.errors || {}
+        error.value = err.response?.data?.msg || err.response?.data?.message || 'Failed to update topic'
         await showError(error.value)
     } finally {
         saving.value = false

@@ -52,7 +52,8 @@ export const useCategoryStore = defineStore('categories', {
                 const response = await api.put(`/study/categories/${id}`, categoryData)
                 const index = this.categories.findIndex(c => c.id === id)
                 if (index !== -1) {
-                    this.categories[index] = response.data.data
+                    // keep fields the update response omits (e.g. review_schedule)
+                    this.categories[index] = { ...this.categories[index], ...response.data.data }
                 }
                 return response.data.data
             } catch (error) {
@@ -68,6 +69,35 @@ export const useCategoryStore = defineStore('categories', {
             } catch (error) {
                 this.setError(error.response?.data?.message || 'Failed to delete category')
                 throw error
+            }
+        },
+
+        async fetchPresets(api) {
+            const response = await api.get('/study/schedule-presets')
+            return response.data.data
+        },
+
+        async saveSchedule(api, categoryId, schedule) {
+            const response = await api.put(`/study/categories/${categoryId}/schedule`, schedule)
+            const saved = response.data.data
+            this.setCategorySchedule(categoryId, {
+                preset_key: saved.preset_key,
+                offsets: saved.offsets,
+                repeat_every_days: saved.repeat_every_days,
+                repeat_until: saved.repeat_until,
+            })
+            return saved
+        },
+
+        async deleteSchedule(api, categoryId) {
+            await api.delete(`/study/categories/${categoryId}/schedule`)
+            this.setCategorySchedule(categoryId, null)
+        },
+
+        setCategorySchedule(categoryId, schedule) {
+            const index = this.categories.findIndex(c => c.id === categoryId)
+            if (index !== -1) {
+                this.categories[index] = { ...this.categories[index], review_schedule: schedule }
             }
         },
     },

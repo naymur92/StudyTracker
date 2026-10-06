@@ -33,7 +33,7 @@ class TopicApiController extends Controller
     public function index(IndexTopicRequest $request): JsonResponse
     {
         $userId = $request->user()->id;
-        $query  = Topic::with('category')->withCount('studyTasks')->where('user_id', $userId)->latest();
+        $query  = Topic::with('category')->withCount('studyTasks')->withNextReviewDate()->where('user_id', $userId)->latest();
 
         if ($request->filled('search')) {
             $query->where('title', 'like', '%' . $request->search . '%');
@@ -49,6 +49,16 @@ class TopicApiController extends Controller
 
         if ($request->filled('difficulty')) {
             $query->where('difficulty', $request->difficulty);
+        }
+
+        if ($request->filled('lane')) {
+            $query->where('lane', $request->lane);
+        }
+
+        // Mistake entries are hidden from the topic list unless asked for.
+        $kind = $request->input('kind', Topic::KIND_TOPIC);
+        if ($kind !== 'all') {
+            $query->where('kind', $kind);
         }
 
         $perPage = min((int) $request->get('per_page', 15), 100);
@@ -69,7 +79,7 @@ class TopicApiController extends Controller
     {
         $topic = $this->createService->execute($request->user()->id, $request->validated());
 
-        $topic->load('category', 'studyTasks');
+        $topic->load('category', 'studyTasks')->loadNextReviewDate();
 
         return $this->jsonResponse(
             flag: true,
@@ -86,7 +96,7 @@ class TopicApiController extends Controller
     {
         $this->authorise($topic, $request->user()->id);
 
-        $topic->load('category');
+        $topic->load('category')->loadNextReviewDate();
 
         $studyTasks = StudyTask::where('topic_id', $topic->id)
             ->orderBy('task_type')
@@ -131,7 +141,7 @@ class TopicApiController extends Controller
         return $this->jsonResponse(
             flag: true,
             message: 'Topic updated successfully.',
-            data: new TopicResource($topic->fresh('category')),
+            data: new TopicResource($topic->fresh('category')->loadNextReviewDate()),
             responseCode: HttpResponse::HTTP_OK,
         );
     }

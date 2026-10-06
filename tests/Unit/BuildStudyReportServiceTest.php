@@ -24,6 +24,7 @@ class BuildStudyReportServiceTest extends TestCase
             'title' => 'Graphs Review',
             'status' => 'completed',
             'notes' => 'Covered shortest path problems.',
+            'recall_grade' => 'hard',
         ]);
         $task->scheduled_date = Carbon::parse('2026-03-20');
         $task->completed_at = Carbon::parse('2026-03-20 08:15:00');
@@ -60,5 +61,7 @@ class BuildStudyReportServiceTest extends TestCase
         $this->assertStringContainsString('2026-03-20', $csv);
         $this->assertStringContainsString('Solved two graph problems.', $csv);
         $this->assertStringContainsString('2026-03-21', $csv);
+        $this->assertStringContainsString('Recall Grade', $csv);
+        $this->assertMatchesRegularExpression('/Graphs Review.*,hard\r?\n/', $csv);
     }
 }

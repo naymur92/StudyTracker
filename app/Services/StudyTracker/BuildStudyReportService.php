@@ -232,6 +232,7 @@ class BuildStudyReportService
             'Status',
             'Completed At',
             'Notes',
+            'Recall Grade',
         ]);
 
         foreach ($this->iterableToArray($reportData['tasks'] ?? []) as $task) {
@@ -244,6 +245,7 @@ class BuildStudyReportService
                 $this->getNestedValue($task, 'status'),
                 $this->formatDateTimeValue($this->getNestedValue($task, 'completed_at')),
                 $this->getNestedValue($task, 'notes'),
+                $this->getNestedValue($task, 'recall_grade'),
             ]);
         }
 

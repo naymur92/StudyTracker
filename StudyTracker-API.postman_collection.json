@@ -172,12 +172,7 @@
                         "url": {
                             "raw": "{{url}}/api/auth/forgot-password/request",
                             "host": ["{{url}}"],
-                            "path": [
-                                "api",
-                                "auth",
-                                "forgot-password",
-                                "request"
-                            ]
+                            "path": ["api", "auth", "forgot-password", "request"]
                         },
                         "description": "Send 6-digit reset code to email (max one email every 30 minutes per user).",
                         "auth": {
@@ -362,12 +357,7 @@
                         "url": {
                             "raw": "{{url}}/api/study/categories/{{category_id}}",
                             "host": ["{{url}}"],
-                            "path": [
-                                "api",
-                                "study",
-                                "categories",
-                                "{{category_id}}"
-                            ]
+                            "path": ["api", "study", "categories", "{{category_id}}"]
                         }
                     },
                     "response": []
@@ -389,12 +379,7 @@
                         "url": {
                             "raw": "{{url}}/api/study/categories/{{category_id}}",
                             "host": ["{{url}}"],
-                            "path": [
-                                "api",
-                                "study",
-                                "categories",
-                                "{{category_id}}"
-                            ]
+                            "path": ["api", "study", "categories", "{{category_id}}"]
                         }
                     },
                     "response": []
@@ -496,7 +481,7 @@
                         ],
                         "body": {
                             "mode": "raw",
-                            "raw": "{\n  \"category_id\": \"{{category_id}}\",\n  \"title\": \"Derivatives and Differentiation\",\n  \"description\": \"Understanding the concept of derivatives and learning differentiation rules\",\n  \"source_link\": \"https://example.com/derivatives\",\n  \"difficulty\": \"medium\",\n  \"first_study_date\": \"2026-03-27\",\n  \"notes\": \"Start from limits and rules\",\n  \"tags\": [\"calculus\", \"mathematics\", \"derivatives\"]\n}"
+                            "raw": "{\n    \"category_id\": \"{{category_id}}\",\n    \"title\": \"Derivatives and Differentiation\",\n    \"description\": \"Understanding the concept of derivatives and learning differentiation rules\",\n    \"source_link\": \"https://example.com/derivatives\",\n    \"difficulty\": \"medium\",\n    \"first_study_date\": \"2026-03-27\",\n    \"notes\": \"Start from limits and rules\",\n    \"tags\": [\n        \"calculus\",\n        \"mathematics\",\n        \"derivatives\"\n    ],\n    \"recall_questions\": [\n        {\n            \"question\": \"What is the derivative of x^n?\",\n            \"answer\": \"n*x^(n-1)\"\n        },\n        {\n            \"question\": \"State the chain rule.\"\n        }\n    ],\n    \"summary\": \"Derivative = instantaneous rate of change.\",\n    \"practice_prompt\": \"Differentiate 10 mixed functions without notes\",\n    \"lane\": \"major\"\n}"
                         },
                         "url": {
                             "raw": "{{url}}/api/study/topics",
@@ -523,7 +508,7 @@
                         ],
                         "body": {
                             "mode": "raw",
-                            "raw": "{\n  \"title\": \"Derivatives (Updated)\",\n  \"description\": \"Updated description\",\n  \"difficulty\": \"hard\",\n  \"status\": \"active\",\n  \"tags\": [\"calculus\", \"math\", \"derivatives\", \"functions\"]\n}"
+                            "raw": "{\n    \"title\": \"Derivatives (Updated)\",\n    \"description\": \"Updated description\",\n    \"difficulty\": \"hard\",\n    \"status\": \"active\",\n    \"tags\": [\n        \"calculus\",\n        \"math\",\n        \"derivatives\",\n        \"functions\"\n    ],\n    \"recall_questions\": [\n        {\n            \"question\": \"What is the derivative of x^n?\",\n            \"answer\": \"n*x^(n-1)\"\n        },\n        {\n            \"question\": \"State the chain rule.\"\n        }\n    ],\n    \"summary\": \"Derivative = instantaneous rate of change.\",\n    \"practice_prompt\": \"Differentiate 10 mixed functions without notes\",\n    \"lane\": \"major\"\n}"
                         },
                         "url": {
                             "raw": "{{url}}/api/study/topics/{{topic_id}}",
@@ -591,39 +576,6 @@
                     "response": []
                 },
                 {
-                    "name": "Mark Task Complete",
-                    "request": {
-                        "method": "POST",
-                        "header": [
-                            {
-                                "key": "Content-Type",
-                                "value": "application/json"
-                            },
-                            {
-                                "key": "Accept",
-                                "value": "application/json"
-                            }
-                        ],
-                        "body": {
-                            "mode": "raw",
-                            "raw": "{\n  \"notes\": \"Completed with good understanding\",\n  \"difficulty_feedback\": \"medium\"\n}"
-                        },
-                        "url": {
-                            "raw": "{{url}}/api/study/tasks/{{task_id}}/complete",
-                            "host": ["{{url}}"],
-                            "path": [
-                                "api",
-                                "study",
-                                "tasks",
-                                "{{task_id}}",
-                                "complete"
-                            ]
-                        },
-                        "description": "Mark a task as completed (locks scheduled date)"
-                    },
-                    "response": []
-                },
-                {
                     "name": "Skip Task",
                     "request": {
                         "method": "POST",
@@ -644,13 +596,7 @@
                         "url": {
                             "raw": "{{url}}/api/study/tasks/{{task_id}}/skip",
                             "host": ["{{url}}"],
-                            "path": [
-                                "api",
-                                "study",
-                                "tasks",
-                                "{{task_id}}",
-                                "skip"
-                            ]
+                            "path": ["api", "study", "tasks", "{{task_id}}", "skip"]
                         }
                     },
                     "response": []
@@ -676,15 +622,41 @@
                         "url": {
                             "raw": "{{url}}/api/study/tasks/{{task_id}}/reschedule",
                             "host": ["{{url}}"],
-                            "path": [
-                                "api",
-                                "study",
-                                "tasks",
-                                "{{task_id}}",
-                                "reschedule"
-                            ]
+                            "path": ["api", "study", "tasks", "{{task_id}}", "reschedule"]
                         },
                         "description": "Reschedule task to a new date (not available if already completed)"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Mark Task Complete",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{url}}/api/study/tasks/{{task_id}}/complete",
+                            "host": ["{{url}}"],
+                            "path": ["api", "study", "tasks", "{{task_id}}", "complete"]
+                        },
+                        "description": "Complete a task (locks its date). For revision tasks send recall_grade (again|hard|good|easy) and optional review_seconds (1-3600): a graded revision re-plans the topic's other pending/missed revisions from today; the response includes schedule_outcome. Ungraded completion keeps other dates. A late learn completion re-anchors the plan. difficulty_feedback is deprecated.",
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"notes\": \"Answered 4 of 5 questions from memory\",\n    \"recall_grade\": \"good\",\n    \"review_seconds\": 140\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        }
                     },
                     "response": []
                 }
@@ -793,12 +765,7 @@
                         "url": {
                             "raw": "{{url}}/api/study/practice-logs/{{practice_log_id}}",
                             "host": ["{{url}}"],
-                            "path": [
-                                "api",
-                                "study",
-                                "practice-logs",
-                                "{{practice_log_id}}"
-                            ]
+                            "path": ["api", "study", "practice-logs", "{{practice_log_id}}"]
                         }
                     },
                     "response": []
@@ -820,12 +787,7 @@
                         "url": {
                             "raw": "{{url}}/api/study/practice-logs/{{practice_log_id}}",
                             "host": ["{{url}}"],
-                            "path": [
-                                "api",
-                                "study",
-                                "practice-logs",
-                                "{{practice_log_id}}"
-                            ]
+                            "path": ["api", "study", "practice-logs", "{{practice_log_id}}"]
                         }
                     },
                     "response": []
@@ -984,14 +946,655 @@
                         "url": {
                             "raw": "{{url}}/api/study/revision-templates/reset",
                             "host": ["{{url}}"],
-                            "path": [
-                                "api",
-                                "study",
-                                "revision-templates",
-                                "reset"
-                            ]
+                            "path": ["api", "study", "revision-templates", "reset"]
                         },
                         "description": "Reset user templates and fallback to system defaults."
+                    },
+                    "response": []
+                }
+            ]
+        },
+        {
+            "name": "Study Preferences",
+            "item": [
+                {
+                    "name": "Get Study Preferences",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{url}}/api/study/preferences",
+                            "host": ["{{url}}"],
+                            "path": ["api", "study", "preferences"]
+                        },
+                        "description": "Returns the user's study preferences merged over defaults (review budget, debt threshold, minutes per review, weekly new-topic cap, week start, off days, success threshold)."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Update Study Preferences",
+                    "request": {
+                        "method": "PUT",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{url}}/api/study/preferences",
+                            "host": ["{{url}}"],
+                            "path": ["api", "study", "preferences"]
+                        },
+                        "description": "Partial update; only sent keys change. review_debt_threshold_minutes must not be below the budget. Demo users get 403.",
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"review_budget_minutes\": 20,\n    \"off_days\": [\n        5,\n        6\n    ]\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        }
+                    },
+                    "response": []
+                }
+            ]
+        },
+        {
+            "name": "Review",
+            "item": [
+                {
+                    "name": "Get Review Load",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{url}}/api/study/review-load?date=",
+                            "host": ["{{url}}"],
+                            "path": ["api", "study", "review-load"],
+                            "query": [
+                                {
+                                    "key": "date",
+                                    "value": ""
+                                }
+                            ]
+                        },
+                        "description": "Due-today estimate (due_topics, estimated_minutes, budget, over_budget) plus review-debt, weekly new-topic cap and never-miss-twice flags. date defaults to today."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Get Review Queue",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{url}}/api/study/review-queue?date=",
+                            "host": ["{{url}}"],
+                            "path": ["api", "study", "review-queue"],
+                            "query": [
+                                {
+                                    "key": "date",
+                                    "value": ""
+                                }
+                            ]
+                        },
+                        "description": "Question-first review queue: one review per topic, overdue oldest first, today's reviews interleaved across categories, within_budget split and grade_preview per item."
+                    },
+                    "response": []
+                }
+            ]
+        },
+        {
+            "name": "Review Schedules",
+            "item": [
+                {
+                    "name": "List Schedule Presets",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{url}}/api/study/schedule-presets",
+                            "host": ["{{url}}"],
+                            "path": ["api", "study", "schedule-presets"]
+                        },
+                        "description": "Built-in review schedule presets."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Get Category Schedule",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{url}}/api/study/categories/{{category_id}}/schedule",
+                            "host": ["{{url}}"],
+                            "path": ["api", "study", "categories", "{{category_id}}", "schedule"]
+                        },
+                        "description": "Your schedule for this category, or null with the fallback that applies."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Set Category Schedule",
+                    "request": {
+                        "method": "PUT",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{url}}/api/study/categories/{{category_id}}/schedule",
+                            "host": ["{{url}}"],
+                            "path": ["api", "study", "categories", "{{category_id}}", "schedule"]
+                        },
+                        "description": "Set a preset or custom offsets (+ repeat). Demo users get 403.",
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"preset_key\": \"exam_short\",\n    \"repeat_until\": \"2026-12-05\",\n    \"apply_to_existing_topics\": false\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Remove Category Schedule",
+                    "request": {
+                        "method": "DELETE",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{url}}/api/study/categories/{{category_id}}/schedule",
+                            "host": ["{{url}}"],
+                            "path": ["api", "study", "categories", "{{category_id}}", "schedule"]
+                        },
+                        "description": "Revert the category to your default schedule."
+                    },
+                    "response": []
+                }
+            ]
+        },
+        {
+            "name": "Mistakes",
+            "item": [
+                {
+                    "name": "List Mistakes",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{url}}/api/study/mistakes?state=open&cause=",
+                            "host": ["{{url}}"],
+                            "path": ["api", "study", "mistakes"],
+                            "query": [
+                                {
+                                    "key": "state",
+                                    "value": "open"
+                                },
+                                {
+                                    "key": "cause",
+                                    "value": ""
+                                }
+                            ]
+                        },
+                        "description": "Mistake notebook — see API-DOCUMENTATION.md"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Log Mistake",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{url}}/api/study/mistakes",
+                            "host": ["{{url}}"],
+                            "path": ["api", "study", "mistakes"]
+                        },
+                        "description": "Mistake notebook — see API-DOCUMENTATION.md",
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"question\": \"T/F/NG: Most respondents...\",\n    \"my_answer\": \"False\",\n    \"correct_answer\": \"Not Given\",\n    \"cause\": \"concept\",\n    \"source\": \"IELTS mock 3\",\n    \"parent_topic_id\": \"{{topic_id}}\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Update Mistake",
+                    "request": {
+                        "method": "PATCH",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{url}}/api/study/mistakes/{{mistake_id}}",
+                            "host": ["{{url}}"],
+                            "path": ["api", "study", "mistakes", "{{mistake_id}}"]
+                        },
+                        "description": "Mistake notebook — see API-DOCUMENTATION.md",
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"correct_answer\": \"Not Given (no claim in the text)\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Delete Mistake",
+                    "request": {
+                        "method": "DELETE",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{url}}/api/study/mistakes/{{mistake_id}}",
+                            "host": ["{{url}}"],
+                            "path": ["api", "study", "mistakes", "{{mistake_id}}"]
+                        },
+                        "description": "Mistake notebook — see API-DOCUMENTATION.md"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Merge Mistake",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{url}}/api/study/mistakes/{{mistake_id}}/merge",
+                            "host": ["{{url}}"],
+                            "path": ["api", "study", "mistakes", "{{mistake_id}}", "merge"]
+                        },
+                        "description": "Mistake notebook — see API-DOCUMENTATION.md"
+                    },
+                    "response": []
+                }
+            ]
+        },
+        {
+            "name": "Weekly Plan",
+            "item": [
+                {
+                    "name": "Get Weekly Plan",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{url}}/api/study/weekly-plan?date=",
+                            "host": ["{{url}}"],
+                            "path": ["api", "study", "weekly-plan"],
+                            "query": [
+                                {
+                                    "key": "date",
+                                    "value": ""
+                                }
+                            ]
+                        },
+                        "description": "Weekly planning — see API-DOCUMENTATION.md"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Weekly History",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{url}}/api/study/weekly-plan/history?weeks=8",
+                            "host": ["{{url}}"],
+                            "path": ["api", "study", "weekly-plan", "history"],
+                            "query": [
+                                {
+                                    "key": "weeks",
+                                    "value": "8"
+                                }
+                            ]
+                        },
+                        "description": "Weekly planning — see API-DOCUMENTATION.md"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Create Weekly Plan",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{url}}/api/study/weekly-plan",
+                            "host": ["{{url}}"],
+                            "path": ["api", "study", "weekly-plan"]
+                        },
+                        "description": "Weekly planning — see API-DOCUMENTATION.md",
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"week_start\": \"2026-10-11\",\n    \"gear\": \"green\",\n    \"major_focus\": \"IELTS Writing\",\n    \"minor_focus\": \"One paper a week\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Update Weekly Plan",
+                    "request": {
+                        "method": "PATCH",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{url}}/api/study/weekly-plan/{{week_id}}",
+                            "host": ["{{url}}"],
+                            "path": ["api", "study", "weekly-plan", "{{week_id}}"]
+                        },
+                        "description": "Weekly planning — see API-DOCUMENTATION.md",
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"reflection\": \"Release week ate two mornings\",\n    \"if_then_plan\": \"If the office runs late, then I do 10 minutes of due reviews only\",\n    \"output_note\": \"Essay #4 marked\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Delete Weekly Plan",
+                    "request": {
+                        "method": "DELETE",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{url}}/api/study/weekly-plan/{{week_id}}",
+                            "host": ["{{url}}"],
+                            "path": ["api", "study", "weekly-plan", "{{week_id}}"]
+                        },
+                        "description": "Weekly planning — see API-DOCUMENTATION.md"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Regenerate Remaining Blocks",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{url}}/api/study/weekly-plan/{{week_id}}/regenerate",
+                            "host": ["{{url}}"],
+                            "path": ["api", "study", "weekly-plan", "{{week_id}}", "regenerate"]
+                        },
+                        "description": "Weekly planning — see API-DOCUMENTATION.md",
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"gear\": \"yellow\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Add Block",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{url}}/api/study/weekly-plan/{{week_id}}/blocks",
+                            "host": ["{{url}}"],
+                            "path": ["api", "study", "weekly-plan", "{{week_id}}", "blocks"]
+                        },
+                        "description": "Weekly planning — see API-DOCUMENTATION.md",
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"block_date\": \"2026-10-15\",\n    \"slot\": \"other\",\n    \"lane\": \"work\",\n    \"planned_task\": \"Read about isolation levels\",\n    \"planned_minutes\": 30\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Update Block",
+                    "request": {
+                        "method": "PATCH",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{url}}/api/study/blocks/{{block_id}}",
+                            "host": ["{{url}}"],
+                            "path": ["api", "study", "blocks", "{{block_id}}"]
+                        },
+                        "description": "Weekly planning — see API-DOCUMENTATION.md",
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"status\": \"done\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Delete Block",
+                    "request": {
+                        "method": "DELETE",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{url}}/api/study/blocks/{{block_id}}",
+                            "host": ["{{url}}"],
+                            "path": ["api", "study", "blocks", "{{block_id}}"]
+                        },
+                        "description": "Weekly planning — see API-DOCUMENTATION.md"
                     },
                     "response": []
                 }

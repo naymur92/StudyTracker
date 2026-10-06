@@ -37,10 +37,16 @@ A full-featured **spaced repetition study management** application with Laravel 
 ### Study Tracker (API + Vue.js Frontend)
 
 - **Topic Management** — Create, update, archive, and browse study topics with categories, difficulty levels, tags, and source links
-- **Spaced Repetition Engine** — Automatically generates revision tasks at Day +1, +7, +30, +90 based on the Ebbinghaus forgetting curve
+- **Adaptive Spaced Repetition** — Revisions start at Day +1, +7, +30, +90 (or the topic's category schedule) and adapt to recall grades: Again restarts the steps with a relearn check tomorrow, Hard brings the topic back tomorrow, Good advances one step, Easy skips one; later reviews are re-planned from the day you actually reviewed
 - **Customizable Revision Templates** — System defaults with per-user override support for custom revision schedules
+- **Schedule Presets per Category** — Standard (1·7·30·90), Exam soon (1·3·7·14 then weekly until an exam date), Long horizon (1·3·7·21·60 then every 90 days) or custom schedules per category; each topic keeps the schedule it was created with
+- **Question-First Review** — A review page serves today's due topics one at a time (overdue first, then mixed across categories): answer the recall questions from memory, reveal the answer key, grade Again/Hard/Good/Easy with the next date shown on each button; sessions stop at your daily time budget
+- **Weekly Plan with Gears** — Choose Green/Yellow/Red per week, get blocks from your office and off days, pre-decide each block's task, mark done/partial/missed/red, and score the week against an 80% success line; the dashboard shows this week's score and "Next up"
+- **Mistakes Notebook** — Log every wrong answer with its cause; it is reviewed at +1/+3/+7 days and then merged into its parent topic's recall questions
+- **Recall Cards** — Each topic can hold up to 10 recall questions (with optional answers), a summary used as the answer key, a practice prompt and a lane (Major/Minor/Work)
+- **Review Load** — "Due today: N topics ≈ M min" banner with a warning above your budget, plus soft warnings for review debt, the weekly new-topic cap and missed days
 - **Daily Agenda** — Grouped daily task view (Learn → Revision 1–4 → Practice → Overdue) with completion summary
-- **Task Actions** — Complete, skip, or reschedule tasks with difficulty feedback and notes
+- **Task Actions** — Complete (with a recall grade for revisions), skip, or reschedule tasks with notes
 - **Date Locking** — Completed tasks become immutable (date and status locked)
 - **Practice Logs** — Log study sessions with type (problem solving, implementation, reading, note making, mock interview), duration, and outcomes
 - **Calendar View** — Monthly calendar with per-day task completion/pending/overdue counts
@@ -296,8 +302,21 @@ The app runs at `http://studytracker.test` (or `http://localhost:8080` with Dock
 ✅ **Categories** — Organize with custom colors and icons
 ✅ **Study Tasks** — Track daily assignments with spaced repetition
 ✅ **Practice Logs** — Record study sessions with details
-✅ **Calendar View** — Mountain visualization of progress
+✅ **Calendar View** — Monthly view of planned and completed tasks
+✅ **Review Page** (`/app/review`) — Question-first review session with recall grades
+✅ **User Guide** (`/app/guide`) — Manual for every menu, with the techniques and algorithms behind it, their benefits and research references; every page has a "Guide" link to its section
+✅ **Features Page** (`/features`, public) — Features, learning techniques, "How StudyTracker decides" (each algorithm with a worked example) and an APA reference list
 ✅ **User Profile** — View statistics and manage account
+
+#### Learning-science content
+
+The Features page and User Guide render shared content modules:
+
+- `resources/js/content/learningScience.js` — references (APA, DOI, `verified` flag), techniques and algorithms with evidence labels (*Research-backed* / *Rule of thumb*), benefits and citations
+- `resources/js/content/userGuide.js` — one section per sidebar item (`guideSection` in `resources/js/config/navigation.js`)
+- `resources/js/content/features.js` — the feature overview cards
+
+`npm run check:content` (also run automatically before `npm run build`) fails on an unknown, uncited or unverified reference, on an entry without an evidence label, two benefits and a reference, and on a sidebar item without a guide section.
 
 ### Frontend Documentation
 
@@ -371,9 +390,36 @@ All endpoints below require the `Authorization: Bearer <token>` header.
 | `PUT`                          | `/api/study/categories/{id}`                   | Update category                | 30/min/user |
 | `DELETE`                       | `/api/study/categories/{id}`                   | Delete category (soft delete)  | 30/min/user |
 | **Revision Templates**         |                                                |                                |             |
-| `GET`                          | `/api/study/revision-templates/{userId}`       | Get revision schedule template | 60/min/user |
-| `PUT`                          | `/api/study/revision-templates/{userId}`       | Update revision schedule       | 30/min/user |
-| `POST`                         | `/api/study/revision-templates/{userId}/reset` | Reset to system defaults       | 30/min/user |
+| `GET`                          | `/api/study/revision-templates`                | Get revision schedule template | 60/min/user |
+| `PUT`                          | `/api/study/revision-templates`                | Update revision schedule       | 30/min/user |
+| `POST`                         | `/api/study/revision-templates/reset`          | Reset to system defaults       | 30/min/user |
+| **Review**                     |                                                |                                |             |
+| `GET`                          | `/api/study/review-queue`                      | Today's review session queue   | 60/min/user |
+| `GET`                          | `/api/study/review-load`                       | Due-today estimate + warnings  | 60/min/user |
+| **Review Schedules**           |                                                |                                |             |
+| `GET`                          | `/api/study/schedule-presets`                  | Built-in schedule presets      | 60/min/user |
+| `GET`                          | `/api/study/categories/{id}/schedule`          | Category review schedule       | 60/min/user |
+| `PUT`                          | `/api/study/categories/{id}/schedule`          | Set category review schedule   | 30/min/user |
+| `DELETE`                       | `/api/study/categories/{id}/schedule`          | Revert category to default     | 30/min/user |
+| **Mistakes**                   |                                                |                                |             |
+| `GET`                          | `/api/study/mistakes`                          | List mistakes (filters)        | 60/min/user |
+| `POST`                         | `/api/study/mistakes`                          | Log a mistake                  | 30/min/user |
+| `PATCH`                        | `/api/study/mistakes/{id}`                     | Edit a mistake                 | 30/min/user |
+| `DELETE`                       | `/api/study/mistakes/{id}`                     | Delete a mistake               | 30/min/user |
+| `POST`                         | `/api/study/mistakes/{id}/merge`               | Merge into parent topic        | 30/min/user |
+| **Weekly Plan**                |                                                |                                |             |
+| `GET`                          | `/api/study/weekly-plan`                       | Week plan, blocks, score       | 60/min/user |
+| `GET`                          | `/api/study/weekly-plan/history`               | Recent weekly scores           | 60/min/user |
+| `POST`                         | `/api/study/weekly-plan`                       | Create a week (gear + blocks)  | 30/min/user |
+| `PATCH`                        | `/api/study/weekly-plan/{id}`                  | Update gear / weekly review    | 30/min/user |
+| `DELETE`                       | `/api/study/weekly-plan/{id}`                  | Delete a week                  | 30/min/user |
+| `POST`                         | `/api/study/weekly-plan/{id}/regenerate`       | Re-plan remaining blocks       | 30/min/user |
+| `POST`                         | `/api/study/weekly-plan/{id}/blocks`           | Add a block                    | 30/min/user |
+| `PATCH`                        | `/api/study/blocks/{id}`                       | Update a block                 | 30/min/user |
+| `DELETE`                       | `/api/study/blocks/{id}`                       | Delete a block                 | 30/min/user |
+| **Study Preferences**          |                                                |                                |             |
+| `GET`                          | `/api/study/preferences`                       | Get study preferences          | 60/min/user |
+| `PUT`                          | `/api/study/preferences`                       | Update study preferences       | 30/min/user |
 
 ---
 
@@ -408,14 +454,17 @@ Access the admin panel at `/admin` after logging in with a Super Admin (type 1) 
 
 ## Scheduled Commands
 
-| Command             | Schedule       | Description                             |
-| ------------------- | -------------- | --------------------------------------- |
-| `study:mark-missed` | Daily at 00:05 | Marks overdue pending tasks as `missed` |
+| Command                       | Schedule       | Description                                                       |
+| ----------------------------- | -------------- | ----------------------------------------------------------------- |
+| `study:mark-missed`           | Daily at 00:01 | Marks overdue pending tasks as `missed`                           |
+| `study:snapshot-review-load`  | Daily at 00:03 | Records each user's start-of-day review load (review-debt history) |
+| `demo:reset`                  | Daily at 00:05 | Resets the demo account's sample data                             |
 
 Run manually:
 
 ```bash
 php artisan study:mark-missed
+php artisan study:snapshot-review-load
 ```
 
 ---
@@ -452,15 +501,24 @@ Optimized for low-resource deployments (AWS free tier):
 
 ```
 users ─┬─< topics ─┬─< study_tasks ──< practice_logs
-       │            │
-       │            └─< practice_logs
+       │            ├─< practice_logs
+       │            └─< topics (mistake entries, via parent_topic_id)
        │
        ├─< categories ──< topics
+       │       └─< category_review_schedules (per user)
        │
-       └─< topic_revision_templates
+       ├─< topic_revision_templates
+       ├─< review_load_snapshots
+       └─< study_weeks ──< study_blocks
 ```
 
-**5 Study Tracker tables:** `categories`, `topics`, `topic_revision_templates`, `study_tasks`, `practice_logs`
+**Study Tracker tables:** `categories`, `topics`, `topic_revision_templates`, `study_tasks`, `practice_logs`, `category_review_schedules`, `review_load_snapshots`, `study_weeks`, `study_blocks`
+
+Notable columns added by the adaptive learning system:
+
+- `topics` — recall card (`recall_questions`, `summary`, `practice_prompt`, `lane`), mistake entries (`kind`, `parent_topic_id`, `mistake_details`, `merged_at`), schedule state (`srs_step`, `srs_lapses`, `last_reviewed_on`) and the schedule snapshot (`srs_offsets`, `srs_repeat_every_days`, `srs_repeat_until`, `srs_schedule_source`)
+- `study_tasks` — `recall_grade`, `review_seconds`, `review_kind`
+- `users` — `study_preferences` (JSON, merged over `config/study.php` defaults)
 
 ---
 

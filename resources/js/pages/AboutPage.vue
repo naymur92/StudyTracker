@@ -4,8 +4,8 @@
         <div class="text-center space-y-3">
             <h1 class="text-3xl md:text-4xl font-bold text-gray-900">About StudyTracker</h1>
             <p class="text-lg text-gray-600 max-w-2xl mx-auto">
-                A study management tool built around spaced repetition — the proven technique
-                for long-term retention.
+                A study tool built around retrieval practice and adaptive spaced repetition — techniques with
+                strong research support for long-term retention.
             </p>
         </div>
 
@@ -21,8 +21,9 @@
                 scheduling, so you can focus on actually learning.
             </p>
             <p class="text-gray-600">
-                Built with Laravel, Vue 3, and Tailwind CSS. The spaced repetition engine generates
-                revision tasks automatically based on configurable intervals.
+                Built with Laravel, Vue 3, and Tailwind CSS. Reviews start on configurable intervals and then adapt to
+                your recall grades, so time goes to what you are about to forget.
+                <router-link to="/features" class="text-primary-700 hover:underline">Read the science behind it.</router-link>
             </p>
         </div>
 

@@ -11,15 +11,17 @@ use Illuminate\Support\Str;
 class CreateTopicWithPlanService
 {
     public function __construct(
-        private GenerateRevisionTasksService $revisionService
+        private GenerateRevisionTasksService $revisionService,
+        private ResolveScheduleService $scheduleResolver,
     ) {}
 
     public function execute(int $userId, array $data): Topic
     {
         return DB::transaction(function () use ($userId, $data) {
             $slug = $this->makeUniqueSlug($userId, $data['title']);
+            $schedule = $this->scheduleResolver->forNewTopic($userId, $data['category_id'] ?? null);
 
-            $topic = Topic::create([
+            $topic = new Topic([
                 'user_id'          => $userId,
                 'category_id'      => $data['category_id'] ?? null,
                 'title'            => $data['title'],
@@ -31,7 +33,14 @@ class CreateTopicWithPlanService
                 'first_study_date' => $data['first_study_date'],
                 'notes'            => $data['notes'] ?? null,
                 'tags'             => $data['tags'] ?? null,
+                'recall_questions' => $data['recall_questions'] ?? null,
+                'summary'          => $data['summary'] ?? null,
+                'practice_prompt'  => $data['practice_prompt'] ?? null,
+                'lane'             => $data['lane'] ?? null,
+                'kind'             => Topic::KIND_TOPIC,
             ]);
+            $this->scheduleResolver->applySnapshot($topic, $schedule);
+            $topic->save();
 
             // Create the initial "Learn" task
             StudyTask::create([
@@ -44,7 +53,7 @@ class CreateTopicWithPlanService
             ]);
 
             // Auto-generate revision tasks based on template
-            $this->revisionService->execute($userId, $topic);
+            $this->revisionService->execute($userId, $topic, $schedule);
 
             return $topic;
         });

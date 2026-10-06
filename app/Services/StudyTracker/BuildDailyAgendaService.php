@@ -17,6 +17,7 @@ class BuildDailyAgendaService
         // - Overdue (scheduled before today and still pending/missed)
         $tasks = StudyTask::with('topic.category')
             ->where('user_id', $userId)
+            ->whereHas('topic')
             ->where(function ($query) use ($date) {
                 $query->where('scheduled_date', $date)
                     ->orWhere(function ($q) use ($date) {
@@ -65,8 +66,9 @@ class BuildDailyAgendaService
             }
         }
 
-        // Remove empty groups
+        // Remove empty groups, then order: learn → revision_N (ascending) → practice → overdue
         $groups = array_filter($groups, fn($g) => count($g) > 0);
+        $groups = $this->orderGroups($groups);
 
         return [
             'date'    => $date,
@@ -98,7 +100,28 @@ class BuildDailyAgendaService
             'is_date_locked'     => $task->is_date_locked,
             'notes'              => $task->notes,
             'difficulty_feedback' => $task->difficulty_feedback,
+            'recall_grade'       => $task->recall_grade,
+            'review_seconds'     => $task->review_seconds,
+            'review_kind'        => $task->review_kind,
             'can_reschedule'     => $task->canBeRescheduled(),
         ];
+    }
+
+    private function orderGroups(array $groups): array
+    {
+        $rank = function (string $key): array {
+            if ($key === 'learn') {
+                return [0, 0];
+            }
+            if (str_starts_with($key, 'revision_')) {
+                return [1, (int) substr($key, 9)];
+            }
+
+            return [$key === 'practice' ? 2 : 3, 0];
+        };
+
+        uksort($groups, fn ($a, $b) => $rank($a) <=> $rank($b));
+
+        return $groups;
     }
 }
