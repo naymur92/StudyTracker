@@ -168,6 +168,17 @@ echo "[10/11] Restarting queue workers..."
 php artisan queue:restart
 supervisorctl restart "${PROJECT_NAME}-worker:*" 2>/dev/null || true
 
+# OPcache runs with validate_timestamps=0 (see ec2-setup.sh), so PHP-FPM keeps
+# serving the previous release's code until it is reloaded.
+echo "Reloading PHP-FPM to flush OPcache..."
+if [ "$(id -u)" -eq 0 ]; then
+    systemctl reload php8.4-fpm
+elif command -v sudo >/dev/null 2>&1; then
+    sudo systemctl reload php8.4-fpm
+else
+    echo "WARNING: Cannot reload php8.4-fpm (need root or sudo); stale code may be served."
+fi
+
 # ── 11. Cleanup ──────────────────────────────
 # node_modules is only needed for the frontend build (step 3) and takes
 # heavy storage on the server. The next deploy's `npm ci` recreates it.
