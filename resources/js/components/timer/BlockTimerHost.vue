@@ -39,7 +39,7 @@ import MiniTimer from './MiniTimer.vue'
 import TimerPanel from './TimerPanel.vue'
 import PopOutTimer from './PopOutTimer.vue'
 import { formatClock, liveTimer, upcomingBoundaries } from './timerMath'
-import { dismissToast, fireAlert, runToastAction, toasts, unlockAudio } from './timerAlerts'
+import { dismissToast, fireAlert, keepAudioUnlocked, runToastAction, toasts } from './timerAlerts'
 import { finishFlow, useTimerActions } from './useTimerActions'
 
 const SYNC_EVERY_MS = 120_000
@@ -218,7 +218,9 @@ const popOut = async () => {
         pipWindow = win
         panelOpen.value = false
 
+        const offPipAudio = keepAudioUnlocked(win)
         win.addEventListener('pagehide', () => {
+            offPipAudio()
             app.unmount()
             pipWindow = null
         })
@@ -236,12 +238,12 @@ watch(() => store.timer, (timer) => {
 const onVisible = () => {
     if (document.visibilityState === 'visible') sync()
 }
-const unlockOnce = () => unlockAudio()
 let offOtherTab = () => {}
+let offAudio = () => {}
 
 onMounted(() => {
-    // After a reload the Start click's audio unlock is gone; the next tap restores it.
-    window.addEventListener('pointerdown', unlockOnce, { once: true })
+    // After a reload the Start click's audio unlock is gone; any tap or key restores it.
+    offAudio = keepAudioUnlocked(window)
     document.addEventListener('visibilitychange', onVisible)
     offOtherTab = onOtherTabChange(() => sync())
     sync(false)
@@ -250,7 +252,7 @@ onMounted(() => {
 onBeforeUnmount(() => {
     stopTicker()
     boundaryTimers.forEach(clearTimeout)
-    window.removeEventListener('pointerdown', unlockOnce)
+    offAudio()
     document.removeEventListener('visibilitychange', onVisible)
     offOtherTab()
     pipWindow?.close()

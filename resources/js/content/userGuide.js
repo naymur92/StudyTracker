@@ -68,7 +68,7 @@ export const guideSections = [
         ],
         tips: [
             { text: 'Over budget? Do the oldest reviews first and stop at your budget — the rest carry over without penalty.' },
-            { text: 'Allow notifications when asked on your first Start: break and finish alerts then reach you in other apps too. Without them you still get the sound and the in-app alert.' },
+            { text: 'Allow notifications when asked on your first Start: break and finish alerts then reach you in other apps too. Without them you still get the sound and the in-app alert. After a page reload the browser keeps sound off until you click or press a key once — the mini timer shows 🔇 until then.' },
             { text: 'Came back after a block finished with the browser closed? The app shows “Block finished” with a link to log what you learned.' },
         ],
         techniques: ['consistency', 'realistic-planning', 'implementation-intentions'],

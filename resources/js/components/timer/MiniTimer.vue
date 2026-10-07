@@ -5,6 +5,7 @@
         <span class="w-2.5 h-2.5 rounded-full" :class="[dot, timer.state === 'running' ? 'animate-pulse' : '']"></span>
         <span class="text-gray-700 max-w-[9rem] truncate">{{ name }}</span>
         <span class="font-mono tabular-nums text-gray-900">{{ formatClock(live.left) }}</span>
+        <span v-if="!audioOn" class="text-xs" title="Alert sounds are off until you click or press a key on this page" aria-label="Sound off">🔇</span>
         <span v-if="timer.state === 'paused'" class="text-xs font-medium text-gray-500">paused</span>
         <span v-else-if="live.phase === 'break'" class="text-xs font-medium text-amber-700">break</span>
     </button>
@@ -14,6 +15,7 @@
 import { computed } from 'vue'
 import { slotLabels } from '@/components/weekly/weeklyMeta'
 import { formatClock } from './timerMath'
+import { audioOn } from './timerAlerts'
 
 const props = defineProps({
     timer: { type: Object, required: true },
