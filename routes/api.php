@@ -115,6 +115,7 @@ Route::middleware('auth:api')->group(function () {
         Route::post('/blocks/{block}/timer/resume', [BlockTimerApiController::class, 'resume'])->middleware(['throttle:study-write', 'deny.demo'])->name('blocks.timer.resume');
         Route::post('/blocks/{block}/timer/stop', [BlockTimerApiController::class, 'stop'])->middleware(['throttle:study-write', 'deny.demo'])->name('blocks.timer.stop');
         Route::delete('/blocks/{block}/timer', [BlockTimerApiController::class, 'discard'])->middleware(['throttle:study-write', 'deny.demo'])->name('blocks.timer.discard');
+        Route::delete('/blocks/{block}/timer/runs', [BlockTimerApiController::class, 'clearRecorded'])->middleware(['throttle:study-write', 'deny.demo'])->name('blocks.timer.clear');
 
         // Study preferences (review budget, week layout, success line)
         Route::get('/preferences', [StudyPreferenceApiController::class, 'show'])->middleware('throttle:study-read')->name('preferences.show');

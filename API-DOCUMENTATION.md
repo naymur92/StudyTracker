@@ -474,12 +474,12 @@ Required: `question` (≤500), `correct_answer` (≤2000), `cause`. Optional: `m
 - `POST /api/study/weekly-plan` — `week_start` (must be your week-start weekday; no overlapping plan), `gear` (`green`/`yellow`/`red`), optional `major_focus`, `minor_focus`, `generate_blocks` (default `true`)
 - `PATCH /api/study/weekly-plan/{week}` — `gear`, focus fields, `reflection` (≤2000), `if_then_plan` (≤500), `output_note` (≤300); blocks are not changed
 - `DELETE /api/study/weekly-plan/{week}`
-- `POST /api/study/weekly-plan/{week}/regenerate` — `{ "gear": "yellow" }`: replaces blocks from today on that are still `planned` (and have no active timer) with that gear's template
+- `POST /api/study/weekly-plan/{week}/regenerate` — `{ "gear": "yellow" }`: replaces blocks from today on that are still `planned` (and have no timer runs) with that gear's template
 - `POST /api/study/weekly-plan/{week}/blocks`, `PATCH /api/study/blocks/{block}`, `DELETE /api/study/blocks/{block}`
 
 Block fields: `block_date` (inside the week), `slot` (`morning`, `class_recap`, `deep`, `block_a`, `block_b`, `review`, `minor`, `other`), `lane` (`major`, `minor`, `review`, `work`), `planned_task` (≤300), `planned_minutes` (5–480), `status` (`planned`, `done`, `partial`, `missed`, `red`), `note` (≤500), optional `category_id`/`topic_id`, and an optional break pattern: `break_every_minutes` (10–120) and `break_minutes` (1–30), both set or both `null` (breaks fall inside `planned_minutes`). `done`, `partial` and `missed` are accepted only for blocks dated today or earlier (`422` otherwise, also when moving a marked block to a later date); future blocks can still be edited, marked `red` or cleared back to `planned`.
 
-Each block in responses also has `actual_minutes` (time recorded by its ended timer runs, rounded) and `timer` (its active timer object, or `null`). While a block's timer is active (running or paused), changing its `block_date`, `planned_minutes`, `status`, `break_every_minutes` or `break_minutes` returns `422`, and so does deleting it; its task, topic, category, slot, lane and note stay editable.
+Each block in responses also has `actual_minutes` (time recorded by its ended timer runs, rounded), `has_recorded_time` and `timer` (its active timer object, or `null`). While a block's timer is active (running or paused), changing its `block_date`, `planned_minutes`, `status`, `break_every_minutes` or `break_minutes` returns `422`, and so does deleting it; its task, topic, category, slot, lane and note stay editable.
 
 Gear templates depend on your `study_profile`. Each day is a workday (office day for a job holder, class day for a student) or an off day (from `off_days`):
 
@@ -503,6 +503,7 @@ Run a weekly-plan block with a timer. A user has at most one active (running or 
 - `POST /api/study/blocks/{block}/timer/resume` — only on the block's day
 - `POST /api/study/blocks/{block}/timer/stop`
 - `DELETE /api/study/blocks/{block}/timer` — discard the active run; the block's status and recorded time stay as before the run
+- `DELETE /api/study/blocks/{block}/timer/runs` — clear the block's recorded time: deletes its ended runs and sets it back to `planned` (`422` while its timer is active or when nothing is recorded)
 
 Every action returns the lookup shape plus `block` (the acted-on block); `stop` also returns `outcome`: `done`, `partial` or `discarded`. Write routes use `study-write` and return `403` for demo users and for another user's block; an unknown block ID returns `404`.
 
@@ -514,6 +515,7 @@ Rules:
 - **Stop**: with more than 30 seconds left the block becomes `partial`; with 30 seconds or less it is completed as `done` with its full planned time; a run shorter than 60 seconds is discarded instead.
 - **Partial blocks** can be started again on their day; their runs add up until the block is `done`.
 - Pause, resume, stop or discard on a block without an active timer returns `422`.
+- **Recorded time is evidence**: on a block with recorded time, an update returns `422` for a status other than `done` or `partial`, a different `block_date`, or `planned_minutes` changed below the recorded time (rounded up). Switching between `done` and `partial` is allowed; clear the recorded time to undo a recording. Regeneration never replaces a block with timer runs.
 
 Timer object (`timer`, and `block.timer`):
 
@@ -804,4 +806,4 @@ Collection includes:
 - Forgot password flow (`forgot-password/request`, `forgot-password/verify`)
 - Encoded ID variables (`category_id`, `topic_id`, `task_id`, `practice_log_id`, `block_id`)
 - User profile endpoints (`get`, `patch`, `change-password`)
-- Block timer (`timer`, `start`, `pause`, `resume`, `stop`, discard)
+- Block timer (`timer`, `start`, `pause`, `resume`, `stop`, discard, clear recorded time)

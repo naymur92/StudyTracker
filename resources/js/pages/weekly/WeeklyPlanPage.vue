@@ -108,8 +108,8 @@
                             <span class="text-[11px] text-gray-500"><template v-if="block.actual_minutes">{{ block.actual_minutes }} / </template>{{ block.planned_minutes || '–' }} min</span>
                             <span class="flex gap-0.5">
                                 <button v-for="s in statuses" :key="s.value" @click="saveBlock(block, { status: block.status === s.value ? 'planned' : s.value })"
-                                    :disabled="outcomeLocked(day, block, s) || timerStore.activeBlockId === block.id"
-                                    :title="timerStore.activeBlockId === block.id ? 'Stop the timer to mark this block' : outcomeLocked(day, block, s) ? `${s.label} can be marked from ${day.label}` : s.label"
+                                    :disabled="outcomeLocked(day, block, s) || timerStore.activeBlockId === block.id || recordedLocked(block, s)"
+                                    :title="timerStore.activeBlockId === block.id ? 'Stop the timer to mark this block' : recordedLocked(block, s) ? recordedLockedTitle : outcomeLocked(day, block, s) ? `${s.label} can be marked from ${day.label}` : s.label"
                                     :class="['w-6 h-6 rounded text-xs font-bold disabled:opacity-40 disabled:cursor-not-allowed', block.status === s.value ? s.style : 'bg-gray-100 text-gray-600 hover:bg-gray-200']">{{ s.short }}</button>
                                 <button @click="removeBlock(block)" :disabled="timerStore.activeBlockId === block.id" title="Remove block" class="w-6 h-6 rounded text-xs text-red-600 hover:bg-red-50 disabled:opacity-40">🗑</button>
                             </span>
@@ -162,7 +162,7 @@ import { useAuthStore } from '@/stores/auth'
 import { useWeeklyPlanStore } from '@/stores/weeklyPlan'
 import { todayLocal, shiftDate, parseLocalDate } from '@/helpers/dates'
 import { showConfirm, showError } from '@/helpers/alerts'
-import { gearsWithOptions, dayTerms, slotLabels, laneStyles, statuses } from '@/components/weekly/weeklyMeta'
+import { gearsWithOptions, dayTerms, slotLabels, laneStyles, statuses, recordedLocked, recordedLockedTitle } from '@/components/weekly/weeklyMeta'
 import { usePreferencesStore } from '@/stores/preferences'
 import ScoreBar from '@/components/weekly/ScoreBar.vue'
 import BlockEditorDialog from '@/components/weekly/BlockEditorDialog.vue'

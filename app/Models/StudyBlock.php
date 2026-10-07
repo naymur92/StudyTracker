@@ -34,6 +34,9 @@ class StudyBlock extends Model
     /** Outcomes that record what happened; only allowed once the day has come. */
     public const OUTCOME_STATUSES = ['done', 'partial', 'missed'];
 
+    /** Statuses a block with recorded timer time can have. */
+    public const RECORDED_STATUSES = ['done', 'partial'];
+
     protected $fillable = [
         'user_id',
         'study_week_id',
@@ -88,6 +91,12 @@ class StudyBlock extends Model
         }
 
         return (int) $this->sessions()->whereNotNull('ended_at')->sum('used_seconds');
+    }
+
+    /** Recorded minutes rounded up: the least the block's planned minutes can be. */
+    public function recordedMinutesCeil(): int
+    {
+        return (int) ceil($this->endedSeconds() / 60);
     }
 
     /** Timer runs of this block. */

@@ -108,6 +108,17 @@ class BlockTimerApiController extends Controller
         return $this->ok('Timer run discarded.', $this->payload($request->user(), $block));
     }
 
+    /**
+     * DELETE /api/study/blocks/{block}/timer/runs
+     */
+    public function clearRecorded(Request $request, StudyBlock $block): JsonResponse
+    {
+        $this->authorise($block, $request->user());
+        $this->timers->clearRecorded($request->user(), $block);
+
+        return $this->ok('Recorded time cleared; the block is planned again.', $this->payload($request->user(), $block));
+    }
+
     private function payload(User $user, ?StudyBlock $block = null): array
     {
         $active = $this->timers->activeSession($user);

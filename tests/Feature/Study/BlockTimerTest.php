@@ -510,4 +510,122 @@ class BlockTimerTest extends StudyApiTestCase
         $this->assertLessThanOrEqual(1, count($perBlock), implode("\n", $queries));
         $this->assertLessThanOrEqual(5, count($queries), implode("\n", $queries));
     }
+
+    // ── Recorded time is evidence ──
+
+    /** Run the block's timer for $minutes and stop it (partial unless the time is up). */
+    private function record(StudyBlock $block, int $minutes): void
+    {
+        $this->start($block)->assertOk();
+        $this->at(Carbon::now()->addMinutes($minutes)->toDateTimeString());
+        $this->postJson($this->url($block, 'stop'))->assertOk();
+    }
+
+    private function blockUrl(StudyBlock $block): string
+    {
+        return '/api/study/blocks/'.IdHasher::encode($block->id);
+    }
+
+    public function test_recorded_block_status_stays_done_or_partial(): void
+    {
+        $block = $this->block();
+        $this->record($block, 40);
+
+        foreach (['planned', 'missed', 'red'] as $status) {
+            $this->patchJson($this->blockUrl($block), ['status' => $status])
+                ->assertStatus(422)->assertJsonValidationErrors('status', 'errors');
+        }
+        $this->assertSame('partial', $block->fresh()->status);
+
+        $this->patchJson($this->blockUrl($block), ['status' => 'done'])->assertOk()->assertJsonPath('data.status', 'done');
+        $this->patchJson($this->blockUrl($block), ['status' => 'partial'])->assertOk()->assertJsonPath('data.status', 'partial');
+
+        // Other edits are unaffected.
+        $this->patchJson($this->blockUrl($block), ['planned_task' => 'Essay #4', 'note' => 'tired', 'slot' => 'deep'])->assertOk();
+    }
+
+    public function test_recorded_block_keeps_its_day_and_enough_minutes(): void
+    {
+        $block = $this->block();
+        $this->record($block, 40);
+
+        $this->patchJson($this->blockUrl($block), ['block_date' => '2026-10-12'])
+            ->assertStatus(422)->assertJsonValidationErrors('block_date', 'errors');
+        $this->patchJson($this->blockUrl($block), ['block_date' => '2026-10-13'])->assertOk();
+
+        $this->patchJson($this->blockUrl($block), ['planned_minutes' => 30])
+            ->assertStatus(422)->assertJsonValidationErrors('planned_minutes', 'errors');
+        $this->patchJson($this->blockUrl($block), ['planned_minutes' => null])
+            ->assertStatus(422)->assertJsonValidationErrors('planned_minutes', 'errors');
+        $this->patchJson($this->blockUrl($block), ['planned_minutes' => 40])->assertOk();
+        $this->assertSame(40, $block->fresh()->planned_minutes);
+    }
+
+    public function test_block_without_recorded_time_is_unrestricted(): void
+    {
+        $block = $this->block();
+        $this->patchJson($this->blockUrl($block), ['status' => 'missed'])->assertOk();
+        $this->patchJson($this->blockUrl($block), ['status' => 'planned', 'block_date' => '2026-10-12', 'planned_minutes' => 20])->assertOk();
+    }
+
+    public function test_clear_recorded_time(): void
+    {
+        $block = $this->block();
+        $this->record($block, 40);
+        $this->at('2026-10-13 14:00:00');
+        $this->start($block)->assertOk();
+        $this->at('2026-10-13 14:50:00');
+        $this->getJson('/api/study/timer')->assertJsonPath('data.recent.block.status', 'done'); // ran out: 90 recorded
+        $this->assertSame('done', $block->fresh()->status);
+
+        $this->deleteJson($this->url($block, 'runs'))->assertOk()
+            ->assertJsonPath('data.block.status', 'planned')
+            ->assertJsonPath('data.block.actual_minutes', 0)
+            ->assertJsonPath('data.block.has_recorded_time', false)
+            ->assertJsonPath('data.recent', null);
+        $this->assertSame(0, StudyBlockSession::count());
+
+        // Now any status is allowed again, and nothing is left to clear.
+        $this->patchJson($this->blockUrl($block), ['status' => 'missed'])->assertOk();
+        $this->deleteJson($this->url($block, 'runs'))->assertStatus(422)->assertJsonValidationErrors('timer', 'errors');
+    }
+
+    public function test_clear_is_refused_while_the_timer_is_active(): void
+    {
+        $block = $this->block();
+        $this->record($block, 40);
+        $this->at('2026-10-13 14:00:00');
+        $this->start($block)->assertOk();
+
+        $this->deleteJson($this->url($block, 'runs'))->assertStatus(422)->assertJsonValidationErrors('timer', 'errors');
+        $this->assertSame(2, StudyBlockSession::count());
+        $this->assertSame('partial', $block->fresh()->status);
+    }
+
+    public function test_clear_access_control(): void
+    {
+        $other = User::factory()->create();
+        $foreignWeek = StudyWeek::factory()->create(['user_id' => $other->id, 'week_start' => '2026-10-11']);
+        $foreign = StudyBlock::factory()->create(['study_week_id' => $foreignWeek->id, 'block_date' => '2026-10-13', 'status' => 'done']);
+        StudyBlockSession::factory()->create(['study_block_id' => $foreign->id, 'user_id' => $other->id]);
+
+        $this->deleteJson($this->url($foreign, 'runs'))->assertForbidden();
+        $this->assertSame(1, StudyBlockSession::count());
+
+        $this->actingAsDemo();
+        $demoWeek = StudyWeek::factory()->create(['user_id' => auth()->id(), 'week_start' => '2026-10-11']);
+        $demo = StudyBlock::factory()->create(['study_week_id' => $demoWeek->id, 'block_date' => '2026-10-13']);
+        $this->deleteJson($this->url($demo, 'runs'))->assertForbidden();
+    }
+
+    public function test_regenerate_keeps_blocks_with_recorded_time(): void
+    {
+        // A planned block that still has runs (recorded before these rules).
+        $block = $this->block(['status' => 'planned']);
+        StudyBlockSession::factory()->create(['study_block_id' => $block->id, 'user_id' => $this->user->id]);
+
+        $this->postJson('/api/study/weekly-plan/'.IdHasher::encode($this->week->id).'/regenerate', ['gear' => 'red'])->assertOk();
+
+        $this->assertNotNull($block->fresh());
+    }
 }

@@ -49,3 +49,13 @@ export const statuses = [
     { value: 'missed', outcome: true, label: 'Missed', short: '✗', style: 'bg-gray-500 text-white' },
     { value: 'red', label: 'Red day', short: 'R', style: 'bg-red-600 text-white' },
 ]
+
+/**
+ * A block with recorded timer time stays done or partial: missed and red are
+ * locked, and so is clicking its current status (which would clear it to
+ * planned). Clear recorded time in the block editor undoes a recording.
+ */
+export const recordedLocked = (block, status) => !!block.has_recorded_time
+    && (!['done', 'partial'].includes(status.value) || block.status === status.value)
+
+export const recordedLockedTitle = 'This block has recorded time — use Clear recorded time in the Weekly Plan block editor (✎) to undo it'

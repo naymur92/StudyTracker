@@ -141,6 +141,7 @@ export const guideSections = [
             { text: 'If a block gets interrupted, write one line — where you stopped and the next step — before leaving it.', refs: ['leroyglomb2018'] },
             { text: 'Pause the timer for an interruption instead of letting it run; paused time does not count. A paused timer can be resumed only on its own day.' },
             { text: 'Each card shows recorded minutes next to planned ones (“40 / 90 min”), so the weekly review starts from what you actually did.' },
+            { text: 'Time the timer recorded counts as proof the block happened: the block stays Done or Partial (you can switch between the two), keeps its day, and its minutes can’t drop below the recorded time. To undo a recording — say, a timer left running while you were away — open ✎ and select Clear recorded time; the block goes back to planned.' },
         ],
         techniques: ['implementation-intentions', 'realistic-planning', 'consistency', 'single-track-focus'],
         algorithms: ['weekly-gear-blocks', 'weekly-score'],

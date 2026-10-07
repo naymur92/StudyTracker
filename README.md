@@ -425,6 +425,7 @@ All endpoints below require the `Authorization: Bearer <token>` header.
 | `POST`                         | `/api/study/blocks/{id}/timer/resume`          | Resume the timer               | 30/min/user |
 | `POST`                         | `/api/study/blocks/{id}/timer/stop`            | Stop (done / partial)          | 30/min/user |
 | `DELETE`                       | `/api/study/blocks/{id}/timer`                 | Discard the active run         | 30/min/user |
+| `DELETE`                       | `/api/study/blocks/{id}/timer/runs`            | Clear recorded time            | 30/min/user |
 | **Study Preferences**          |                                                |                                |             |
 | `GET`                          | `/api/study/preferences`                       | Get study preferences          | 60/min/user |
 | `PUT`                          | `/api/study/preferences`                       | Update study preferences       | 30/min/user |

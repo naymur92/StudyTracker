@@ -82,6 +82,10 @@ export const useBlockTimerStore = defineStore('blockTimer', {
         discard(api, blockId = this.activeBlockId) {
             return this.act(api, (a) => a.delete(`/study/blocks/${blockId}/timer`))
         },
+        /** Delete a block's recorded runs; the block becomes planned again. */
+        clearRecorded(api, blockId) {
+            return this.act(api, (a) => a.delete(`/study/blocks/${blockId}/timer/runs`))
+        },
 
         /** Remember a finished run's block for the topic-page wrap-up. */
         setWrapup(run) {

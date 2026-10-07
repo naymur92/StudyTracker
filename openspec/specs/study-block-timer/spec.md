@@ -175,11 +175,43 @@ A timer object SHALL include:
 ### Requirement: Timer fields in block responses
 Every block in API responses SHALL include:
 - `actual_minutes`: the block's recorded time from ended runs, rounded to the nearest minute, or 0;
+- `has_recorded_time`: whether the block has any recorded time;
 - `timer`: the block's active timer object, or null.
 
 #### Scenario: Weekly plan with a running block
 - **WHEN** a user fetches the weekly plan while today's morning block is running
 - **THEN** that block has a `timer` with state `running`, and every other block has a null `timer`
+
+### Requirement: Recorded time constrains block edits
+When a block has recorded time from ended runs, a block update SHALL respond 422:
+- on `status`, for any status other than `done` or `partial`;
+- on `block_date`, for a date other than the block's current date;
+- on `planned_minutes`, for a changed value that is null or below the recorded time rounded up to whole minutes.
+
+Changing between `done` and `partial`, and every other field, SHALL stay allowed. Blocks without recorded time SHALL keep the ordinary block rules.
+
+#### Scenario: Timer-done block set back to planned
+- **WHEN** a user sets a block the timer marked `done` with 90 recorded minutes to `planned`, `missed` or `red`
+- **THEN** the API responds 422 on `status` and the block stays `done`
+
+#### Scenario: Judging a recorded block partial
+- **WHEN** a user changes that block from `done` to `partial`
+- **THEN** the block is saved as `partial` with 90 recorded minutes
+
+#### Scenario: Minutes below the recorded time
+- **WHEN** a user sets the planned minutes of a block with 40 recorded minutes to 30
+- **THEN** the API responds 422 on `planned_minutes`
+
+### Requirement: Clear recorded time
+`DELETE /api/study/blocks/{block}/timer/runs` SHALL delete the block's ended runs and set its status to `planned`, returning the timer lookup payload with the block. It SHALL respond 422 while the block has an active timer, or when the block has no recorded time. The route uses the study write rate limiter and responds 403 for demo users and for another user's block. The Weekly Plan block editor SHALL offer it, after a confirmation, on a block with recorded time.
+
+#### Scenario: Undo a recording
+- **WHEN** a user clears the recorded time of a `done` block with 90 recorded minutes
+- **THEN** the block is `planned` with no recorded time, and any status can be set on it again
+
+#### Scenario: Clear while running
+- **WHEN** a user clears the recorded time of a block whose timer is running
+- **THEN** the API responds 422 and the runs stay
 
 ### Requirement: Timer access control
 Timer routes on another user's block SHALL respond 403. An unknown or malformed block ID SHALL respond 404. Pause, resume, stop or discard on a block without an active timer SHALL respond 422. Run IDs SHALL be exposed as opaque hashed strings.

@@ -1799,6 +1799,38 @@
                         "description": "Block timer — see API-DOCUMENTATION.md"
                     },
                     "response": []
+                },
+                {
+                    "name": "Clear Block Recorded Time",
+                    "request": {
+                        "method": "DELETE",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{url}}/api/study/blocks/{{block_id}}/timer/runs",
+                            "host": [
+                                "{{url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "study",
+                                "blocks",
+                                "{{block_id}}",
+                                "timer",
+                                "runs"
+                            ]
+                        },
+                        "description": "Block timer — see API-DOCUMENTATION.md"
+                    },
+                    "response": []
                 }
             ]
         },

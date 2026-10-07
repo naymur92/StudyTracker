@@ -161,6 +161,26 @@ class BlockTimerService
     }
 
     /**
+     * Delete the block's recorded (ended) runs and set it back to planned.
+     * Refused while the block has an active timer or nothing is recorded.
+     */
+    public function clearRecorded(User $user, StudyBlock $block): void
+    {
+        $this->locked($user, function () use ($block) {
+            if ($block->activeSession()->exists()) {
+                $this->fail('timer', 'Stop the block\'s timer before clearing its recorded time.');
+            }
+
+            $deleted = $block->sessions()->whereNotNull('ended_at')->delete();
+            if ($deleted === 0) {
+                $this->fail('timer', 'This block has no recorded time.');
+            }
+
+            $block->update(['status' => 'planned']);
+        });
+    }
+
+    /**
      * Complete the user's running run if its time has run out, as of the
      * moment it ran out. Called before every read of timers or blocks.
      */

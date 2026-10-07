@@ -27,6 +27,7 @@ class StudyBlockResource extends JsonResource
             'category_id' => $this->category_id ? IdHasher::encode($this->category_id) : null,
             'topic' => $this->topic ? ['id' => IdHasher::encode($this->topic->id), 'title' => $this->topic->title] : null,
             'actual_minutes' => (int) round($this->resource->endedSeconds() / 60),
+            'has_recorded_time' => $this->resource->endedSeconds() > 0,
             'timer' => $this->activeSession
                 ? app(BlockTimerService::class)->timerFields($this->activeSession, $this->resource)
                 : null,

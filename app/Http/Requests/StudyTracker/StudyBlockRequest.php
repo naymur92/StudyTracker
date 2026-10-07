@@ -72,6 +72,41 @@ class StudyBlockRequest extends FormRequest
                     }
                 }
             },
+            // Time recorded by the block's timer runs is evidence: the block was
+            // studied on its day. Its status stays done or partial, its date
+            // stays, and its minutes cover the recorded time. "Clear recorded
+            // time" (DELETE /blocks/{block}/timer/runs) undoes a recording.
+            function (Validator $validator) {
+                $block = $this->route('block');
+                if (! $block instanceof StudyBlock || $block->user_id !== $this->user()?->id) {
+                    return;
+                }
+
+                $recorded = $block->endedSeconds();
+                if ($recorded <= 0) {
+                    return;
+                }
+
+                $clear = 'This block has recorded time; clear it first to change this.';
+
+                if ($this->has('status') && ! $validator->errors()->has('status')
+                    && ! in_array($this->input('status'), StudyBlock::RECORDED_STATUSES, true)) {
+                    $validator->errors()->add('status', 'A block with recorded time can only be done or partial. '.$clear);
+                }
+
+                if ($this->filled('block_date') && ! $validator->errors()->has('block_date')
+                    && $this->input('block_date') !== $block->block_date->toDateString()) {
+                    $validator->errors()->add('block_date', 'A block with recorded time stays on its day. '.$clear);
+                }
+
+                $minimum = $block->recordedMinutesCeil();
+                $minutes = $this->input('planned_minutes');
+                if ($this->has('planned_minutes') && ! $validator->errors()->has('planned_minutes')
+                    && $minutes !== $block->planned_minutes
+                    && ($minutes === null || (int) $minutes < $minimum)) {
+                    $validator->errors()->add('planned_minutes', "Planned minutes can't be less than the {$minimum} minutes already recorded.");
+                }
+            },
             // A break pattern needs both halves, counting the stored values on update.
             function (Validator $validator) {
                 if ($validator->errors()->hasAny(['break_every_minutes', 'break_minutes'])) {

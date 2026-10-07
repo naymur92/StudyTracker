@@ -147,7 +147,7 @@ class WeeklyPlanService
         return $days;
     }
 
-    /** Replace today's and later still-planned blocks (without an active timer) with another gear's template. */
+    /** Replace today's and later still-planned blocks (without timer runs) with another gear's template. */
     public function regenerate(StudyWeek $week, string $gear, StudyPreferences $prefs): void
     {
         DB::transaction(function () use ($week, $gear, $prefs) {
@@ -156,7 +156,7 @@ class WeeklyPlanService
             $week->blocks()
                 ->whereDate('block_date', '>=', $from->toDateString())
                 ->where('status', 'planned')
-                ->whereDoesntHave('activeSession')
+                ->whereDoesntHave('sessions')
                 ->delete();
 
             $week->update(['gear' => $gear]);

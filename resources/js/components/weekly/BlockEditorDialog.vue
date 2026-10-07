@@ -7,6 +7,10 @@
                 <p v-if="locked" class="mt-2 text-xs rounded-lg bg-amber-50 border border-amber-200 text-amber-900 p-2">
                     This block's timer is active, so its minutes and breaks are locked until you stop it.
                 </p>
+                <div v-else-if="block.has_recorded_time" class="mt-2 text-xs rounded-lg bg-gray-50 border border-gray-200 text-gray-700 p-2 flex items-start justify-between gap-3">
+                    <span>The timer recorded {{ block.actual_minutes }} min on this block, so it stays done or partial and its minutes can't go below that.</span>
+                    <button type="button" class="shrink-0 font-semibold text-red-700 hover:underline disabled:opacity-50" :disabled="saving" @click="clearRecorded">Clear recorded time</button>
+                </div>
             </div>
 
             <div>
@@ -17,7 +21,7 @@
             <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1" for="block-minutes">Minutes</label>
-                    <input id="block-minutes" v-model.number="form.planned_minutes" type="number" min="5" max="480" class="input-base" :disabled="locked" />
+                    <input id="block-minutes" v-model.number="form.planned_minutes" type="number" :min="Math.max(5, block.actual_minutes || 0)" max="480" class="input-base" :disabled="locked" />
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1" for="block-slot">Slot</label>
@@ -81,6 +85,8 @@ import { computed, reactive, ref, watch } from 'vue'
 import { format } from 'date-fns'
 import { useAuthStore } from '@/stores/auth'
 import { useWeeklyPlanStore } from '@/stores/weeklyPlan'
+import { useBlockTimerStore } from '@/stores/blockTimer'
+import { showConfirm } from '@/helpers/alerts'
 import { parseLocalDate } from '@/helpers/dates'
 import { slotLabels } from '@/components/weekly/weeklyMeta'
 import TopicPicker from '@/components/timer/TopicPicker.vue'
@@ -135,6 +141,29 @@ watch(breakPreset, (value) => {
         form.break_minutes = 5
     }
 })
+
+const timerStore = useBlockTimerStore()
+
+/** Delete the block's timer runs after a confirmation; it becomes planned again. */
+const clearRecorded = async () => {
+    const ok = await showConfirm(
+        `Delete the ${props.block.actual_minutes} min the timer recorded on this block? It goes back to planned, and this can't be undone.`,
+        'Clear recorded time',
+    )
+    if (!ok) return
+    saving.value = true
+    error.value = ''
+    try {
+        await timerStore.clearRecorded(authStore.getApiClient(), props.block.id)
+        emit('saved')
+        emit('close')
+    } catch (err) {
+        const errors = err.response?.data?.errors
+        error.value = (errors && Object.values(errors).flat()[0]) || err.response?.data?.msg || 'The recorded time could not be cleared.'
+    } finally {
+        saving.value = false
+    }
+}
 
 const save = async () => {
     saving.value = true

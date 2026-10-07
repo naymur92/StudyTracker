@@ -105,9 +105,9 @@ The job-holder Red template SHALL create one review block (review, 20 minutes) o
 ### Requirement: Regenerate remaining blocks for a new gear
 `POST /api/study/weekly-plan/{week}/regenerate` with a `gear` SHALL:
 - set the plan's gear;
-- replace the blocks dated today or later that still have status `planned` and no active timer with that gear's template blocks for the same dates.
+- replace the blocks dated today or later that still have status `planned` and no timer runs (active or ended) with that gear's template blocks for the same dates.
 
-Past blocks, blocks with any other status and blocks with an active timer SHALL NOT change.
+Past blocks, blocks with any other status and blocks with timer runs SHALL NOT change.
 
 #### Scenario: Downshift mid-week
 - **WHEN** on Tuesday a user regenerates a green plan as `yellow`

@@ -41,8 +41,8 @@
                     <span class="flex gap-1 shrink-0">
                         <button v-if="canStart(block)" @click="startBlock(block)" :disabled="!!startBlockedReason()" :title="startBlockedReason() || 'Start the timer'"
                             class="h-7 px-2 rounded text-xs font-semibold bg-primary-600 text-white hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed">▶ Start</button>
-                        <button v-for="s in quickStatuses" :key="s.value" @click="mark(block, s.value)" :disabled="timerStore.activeBlockId === block.id"
-                            :title="timerStore.activeBlockId === block.id ? 'Stop the timer to mark this block' : s.label"
+                        <button v-for="s in quickStatuses" :key="s.value" @click="mark(block, s.value)" :disabled="timerStore.activeBlockId === block.id || recordedLocked(block, s)"
+                            :title="timerStore.activeBlockId === block.id ? 'Stop the timer to mark this block' : recordedLocked(block, s) ? recordedLockedTitle : s.label"
                             :class="['w-7 h-7 rounded text-xs font-bold disabled:opacity-40 disabled:cursor-not-allowed', block.status === s.value ? s.style : 'bg-gray-100 text-gray-600 hover:bg-gray-200']">{{ s.short }}</button>
                     </span>
                 </div>
@@ -60,7 +60,7 @@ import { useAuthStore } from '@/stores/auth'
 import { useWeeklyPlanStore } from '@/stores/weeklyPlan'
 import { todayLocal } from '@/helpers/dates'
 import { showError } from '@/helpers/alerts'
-import { gearsWithOptions, slotLabels, statuses } from '@/components/weekly/weeklyMeta'
+import { gearsWithOptions, slotLabels, statuses, recordedLocked, recordedLockedTitle } from '@/components/weekly/weeklyMeta'
 import ScoreBar from '@/components/weekly/ScoreBar.vue'
 import StartBlockDialog from '@/components/timer/StartBlockDialog.vue'
 import TimerBadge from '@/components/timer/TimerBadge.vue'
